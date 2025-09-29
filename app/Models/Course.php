@@ -14,6 +14,9 @@ class Course extends Model
         'name',
         'description',
         'link',
+        'creator_id',
+        'is_active',
+        'is_featured',
     ];
 
     protected function casts(): array
@@ -86,6 +89,6 @@ class Course extends Model
     public function getDeadlineDaysAttribute(): int
     {
         $lessonCount = $this->lessons_count;
-        return $lessonCount + ($lessonCount / 5 * 2);
+        return (int) ($lessonCount + ($lessonCount / 5 * 2));
     }
 }
