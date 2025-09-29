@@ -25,10 +25,21 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+            'username' => fake()->unique()->userName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'full_name' => fake()->optional(0.7)->name(),
+            'profile_picture_url' => fake()->optional(0.3)->imageUrl(200, 200, 'people'),
+            'title' => fake()->optional(0.5)->jobTitle(),
+            'bio' => fake()->optional(0.6)->paragraph(),
+            'linkedin_url' => fake()->optional(0.4)->url(),
+            'website_url' => fake()->optional(0.3)->url(),
+            'is_public' => fake()->boolean(80), // 80% chance of being public
+            'is_active' => fake()->boolean(95), // 95% chance of being active
+            'points' => fake()->numberBetween(0, 100),
+            'total_completed_enrollments' => fake()->numberBetween(0, 5),
         ];
     }
 
