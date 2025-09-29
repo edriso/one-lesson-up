@@ -24,7 +24,6 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
             'username' => fake()->unique()->userName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
@@ -38,8 +37,6 @@ class UserFactory extends Factory
             'website_url' => fake()->optional(0.3)->url(),
             'is_public' => fake()->boolean(80), // 80% chance of being public
             'is_active' => fake()->boolean(95), // 95% chance of being active
-            'points' => fake()->numberBetween(0, 100),
-            'total_completed_enrollments' => fake()->numberBetween(0, 5),
         ];
     }
 
