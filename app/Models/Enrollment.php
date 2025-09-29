@@ -21,7 +21,7 @@ class Enrollment extends Model
     protected function casts(): array
     {
         return [
-            'is_completed' => 'boolean',
+            'completed_at' => 'datetime',
             'deadline_date' => 'datetime',
         ];
     }

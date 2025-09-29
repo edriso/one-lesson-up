@@ -25,7 +25,7 @@ class CompletedLesson extends Model
         // Award 1 point when a lesson is completed
         static::created(function ($completedLesson) {
             $completedLesson->enrollment->user->increment('points');
-            
+
             // Check if this was the last lesson of the course
             $completedLesson->checkCourseCompletion();
         });
@@ -93,9 +93,9 @@ class CompletedLesson extends Model
         $completedLessons = $enrollment->completedLessons()->count();
 
         // Check if all lessons are completed
-        if ($completedLessons === $totalLessons && !$enrollment->is_completed) {
+        if ($completedLessons === $totalLessons && !$enrollment->completed_at) {
             // Mark enrollment as completed
-            $enrollment->update(['is_completed' => true]);
+            $enrollment->update(['completed_at' => now()]);
             
             // Calculate and award bonus points
             $this->awardCourseCompletionBonus($enrollment, $course);
