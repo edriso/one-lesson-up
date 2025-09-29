@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('full_name')->nullable();
             $table->string('profile_picture_url')->nullable();
             $table->string('title')->nullable();
-            $table->text('bio')->nullable();
+            $table->string('bio')->nullable();
             $table->string('linkedin_url')->nullable();
             $table->string('website_url')->nullable();
             $table->integer('points')->default(0);

@@ -4,10 +4,10 @@ namespace App\Enums;
 
 enum PointThreshold: int
 {
-    case PROFILE_PICTURE_UNLOCK = 100;    
-    case CUSTOM_TITLE = 100;
+    case PROFILE_PICTURE_UNLOCK = 100;
+    case CUSTOM_TITLE = 150;
     case LEADERBOARD_VISIBILITY = 10;
-    
+
     public function description(): string
     {
         return match($this) {

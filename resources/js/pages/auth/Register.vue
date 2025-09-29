@@ -26,18 +26,18 @@ import { LoaderCircle } from 'lucide-vue-next';
         >
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="name">Name</Label>
+                    <Label for="full_name">Name</Label>
                     <Input
-                        id="name"
+                        id="full_name"
                         type="text"
                         required
                         autofocus
                         :tabindex="1"
                         autocomplete="name"
-                        name="name"
+                        name="full_name"
                         placeholder="Full name"
                     />
-                    <InputError :message="errors.name" />
+                    <InputError :message="errors.full_name" />
                 </div>
 
                 <div class="grid gap-2">

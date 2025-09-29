@@ -66,6 +66,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get user's current enrollment (most recent active).
+     */
+    public function currentEnrollment()
+    {
+        return $this->hasOne(Enrollment::class)->whereNull('completed_at')->latest('created_at');
+    }
+
+    /**
      * Get user's latest completed enrollment.
      */
     public function latestCompletedEnrollment()
@@ -113,14 +121,6 @@ class User extends Authenticatable
     public function totalCompletedEnrollments()
     {
         return $this->hasMany(Enrollment::class)->where('is_completed', true);
-    }
-
-    /**
-     * Get user's current enrollment (most recent active).
-     */
-    public function currentEnrollment()
-    {
-        return $this->hasOne(Enrollment::class)->whereNull('completed_at')->latest();
     }
 
     /**
