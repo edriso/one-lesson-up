@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('completed_lessons', function (Blueprint $table) {
             $table->id();
             $table->foreignId('enrollment_id')->constrained('enrollments')->onDelete('cascade');
-            $table->foreignId('lesson_id')->constrained('lessons')->onDelete('null');
+            $table->foreignId('lesson_id')->constrained('lessons')->onDelete('cascade');
             $table->text('summary');
             $table->string('link')->nullable();
             $table->timestamps();
