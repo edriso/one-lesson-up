@@ -83,7 +83,6 @@ class CompletedLesson extends Model
      */
     public function isLastLesson(): bool
     {
-        // return $this->lesson->lesson_order === $this->course->lessons_count;
         $totalLessons = $this->enrollment->course->lessons_count;
         $completedLessons = $this->enrollment->completedLessons()->count();
         

@@ -35,6 +35,9 @@ test('user earns points when completing a lesson', function () {
 });
 
 test('learning activity is created when completing a lesson', function () {
+    // Create additional lessons so completing one doesn't complete the course
+    $additionalLessons = Lesson::factory()->count(2)->create(['module_id' => $this->module->id]);
+    
     $initialActivityCount = LearningActivity::count();
     
     CompletedLesson::create([
@@ -135,7 +138,13 @@ test('course completion creates learning activity', function () {
     
     $initialActivityCount = LearningActivity::count();
     
-    // Complete all lessons
+    // Complete all lessons (including the original one from setup)
+    CompletedLesson::create([
+        'enrollment_id' => $this->enrollment->id,
+        'lesson_id' => $this->lesson->id,
+        'summary' => 'Test lesson completion',
+    ]);
+    
     foreach ($lessons as $lesson) {
         CompletedLesson::create([
             'enrollment_id' => $this->enrollment->id,
@@ -144,8 +153,8 @@ test('course completion creates learning activity', function () {
         ]);
     }
 
-    // Should have created: 2 lesson activities + 1 course completion activity
-    expect(LearningActivity::count())->toBe($initialActivityCount + 3);
+    // Should have created: 3 lesson activities + 1 course completion activity
+    expect(LearningActivity::count())->toBe($initialActivityCount + 4);
     
     $courseCompletionActivity = LearningActivity::where('activity_type', ActivityType::COURSE_COMPLETED->value)->first();
     expect($courseCompletionActivity)->not->toBeNull();
@@ -153,22 +162,34 @@ test('course completion creates learning activity', function () {
 });
 
 test('enrollment is marked as completed when all lessons are done', function () {
+    // Create a fresh enrollment for this test to avoid interference from other tests
+    $freshEnrollment = Enrollment::factory()->create([
+        'user_id' => $this->user->id,
+        'course_id' => $this->course->id,
+    ]);
+    
     // Create a course with multiple lessons
     $lessons = Lesson::factory()->count(2)->create(['module_id' => $this->module->id]);
     
-    expect($this->enrollment->completed_at)->toBeNull();
+    expect($freshEnrollment->completed_at)->toBeNull();
     
-    // Complete all lessons
+    // Complete all lessons (including the original one from setup)
+    CompletedLesson::create([
+        'enrollment_id' => $freshEnrollment->id,
+        'lesson_id' => $this->lesson->id,
+        'summary' => 'Test lesson completion',
+    ]);
+    
     foreach ($lessons as $lesson) {
         CompletedLesson::create([
-            'enrollment_id' => $this->enrollment->id,
+            'enrollment_id' => $freshEnrollment->id,
             'lesson_id' => $lesson->id,
             'summary' => 'Test lesson completion',
         ]);
     }
 
-    $this->enrollment->refresh();
-    expect($this->enrollment->completed_at)->not->toBeNull();
+    $freshEnrollment->refresh();
+    expect($freshEnrollment->completed_at)->not->toBeNull();
 });
 
 
