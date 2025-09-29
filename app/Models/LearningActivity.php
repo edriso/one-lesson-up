@@ -4,10 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\ActivityType;
+use App\Enums\PointValue;
 
 class LearningActivity extends Model
 {
-    protected $fillable = [];
+    protected $fillable = [
+        'user_id',
+        'enrollment_id',
+        'lesson_id',
+        'activity_type',
+        'points_earned',
+    ];
 
     protected function casts(): array
     {
@@ -64,7 +71,7 @@ class LearningActivity extends Model
             'enrollment_id' => $enrollmentId,
             'lesson_id' => $lessonId,
             'activity_type' => ActivityType::LESSON_COMPLETED,
-            'points_earned' => 1,
+            'points_earned' => PointValue::LESSON_COMPLETED->value,
         ]);
     }
 
@@ -78,21 +85,21 @@ class LearningActivity extends Model
             'enrollment_id' => $enrollmentId,
             'lesson_id' => null,
             'activity_type' => ActivityType::COURSE_STARTED,
-            'points_earned' => 0,
+            'points_earned' => null, // No points for course start
         ]);
     }
 
     /**
      * Create a learning activity for course completion.
      */
-    public static function createCourseCompleted(int $userId, int $enrollmentId, int $pointsEarned = 0): self
+    public static function createCourseCompleted(int $userId, int $enrollmentId, float $bonusPoints = 0): self
     {
         return self::create([
             'user_id' => $userId,
             'enrollment_id' => $enrollmentId,
             'lesson_id' => null,
             'activity_type' => ActivityType::COURSE_COMPLETED,
-            'points_earned' => $pointsEarned,
+            'points_earned' => (int) $bonusPoints,
         ]);
     }
 }

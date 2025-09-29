@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Enums\PointValue;
 
 class CompletedLesson extends Model
 {
@@ -122,13 +123,8 @@ class CompletedLesson extends Model
         $deadlineDate = $enrollment->created_at->addDays($deadline);
         $isCompletedOnTime = now()->lte($deadlineDate);
         
-        if ($isCompletedOnTime) {
-            // On-time completion: 50% bonus
-            $bonusPoints = $lessonCount * 0.5;
-        } else {
-            // Late completion: 25% bonus
-            $bonusPoints = $lessonCount * 0.25;
-        }
+        // Calculate bonus points using PointValue enum
+        $bonusPoints = PointValue::calculateCourseBonus($lessonCount, $isCompletedOnTime);
         
         // Award bonus points
         $user->increment('points', (int) $bonusPoints);
@@ -137,7 +133,7 @@ class CompletedLesson extends Model
         \App\Models\LearningActivity::createCourseCompleted(
             $user->id,
             $enrollment->id,
-            (int) $bonusPoints
+            $bonusPoints
         );
     }
 
