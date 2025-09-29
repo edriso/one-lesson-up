@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\ActivityType;
+use App\Enums\ActivityType;
 
 class LearningActivity extends Model
 {

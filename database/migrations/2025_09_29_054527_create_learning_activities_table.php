@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('enrollment_id')->constrained('enrollments')->onDelete('cascade');
             $table->foreignId('lesson_id')->nullable()->constrained('lessons')->onDelete('cascade');
-            $table->enum('activity_type', \App\ActivityType::values());
+            $table->enum('activity_type', \App\Enums\ActivityType::values());
             $table->unsignedTinyInteger('points_earned')->nullable();
             $table->timestamps();
             

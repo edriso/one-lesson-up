@@ -124,7 +124,7 @@ class User extends Authenticatable
 
         $activities = $this->learningActivities()
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->where('activity_type', \App\ActivityType::LESSON_COMPLETED->value)
+            ->where('activity_type', \App\Enums\ActivityType::LESSON_COMPLETED->value)
             ->get()
             ->groupBy(function ($activity) {
                 return $activity->created_at->format('Y-m-d');
