@@ -56,13 +56,6 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Get the user's current enrollment.
-     */
-    public function currentEnrollment()
-    {
-        return $this->hasOne(Enrollment::class, 'id', 'enrollment_id');
-    }
 
     /**
      * Get all enrollments for the user.
@@ -120,6 +113,73 @@ class User extends Authenticatable
     public function totalCompletedEnrollments()
     {
         return $this->hasMany(Enrollment::class)->where('is_completed', true);
+    }
+
+    /**
+     * Get user's current enrollment (most recent active).
+     */
+    public function currentEnrollment()
+    {
+        return $this->hasOne(Enrollment::class)->whereNull('completed_at')->latest();
+    }
+
+    /**
+     * Get user's learning statistics.
+     */
+    public function getLearningStatsAttribute(): array
+    {
+        $totalLessons = $this->completedLessons()->count();
+        $totalCourses = $this->enrollments()->whereNotNull('completed_at')->count();
+        $totalPoints = $this->points;
+
+        // Calculate average lessons per day
+        $firstActivity = $this->learningActivities()
+            ->where('activity_type', \App\Enums\ActivityType::LESSON_COMPLETED->value)
+            ->orderBy('created_at', 'asc')
+            ->first();
+
+        $daysActive = 0;
+        if ($firstActivity) {
+            $daysActive = $firstActivity->created_at->diffInDays(now()) + 1;
+        }
+
+        $avgLessonsPerDay = $daysActive > 0 ? round($totalLessons / $daysActive, 2) : 0;
+
+        return [
+            'total_lessons' => $totalLessons,
+            'total_courses' => $totalCourses,
+            'total_points' => $totalPoints,
+            'days_active' => $daysActive,
+            'avg_lessons_per_day' => $avgLessonsPerDay,
+        ];
+    }
+
+    /**
+     * Get user's learning streak (consecutive days with activity).
+     */
+    public function getLearningStreakAttribute(): int
+    {
+        $activities = $this->learningActivities()
+            ->where('activity_type', \App\Enums\ActivityType::LESSON_COMPLETED->value)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $streak = 0;
+        $currentDate = now()->startOfDay();
+
+        foreach ($activities as $activity) {
+            $activityDate = $activity->created_at->startOfDay();
+            $daysDiff = $currentDate->diffInDays($activityDate);
+
+            if ($daysDiff === $streak) {
+                $streak++;
+                $currentDate = $activityDate;
+            } else {
+                break;
+            }
+        }
+
+        return $streak;
     }
 
     /**
