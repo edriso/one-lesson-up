@@ -16,6 +16,7 @@ class Enrollment extends Model
         'user_id',
         'course_id',
         'reflection',
+        'completed_at',
     ];
 
     protected function casts(): array
