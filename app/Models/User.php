@@ -88,6 +88,11 @@ class User extends Authenticatable
         return $this->hasManyThrough(CompletedLesson::class, Enrollment::class);
     }
 
+    public function learningActivities()
+    {
+        return $this->hasMany(LearningActivity::class);
+    }
+
     /**
      * Get the user's display name (full_name or username).
      */
@@ -107,5 +112,36 @@ class User extends Authenticatable
     public function totalCompletedEnrollments()
     {
         return $this->hasMany(Enrollment::class)->where('is_completed', true);
+    }
+
+    /**
+     * Get user's learning calendar data for a specific month.
+     */
+    public function getLearningCalendar(int $year, int $month): array
+    {
+        $startDate = now()->setYear($year)->setMonth($month)->startOfMonth();
+        $endDate = $startDate->copy()->endOfMonth();
+
+        $activities = $this->learningActivities()
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->where('activity_type', \App\ActivityType::LESSON_COMPLETED->value)
+            ->get()
+            ->groupBy(function ($activity) {
+                return $activity->created_at->format('Y-m-d');
+            });
+
+        $calendar = [];
+        for ($day = 1; $day <= $endDate->day; $day++) {
+            $date = $startDate->copy()->setDay($day);
+            $dateKey = $date->format('Y-m-d');
+            
+            $calendar[$day] = [
+                'date' => $date,
+                'has_activity' => $activities->has($dateKey),
+                'lessons_completed' => $activities->get($dateKey, collect())->count(),
+            ];
+        }
+
+        return $calendar;
     }
 }

@@ -26,6 +26,13 @@ class CompletedLesson extends Model
         static::created(function ($completedLesson) {
             $completedLesson->enrollment->user->increment('points');
 
+            // Create learning activity
+            \App\Models\LearningActivity::createLessonCompleted(
+                $completedLesson->enrollment->user_id,
+                $completedLesson->enrollment_id,
+                $completedLesson->lesson_id
+            );
+            
             // Check if this was the last lesson of the course
             $completedLesson->checkCourseCompletion();
         });
@@ -125,5 +132,13 @@ class CompletedLesson extends Model
         
         // Award bonus points
         $user->increment('points', (int) $bonusPoints);
+        
+        // Create learning activity for course completion
+        \App\Models\LearningActivity::createCourseCompleted(
+            $user->id,
+            $enrollment->id,
+            (int) $bonusPoints
+        );
     }
+
 }

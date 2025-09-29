@@ -20,7 +20,7 @@ class EnrollmentFactory extends Factory
             'user_id' => \App\Models\User::factory(),
             'course_id' => \App\Models\Course::factory(),
             'reflection' => fake()->optional(0.3)->paragraph(),
-            'is_completed' => fake()->boolean(20), // 20% chance of being completed
+            'completed_at' => fake()->optional(0.2)->dateTimeBetween('-30 days', 'now'), // 20% chance of being completed
         ];
     }
 
@@ -30,7 +30,7 @@ class EnrollmentFactory extends Factory
     public function completed(): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_completed' => true,
+            'completed_at' => now(),
             'reflection' => fake()->paragraph(),
         ]);
     }
@@ -41,7 +41,7 @@ class EnrollmentFactory extends Factory
     public function active(): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_completed' => false,
+            'completed_at' => null,
             'reflection' => null,
         ]);
     }

@@ -27,7 +27,7 @@ class EnrollmentSeeder extends Seeder
                     'user_id' => $user->id,
                     'course_id' => $course->id,
                     'reflection' => $isCompleted ? fake()->paragraph() : null,
-                    'is_completed' => $isCompleted,
+                    'completed_at' => $isCompleted ? now() : null,
                 ]);
             }
         }

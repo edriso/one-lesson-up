@@ -51,6 +51,14 @@ class Enrollment extends Model
     }
 
     /**
+     * Get all learning activities for this enrollment.
+     */
+    public function learningActivities(): HasMany
+    {
+        return $this->hasMany(LearningActivity::class);
+    }
+
+    /**
      * Get the current module progress percentage.
      */
     public function getCurrentModuleProgressPercentageAttribute(): int
