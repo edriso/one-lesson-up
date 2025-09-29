@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\ActivityType;
-use App\Enums\PointValue;
+use App\Enums\PointSystemValue;
 
 class LearningActivity extends Model
 {
@@ -71,7 +71,7 @@ class LearningActivity extends Model
             'enrollment_id' => $enrollmentId,
             'lesson_id' => $lessonId,
             'activity_type' => ActivityType::LESSON_COMPLETED,
-            'points_earned' => PointValue::LESSON_COMPLETED->value,
+            'points_earned' => PointSystemValue::LESSON_COMPLETED->value,
         ]);
     }
 

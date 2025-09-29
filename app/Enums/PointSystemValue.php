@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum PointValue: int
+enum PointSystemValue: int
 {
     case LESSON_COMPLETED = 1;
     case COURSE_ON_TIME_BONUS_MULTIPLIER = 50; // 50% bonus

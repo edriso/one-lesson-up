@@ -61,7 +61,7 @@ class User extends Authenticatable
      */
     public function currentEnrollment()
     {
-        return $this->belongsTo(Enrollment::class, 'enrollment_id');
+        return $this->hasOne(Enrollment::class, 'id', 'enrollment_id');
     }
 
     /**
@@ -70,6 +70,14 @@ class User extends Authenticatable
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    /**
+     * Get user's latest completed enrollment.
+     */
+    public function latestCompletedEnrollment()
+    {
+        return $this->hasOne(Enrollment::class, 'enrollment_id')->where('completed_at')->latest();
     }
 
     /**
