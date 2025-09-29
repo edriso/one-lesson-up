@@ -13,7 +13,17 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('username')->unique();
+            $table->string('full_name')->nullable();
+            $table->string('profile_picture_url')->nullable();
+            $table->string('title')->nullable();
+            $table->text('bio')->nullable();
+            $table->string('linkedin_url')->nullable();
+            $table->string('website_url')->nullable();
+            $table->integer('points')->default(0);
+            $table->boolean('is_public')->default(true);
+            $table->boolean('is_active')->default(true);
+            $table->unsignedBigInteger('enrollment_id')->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

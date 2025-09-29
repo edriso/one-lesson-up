@@ -19,9 +19,16 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'username',
         'email',
         'password',
+        'full_name',
+        'profile_picture_url',
+        'title',
+        'bio',
+        'linkedin_url',
+        'website_url',
+        'is_public',
     ];
 
     /**
@@ -44,6 +51,61 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_public' => 'boolean',
+            'points' => 'integer',
         ];
+    }
+
+    /**
+     * Get the user's current enrollment.
+     */
+    public function currentEnrollment()
+    {
+        return $this->belongsTo(Enrollment::class, 'enrollment_id');
+    }
+
+    /**
+     * Get all enrollments for the user.
+     */
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    /**
+     * Get all courses created by the user.
+     */
+    public function createdCourses()
+    {
+        return $this->hasMany(Course::class, 'creator_id');
+    }
+
+    /**
+     * Get all completed lessons for the user.
+     */
+    public function completedLessons()
+    {
+        return $this->hasManyThrough(CompletedLesson::class, Enrollment::class);
+    }
+
+    /**
+     * Get the user's display name (full_name or username).
+     */
+    public function getDisplayNameAttribute()
+    {
+        return $this->full_name ?: $this->username;
+    }
+
+    /**
+     * Get the user's joined days ago.
+     */
+    public function getJoinedDaysAgoAttribute()
+    {
+        return $this->created_at->diffInDays(now());
+    }
+
+    public function totalCompletedEnrollments()
+    {
+        return $this->hasMany(Enrollment::class)->where('is_completed', true);
     }
 }
