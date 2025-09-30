@@ -28,7 +28,7 @@ class CourseController extends Controller
             ->withCount('lessons')
             ->with('tags')
             ->where('is_active', true)
-            ->latest()
+            ->orderBy('enrollments_count', 'desc')
             ->get()
             ->map(function ($course) use ($user) {
                 // Check if user has active enrollment in this course
