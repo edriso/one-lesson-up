@@ -27,12 +27,14 @@ class CompletedLesson extends Model
         static::created(function ($completedLesson) {
             $completedLesson->enrollment->user->increment('points');
 
-            // Create learning activity
-            \App\Models\LearningActivity::createLessonCompleted(
-                $completedLesson->enrollment->user_id,
-                $completedLesson->enrollment_id,
-                $completedLesson->lesson_id
-            );
+            // Create learning activity for tracking (without points to avoid double-counting)
+            \App\Models\LearningActivity::create([
+                'user_id' => $completedLesson->enrollment->user_id,
+                'enrollment_id' => $completedLesson->enrollment_id,
+                'lesson_id' => $completedLesson->lesson_id,
+                'activity_type' => \App\Enums\ActivityType::LESSON_COMPLETED,
+                'points_earned' => null, // Points are awarded via user.points increment above
+            ]);
             
             // Check if this was the last lesson of the course
             $completedLesson->checkCourseCompletion();
@@ -85,43 +87,9 @@ class CompletedLesson extends Model
 
         // Check if all lessons are completed and enrollment not yet marked as complete
         if ($completedLessons === $totalLessons && !$enrollment->completed_at) {
-            // Mark enrollment as completed (completed_at is the completion date)
-            $enrollment->update(['completed_at' => now()]);
-            
-            // Calculate and award bonus points
-            $this->awardCourseCompletionBonus($enrollment, $course);
-            
-            // Clear user's enrollment_id since course is completed
-            $enrollment->user->update(['enrollment_id' => null]);
+            // Note: We don't auto-complete the enrollment here anymore
+            // Completion now requires both all lessons completed AND a reflection
+            // The completion will be triggered when reflection is provided via UI
         }
     }
-
-    /**
-     * Award bonus points for course completion.
-     */
-    private function awardCourseCompletionBonus(Enrollment $enrollment, Course $course): void
-    {
-        $user = $enrollment->user;
-        $lessonCount = $course->lessons_count;
-        $deadline = $course->deadline_days;
-        
-        // Check if completed within deadline
-        // start_date = enrollment created_at, deadline calculated from there
-        $deadlineDate = $enrollment->created_at->addDays($deadline);
-        $isCompletedOnTime = now()->lte($deadlineDate);
-        
-        // Calculate bonus points using PointSystemValue enum
-        $bonusPoints = PointSystemValue::calculateCourseBonus($lessonCount, $isCompletedOnTime);
-        
-        // Award bonus points (round to nearest integer)
-        $user->increment('points', round($bonusPoints));
-        
-        // Create learning activity for course completion
-        \App\Models\LearningActivity::createCourseCompleted(
-            $user->id,
-            $enrollment->id,
-            $bonusPoints
-        );
-    }
-
 }

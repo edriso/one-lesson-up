@@ -24,6 +24,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   emptyMessage: 'No activities yet',
 });
+
+const { entries, currentUserId, emptyMessage } = props;
 </script>
 
 <template>

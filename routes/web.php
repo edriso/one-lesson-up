@@ -80,12 +80,10 @@ Route::get('/', function () {
             'full_name' => $user->full_name ?? $user->username,
             'username' => $user->username,
             'points' => $user->points ?? 0,
-            'current_enrollment' => $user->enrollment ? [
-                'id' => $user->enrollment->id,
-                'class' => [
-                    'id' => $user->enrollment->course->id,
-                    'title' => $user->enrollment->course->name,
-                ],
+            'enrollment_id' => $user->enrollment_id,
+            'current_class' => $user->enrollment ? [
+                'id' => $user->enrollment->course->id,
+                'title' => $user->enrollment->course->name,
             ] : null,
         ],
         'upcoming_lessons' => $upcomingLessons,
@@ -150,6 +148,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('classes/{course}', [App\Http\Controllers\CourseController::class, 'show'])->name('classes.show');
     Route::post('classes/{course}/join', [App\Http\Controllers\CourseController::class, 'join'])->name('classes.join');
     Route::post('classes/{course}/leave', [App\Http\Controllers\CourseController::class, 'leave'])->name('classes.leave');
+    Route::post('classes/{course}/complete', [App\Http\Controllers\CourseController::class, 'completeWithReflection'])->name('classes.complete');
     
     Route::get('lessons/{lesson}/complete', [App\Http\Controllers\LessonController::class, 'showCompleteForm'])->name('lessons.complete');
     Route::post('lessons/{lesson}/complete', [App\Http\Controllers\LessonController::class, 'complete'])->name('lessons.complete.store');
@@ -242,9 +241,10 @@ Route::put('lessons/{lesson}/summary', function ($lessonId, \Illuminate\Http\Req
 Route::get('profile/{username}', function ($username) {
     $user = \App\Models\User::where('username', $username)->firstOrFail();
     
-    // Get completed classes
+    // Get completed classes (both completed_at and reflection required)
     $completedClasses = \App\Models\Enrollment::where('user_id', $user->id)
         ->whereNotNull('completed_at')
+        ->whereNotNull('reflection')
         ->with('course')
         ->get()
         ->map(function ($enrollment) {

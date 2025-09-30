@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import ModalAlert from '@/components/ModalAlert.vue';
+import LessonCompletionModal from '@/components/LessonCompletionModal.vue';
 import { 
   BookOpen, 
   ArrowLeft, 
@@ -62,8 +63,6 @@ const props = defineProps<Props>();
 // Modal state
 const isModalOpen = ref(false);
 const selectedLesson = ref<Lesson | null>(null);
-const summary = ref('');
-const link = ref('');
 
 // Leave course modal state
 const isLeaveModalOpen = ref(false);
@@ -75,35 +74,16 @@ const lessonSummary = ref('');
 const lessonLink = ref('');
 const isEditingSummary = ref(false);
 const summaryError = ref('');
-const summarySuccess = ref('');
 const isSaving = ref(false);
 
 const openCompleteModal = (lesson: Lesson) => {
   selectedLesson.value = lesson;
-  summary.value = '';
-  link.value = '';
   isModalOpen.value = true;
 };
 
-const closeModal = () => {
-  isModalOpen.value = false;
-  selectedLesson.value = null;
-  summary.value = '';
-  link.value = '';
-};
-
-const submitCompletion = () => {
-  if (!selectedLesson.value || !summary.value.trim()) return;
-  
-  router.post(`/lessons/${selectedLesson.value.id}/complete`, {
-    summary: summary.value,
-    link: link.value,
-  }, {
-    onSuccess: () => {
-      closeModal();
-    },
-    preserveScroll: true,
-  });
+const onLessonCompleted = () => {
+  // This will be called when the lesson is successfully completed
+  // The page will already be refreshed by Inertia
 };
 
 const openLeaveModal = () => {
@@ -170,14 +150,12 @@ const closeSummaryModal = () => {
   lessonLink.value = '';
   isEditingSummary.value = false;
   summaryError.value = '';
-  summarySuccess.value = '';
   isSaving.value = false;
 };
 
 const startEditingSummary = () => {
   isEditingSummary.value = true;
   summaryError.value = '';
-  summarySuccess.value = '';
 };
 
 const saveSummary = async () => {
@@ -188,7 +166,6 @@ const saveSummary = async () => {
   
   isSaving.value = true;
   summaryError.value = '';
-  summarySuccess.value = '';
   
   try {
     const response = await fetch(`/lessons/${selectedLessonForSummary.value.id}/summary`, {
@@ -209,7 +186,6 @@ const saveSummary = async () => {
     
     if (response.ok && data.success) {
       isEditingSummary.value = false;
-      summarySuccess.value = data.message || 'Summary saved successfully!';
       // Update the displayed data
       if (data.data) {
         lessonSummary.value = data.data.summary || lessonSummary.value;
@@ -344,7 +320,7 @@ const progressText = computed(() => {
       <div class="flex items-start justify-between gap-4">
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-2">
-            <Button variant="ghost" size="sm" @click="router.visit('/classes')">
+            <Button variant="ghost" size="sm" @click="router.visit('/classes')" class="cursor-pointer">>
               <ArrowLeft class="h-4 w-4 mr-2" />
               Back to Classes
             </Button>
@@ -379,7 +355,7 @@ const progressText = computed(() => {
             v-if="can_join"
             variant="default"
             @click="joinCourse"
-            class="bg-primary text-primary-foreground hover:bg-primary/90"
+            class="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
           >
             Join Class
           </Button>
@@ -390,6 +366,7 @@ const progressText = computed(() => {
             :href="course.link"
             target="_blank"
             rel="noopener noreferrer"
+            class="cursor-pointer"
           >
             <ExternalLink class="h-4 w-4 mr-2" />
             View Class
@@ -421,7 +398,7 @@ const progressText = computed(() => {
       </Card>
 
       <!-- Completed Course Status -->
-      <Card v-else-if="is_completed" class="mb-4 p-4 bg-gradient-to-r from-primary/20 to-secondary/20 border border-primary/30 rounded-lg">
+      <Card v-else-if="is_completed" class="mb-4 p-4 bg-gradient-to-l from-primary/20 to-secondary/20 border border-primary/30 rounded-lg">
         <CardContent class="p-6">
           <div class="space-y-4">
             <div class="flex items-center justify-between">
@@ -438,7 +415,7 @@ const progressText = computed(() => {
                 </p>
               </div>
             </div>
-              <Badge variant="default" class="bg-primary text-primary-foreground text-lg px-3 py-1">
+              <Badge variant="secondary" class="text-secondary-foreground text-lg px-3 py-1">
                 100%
               </Badge>
             </div>
@@ -514,7 +491,7 @@ const progressText = computed(() => {
                   <Button
                     v-if="is_enrolled && !lesson.is_completed && canCompleteLesson(lesson)"
                     size="sm"
-                    class="ml-auto bg-primary text-primary-foreground hover:bg-primary/90"
+                    class="ml-auto bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
                     @click="openCompleteModal(lesson)"
                   >
                     Complete
@@ -523,7 +500,7 @@ const progressText = computed(() => {
                     v-else-if="lesson.is_completed || is_completed"
                     size="sm"
                     variant="outline"
-                    class="ml-auto"
+                    class="ml-auto cursor-pointer"
                     @click="openSummaryModal(lesson)"
                   >
                     View Summary
@@ -583,56 +560,12 @@ const progressText = computed(() => {
     </div>
 
     <!-- Complete Lesson Modal -->
-    <Dialog :open="isModalOpen" @update:open="closeModal">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Complete Lesson: {{ selectedLesson?.name }}</DialogTitle>
-          <DialogDescription>
-            Share your insights and mark this lesson as complete.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div class="space-y-4">
-          <div class="space-y-2">
-            <Label for="summary">Your Summary *</Label>
-            <Textarea 
-              id="summary" 
-              v-model="summary"
-              placeholder="e.g., I learned about Vue 3's Composition API, reactive state management with ref and reactive, and how to use computed properties for derived state."
-              :rows="4"
-              required
-            />
-          </div>
-
-          <div class="space-y-2">
-            <Label for="link">Optional Resource Link</Label>
-            <div class="relative">
-              <LinkIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                id="link" 
-                v-model="link"
-                type="url"
-                placeholder="https://your-notes.com/lesson-summary" 
-                class="pl-10"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-2 pt-4">
-          <Button variant="outline" @click="closeModal">
-            Cancel
-          </Button>
-          <Button 
-            @click="submitCompletion"
-            :disabled="!summary.trim()"
-          >
-            <CheckCircle class="h-4 w-4 mr-2" />
-            Mark as Complete
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <LessonCompletionModal 
+      :is-open="isModalOpen"
+      :lesson="selectedLesson"
+      @update:is-open="isModalOpen = $event"
+      @completed="onLessonCompleted"
+    />
 
     <!-- Leave Course Confirmation Modal -->
     <Dialog :open="isLeaveModalOpen" @update:open="closeLeaveModal">
@@ -669,13 +602,7 @@ const progressText = computed(() => {
           </DialogDescription>
         </DialogHeader>
         
-        <!-- Success/Error Messages -->
-        <ModalAlert 
-          v-if="summarySuccess" 
-          type="success" 
-          :message="summarySuccess" 
-        />
-        
+        <!-- Error Messages -->
         <ModalAlert 
           v-if="summaryError" 
           type="error" 

@@ -69,11 +69,11 @@ const formatDate = (dateString: string) => {
   <AppLayout>
     <div class="space-y-6">
       <!-- Header -->
-      <div class="text-center mb-8">
+      <div>
         <h1 class="text-4xl font-bold text-foreground mb-3">
           Learning Feeds
         </h1>
-        <p class="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p class="text-muted-foreground">
           Discover insights and learnings shared by the community
         </p>
       </div>
@@ -88,14 +88,14 @@ const formatDate = (dateString: string) => {
           Be the first to share your learning experience! Complete a lesson and add a summary to inspire others.
         </p>
         <Button asChild>
-          <Link href="/classes">
+          <Link href="/classes" class="cursor-pointer">
             Explore Classes
           </Link>
         </Button>
       </div>
 
       <!-- Feed Items -->
-      <div v-else class="max-w-2xl mx-auto space-y-6">
+      <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card v-for="summary in lesson_summaries" :key="summary.id" 
               class="overflow-hidden hover:shadow-md transition-all duration-200 border-l-4 border-l-primary/20">
           
@@ -109,7 +109,7 @@ const formatDate = (dateString: string) => {
                   <Link 
                     v-if="summary.lesson?.module?.course?.id"
                     :href="`/classes/${summary.lesson.module.course.id}`"
-                    class="font-semibold text-lg text-foreground hover:text-primary transition-colors"
+                    class="font-semibold text-lg text-foreground hover:text-primary transition-colors cursor-pointer"
                   >
                     {{ summary.lesson?.module?.course?.title || 'Unknown Course' }}
                   </Link>
@@ -142,9 +142,9 @@ const formatDate = (dateString: string) => {
               <a 
                 :href="summary.link" 
                 target="_blank" 
-                class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-muted rounded-lg hover:bg-muted/80 transition-colors group"
+                class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-accent text-muted-foreground hover:bg-primary hover:text-accent-foreground rounded-lg transition-colors cursor-pointer"
               >
-                <ExternalLink class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                <ExternalLink class="h-4 w-4" />
                 <span class="font-medium">View Resource</span>
               </a>
             </div>
@@ -153,7 +153,7 @@ const formatDate = (dateString: string) => {
             <div class="flex items-center gap-4 pt-4 border-t border-border/50">
               <Link 
                 :href="`/profile/${summary.user?.username || ''}`"
-                class="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                class="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer"
               >
                 <span>@{{ summary.user?.username || 'unknown' }}</span>
               </Link>

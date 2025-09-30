@@ -16,21 +16,25 @@ import {
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 
+interface Tag {
+  id: number;
+  name: string;
+}
+
 interface Course {
   id: number;
   title: string;
   description: string;
   students_count: number;
+  active_students_count?: number;
+  completed_students_count?: number;
   lessons_count: number;
   created_at: string;
   can_join: boolean;
   is_enrolled: boolean;
   is_creator: boolean;
   is_public?: boolean;
-  tags?: Array<{
-    id: number;
-    name: string;
-  }>;
+  tags?: Tag[];
 }
 
 interface Props {
@@ -38,12 +42,10 @@ interface Props {
   can_create_class?: boolean;
   user?: {
     id: number;
-    current_enrollment?: {
+    enrollment_id?: number;
+    current_class?: {
       id: number;
-      class: {
-        id: number;
-        title: string;
-      };
+      title: string;
     };
   };
 }
@@ -54,34 +56,83 @@ const props = withDefaults(defineProps<Props>(), {
   user: undefined,
 });
 
-
-const canCreateClass = props.can_create_class && !props.user?.current_enrollment;
-
 // Search functionality
 const searchQuery = ref('');
 
 const filteredCourses = computed(() => {
-  if (!searchQuery.value) {
-    return props.courses;
+  let courses = props.courses;
+  
+  // Apply search filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    courses = courses.filter(course => 
+      course.title?.toLowerCase().includes(query) ||
+      course.description?.toLowerCase().includes(query) ||
+      course.tags?.some(tag => tag.name?.toLowerCase().includes(query))
+    );
   }
 
-  const query = searchQuery.value.toLowerCase();
-  return props.courses.filter(course => {
-    // Search in title and description with null checks
-    const titleMatch = course.title?.toLowerCase().includes(query) || false;
-    const descriptionMatch = course.description?.toLowerCase().includes(query) || false;
+  // Sort courses: current enrollment first, then enrolled, then by student count
+  const currentId = props.user?.current_class?.id;
+  
+  return courses.sort((a, b) => {
+    // Current enrollment first
+    if (a.id === currentId) return -1;
+    if (b.id === currentId) return 1;
     
-    // Search in tags
-    const tagMatch = course.tags?.some(tag => 
-      tag.name?.toLowerCase().includes(query)
-    ) || false;
+    // Enrolled courses next
+    if (a.is_enrolled && !b.is_enrolled) return -1;
+    if (b.is_enrolled && !a.is_enrolled) return 1;
     
-    return titleMatch || descriptionMatch || tagMatch;
+    // Sort by popularity (student count) for non-enrolled courses
+    if (!a.is_enrolled && !b.is_enrolled) {
+      return b.students_count - a.students_count;
+    }
+    
+    return 0;
   });
 });
 
 const clearSearch = () => {
   searchQuery.value = '';
+};
+
+const getStudentCountText = (course: Course): string => {
+  // If we have detailed counts, show them
+  if (course.active_students_count !== undefined && course.completed_students_count !== undefined) {
+    const total = course.students_count;
+    if (total === 0) return '0 students';
+    if (course.active_students_count === 0) return `${total} completed`;
+    if (course.completed_students_count === 0) return `${total} active`;
+    return `${total} total (${course.active_students_count} active, ${course.completed_students_count} completed)`;
+  }
+  
+  // Fallback to the basic count
+  return `${course.students_count} student${course.students_count !== 1 ? 's' : ''}`;
+};
+
+const getCourseStatus = (course: Course) => {
+  if (course.id === props.user?.current_class?.id) {
+    return { label: 'Current', variant: 'secondary' as const };
+  }
+  if (course.is_enrolled) {
+    return { label: 'Completed', variant: 'default' as const };
+  }
+  return null;
+};
+
+const getButtonText = (course: Course): string => {
+  if (!course.is_enrolled) {
+    return course.can_join ? 'Join Class' : 'Cannot Join';
+  }
+  return course.id === props.user?.current_class?.id ? 'Continue Learning' : 'View Class';
+};
+
+const getButtonVariant = (course: Course) => {
+  if (!course.is_enrolled) {
+    return course.can_join ? 'default' : 'outline';
+  }
+  return course.id === props.user?.current_class?.id ? 'default' : 'outline';
 };
 
 const joinCourse = (courseId: number) => {
@@ -92,6 +143,14 @@ const joinCourse = (courseId: number) => {
 
 const viewCourse = (courseId: number) => {
   router.visit(`/classes/${courseId}`);
+};
+
+const handleCourseAction = (course: Course) => {
+  if (course.is_enrolled) {
+    viewCourse(course.id);
+  } else if (course.can_join) {
+    joinCourse(course.id);
+  }
 };
 </script>
 
@@ -115,9 +174,9 @@ const viewCourse = (courseId: number) => {
         <Link :href="'/classes/create'">
           <Button 
             variant="default" 
-            :disabled="!canCreateClass"
-            class="w-full md:w-auto"
-            :title="!canCreateClass ? 'You must leave your current class before creating a new one' : 'Create a new class'"
+            :disabled="!can_create_class"
+            class="w-full md:w-auto cursor-pointer"
+            :title="!can_create_class ? 'You must leave your current class before creating a new one' : 'Create a new class'"
           >
             <Plus class="h-4 w-4 mr-2" />
             Create Class
@@ -126,12 +185,12 @@ const viewCourse = (courseId: number) => {
       </div>
 
       <!-- Tooltip for disabled create button -->
-      <div v-if="!canCreateClass" class="mb-4 p-3 bg-muted/50 rounded-lg border border-muted">
+      <div v-if="!can_create_class" class="mb-4 p-3 bg-muted/50 rounded-lg border border-muted">
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
           <Lock class="h-4 w-4" />
-          <span v-if="user.current_enrollment">
-            You're already enrolled in "{{ user.current_enrollment.class.title }}". 
-            Complete it or leave to create a new class.
+          <span v-if="user.enrollment_id">
+            You're already enrolled in "{{ user.current_class?.title }}". 
+            Complete it or leave to join or create a new class.
           </span>
           <span v-else>
             You need to meet certain requirements to create a class.
@@ -197,7 +256,7 @@ const viewCourse = (courseId: number) => {
           >
             Clear Search
           </Button>
-          <Link v-if="canCreateClass && !searchQuery" :href="'/classes/create'">
+          <Link v-if="can_create_class && !searchQuery" :href="'/classes/create'">
             <Button variant="default">
               <Plus class="h-4 w-4 mr-2" />
               Create First Class
@@ -218,8 +277,12 @@ const viewCourse = (courseId: number) => {
                 </CardDescription>
               </div>
               <div class="flex items-center gap-2 ml-4">
-                <Badge v-if="course.is_enrolled" variant="secondary" class="text-secondary-foreground">
-                  Enrolled
+                <Badge 
+                  v-if="getCourseStatus(course)" 
+                  :variant="getCourseStatus(course)!.variant" 
+                  :class="getCourseStatus(course)!.variant === 'secondary' ? 'text-secondary-foreground' : 'bg-primary text-primary-foreground'"
+                >
+                  {{ getCourseStatus(course)!.label }}
                 </Badge>
               </div>
             </div>
@@ -237,14 +300,14 @@ const viewCourse = (courseId: number) => {
             </div>
   
             <!-- Class Stats -->
-            <div class="flex items-center gap-4 text-sm text-muted-foreground mt-4">
+            <div class="flex flex-col gap-4 text-sm text-muted-foreground mt-4">
               <div class="flex items-center gap-1">
                 <BookOpen class="h-4 w-4" />
                 <span>{{ course.lessons_count }} lessons</span>
               </div>
               <div class="flex items-center gap-1">
                 <Users class="h-4 w-4" />
-                <span>{{ course.students_count }} students</span>
+                <span>{{ getStudentCountText(course) }}</span>
               </div>
             </div>
           </CardHeader>
@@ -253,21 +316,12 @@ const viewCourse = (courseId: number) => {
           <div class="px-6 pt-4 border-t border-border/50">
             <div class="flex gap-2">
               <Button 
-                v-if="!course.is_enrolled && !course.is_creator"
-                :variant="course.can_join ? 'default' : 'outline'"
-                :disabled="!course.can_join"
-                class="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                @click="joinCourse(course.id)"
+                :variant="getButtonVariant(course)"
+                class="flex-1 cursor-pointer"
+                :disabled="!course.is_enrolled && !course.can_join"
+                @click="handleCourseAction(course)"
               >
-                {{ course.can_join ? 'Join Class' : 'Cannot Join' }}
-              </Button>
-              <Button 
-                v-else
-                variant="outline"
-                class="flex-1"
-                @click="viewCourse(course.id)"
-              >
-                {{ course.is_enrolled ? 'Continue Learning' : 'View Class' }}
+                {{ getButtonText(course) }}
               </Button>
             </div>
           </div>
@@ -275,7 +329,7 @@ const viewCourse = (courseId: number) => {
       </div>
 
       <!-- Current Enrollment Info -->
-      <Card v-if="user?.current_enrollment" class="mt-8 border-primary/20">
+      <Card v-if="user?.enrollment_id && user?.current_class" class="mt-8 border-primary/20">
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
             <Trophy class="h-5 w-5 text-primary" />
@@ -288,10 +342,10 @@ const viewCourse = (courseId: number) => {
         <CardContent>
           <div class="flex items-center justify-between">
             <div>
-              <h3 class="font-semibold text-foreground">{{ user.current_enrollment!.class.title }}</h3>
+              <h3 class="font-semibold text-foreground">{{ user.current_class!.title }}</h3>
               <p class="text-sm text-muted-foreground">Continue your learning journey</p>
             </div>
-            <Link :href="`/classes/${user.current_enrollment!.class.id}`">
+            <Link :href="`/classes/${user.current_class!.id}`">
               <Button variant="default">
                 Continue Learning
               </Button>

@@ -6,11 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Clock, BookOpen, Trophy, TrendingUp, CheckCircle, Circle, Link as LinkIcon } from 'lucide-vue-next';
+import LessonCompletionModal from '@/components/LessonCompletionModal.vue';
+import { Clock, BookOpen, Trophy, TrendingUp, CheckCircle, Circle } from 'lucide-vue-next';
 import { ref } from 'vue';
 import UserInfo from '@/components/UserInfo.vue';
 
@@ -44,18 +41,16 @@ interface Props {
     username: string;
     points: number;
     avatar?: string;
-    current_enrollment?: {
+    enrollment_id?: number;
+    current_class?: {
       id: number;
-      class: {
+      title: string;
+      modules: Array<{
         id: number;
         title: string;
-        modules: Array<{
-          id: number;
-          title: string;
-          lessons: Lesson[];
-          completion_percentage: number;
-        }>;
-      };
+        lessons: Lesson[];
+        completion_percentage: number;
+      }>;
     };
   };
   upcoming_lessons?: Lesson[];
@@ -70,76 +65,15 @@ withDefaults(defineProps<Props>(), {
 // Modal state
 const isModalOpen = ref(false);
 const selectedLesson = ref<Lesson | null>(null);
-const summary = ref('');
-const link = ref('');
-const isSubmitting = ref(false);
-const errorMessage = ref('');
 
 const openCompleteModal = (lesson: Lesson) => {
   selectedLesson.value = lesson;
-  summary.value = '';
-  link.value = '';
-  errorMessage.value = '';
   isModalOpen.value = true;
 };
 
-const closeModal = () => {
-  isModalOpen.value = false;
-  selectedLesson.value = null;
-  summary.value = '';
-  link.value = '';
-  errorMessage.value = '';
-};
-
-const submitCompletion = () => {
-  if (!selectedLesson.value || !summary.value.trim() || isSubmitting.value) return;
-  
-  // Clear any previous errors
-  errorMessage.value = '';
-  isSubmitting.value = true;
-  
-  // Prepare data - only include link if it's not empty and looks like a URL
-  const data: any = {
-    summary: summary.value,
-  };
-  
-  // Only include link if it's not empty and looks like a valid URL
-  if (link.value.trim()) {
-    // Basic URL validation
-    try {
-      new URL(link.value.trim());
-      data.link = link.value.trim();
-    } catch (e) {
-        const error = e as Error;
-        errorMessage.value = error.message.includes('Invalid URL')
-        ? 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.'
-        : error.message;
-        isSubmitting.value = false;
-        return;
-    }
-  }
-  
-  router.post(`/lessons/${selectedLesson.value.id}/complete`, data, {
-    onSuccess: () => {
-      closeModal();
-    },
-    onError: (errors) => {
-      console.error('Lesson completion failed:', errors);
-      // Show user-friendly error message
-      if (errors.link) {
-        errorMessage.value = 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.';
-      } else if (errors.summary) {
-        errorMessage.value = errors.summary;
-      } else {
-        errorMessage.value = 'Failed to complete lesson. Please try again.';
-      }
-      isSubmitting.value = false;
-    },
-    onFinish: () => {
-      isSubmitting.value = false;
-    },
-    preserveScroll: true,
-  });
+const onLessonCompleted = () => {
+  // This will be called when the lesson is successfully completed
+  // The page will already be refreshed by Inertia
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -176,7 +110,7 @@ const getActivityIcon = (type: string) => {
     <Head title="Home" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6 bg-gradient-to-br from-primary/5 to-secondary/5">
+        <div class="flex h-full flex-1 flex-col gap-6 bg-gradient-to-br from-primary/5 to-secondary/5">
             <!-- Welcome Section -->
             <div class="mb-4">
                 <h1 class="text-4xl font-bold text-foreground mb-2">
@@ -196,18 +130,18 @@ const getActivityIcon = (type: string) => {
                 <!-- Main Content -->
                 <div class="lg:col-span-2 space-y-6">
                     <!-- Current Class Progress -->
-                    <Card v-if="user.current_enrollment" class="border-primary/20 shadow-sm hover:shadow-md transition-shadow cursor-pointer" @click="router.visit(`/classes/${user.current_enrollment.class.id}`)">
+                    <Card v-if="user.enrollment_id && user.current_class" class="border-primary/20 shadow-sm hover:shadow-md transition-shadow cursor-pointer" @click="router.visit(`/classes/${user.current_class.id}`)">
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
                                 <BookOpen class="h-5 w-5 text-primary" />
-                                Current Class: {{ user.current_enrollment.class.title }}
+                                Current Class: {{ user.current_class.title }}
                             </CardTitle>
                             <CardDescription>
                                 Continue your learning journey
                             </CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div v-for="module in user.current_enrollment.class.modules" :key="module.id" class="space-y-3">
+                            <div v-for="module in user.current_class?.modules" :key="module.id" class="space-y-3">
                                 <div class="flex items-center justify-between">
                                     <h3 class="font-semibold text-foreground">{{ module.title }}</h3>
                                     <Badge variant="secondary" class="text-secondary-foreground bg-secondary">
@@ -238,10 +172,10 @@ const getActivityIcon = (type: string) => {
                             </div>
                             <div v-else class="space-y-3">
                                 <div v-for="lesson in upcoming_lessons" :key="lesson.id" 
-                                     class="flex items-center justify-between p-4 rounded-lg border transition-all hover:shadow-md"
+                                     class="flex flex-wrap gap-y-4 items-center justify-between p-4 rounded-lg border transition-all hover:shadow-md"
                                      :class="[
                                         lesson.completed ? 'bg-muted/50 border-muted' : 'bg-background border-border hover:border-primary/30',
-                                        !user.current_enrollment ? 'opacity-50' : ''
+                                        !user.enrollment_id ? 'opacity-50' : ''
                                      ]">
                                     <div class="flex items-center gap-3">
                                         <div class="flex-shrink-0">
@@ -262,14 +196,14 @@ const getActivityIcon = (type: string) => {
                                             Due {{ formatDate(lesson.due_date) }}
                                         </Badge>
                                         <Button 
-                                            v-if="!lesson.completed && user.current_enrollment" 
+                                            v-if="!lesson.completed && user.enrollment_id" 
                                             size="sm" 
                                             class="bg-primary text-primary-foreground hover:bg-primary/90" 
                                             @click="openCompleteModal(lesson)"
                                         >
                                             Complete Lesson
                                         </Button>
-                                        <div v-else-if="!lesson.completed && !user.current_enrollment" class="text-sm text-muted-foreground">
+                                        <div v-else-if="!lesson.completed && !user.enrollment_id" class="text-sm text-muted-foreground">
                                             Join a class to complete lessons
                                         </div>
                                     </div>
@@ -330,63 +264,11 @@ const getActivityIcon = (type: string) => {
         </div>
 
         <!-- Complete Lesson Modal -->
-        <Dialog :open="isModalOpen" @update:open="closeModal">
-            <DialogContent class="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Complete Lesson</DialogTitle>
-                    <DialogDescription>
-                        Share what you learned from "{{ selectedLesson?.title }}"
-                    </DialogDescription>
-                </DialogHeader>
-                
-                <div class="space-y-4">
-                    <!-- Error Message -->
-                    <div v-if="errorMessage" class="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                        <p class="text-sm text-destructive">{{ errorMessage }}</p>
-                    </div>
-                    
-                    <div>
-                        <Label for="summary">Summary *</Label>
-                        <Textarea
-                            id="summary"
-                            v-model="summary"
-                            placeholder="Describe what you learned and key takeaways..."
-                            :rows="4"
-                            class="mt-1"
-                        />
-                    </div>
-                    
-                    <div>
-                        <Label for="link">Optional Link</Label>
-                        <div class="relative mt-1">
-                            <LinkIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                id="link"
-                                v-model="link"
-                                type="url"
-                                placeholder="https://example.com"
-                                class="pl-10"
-                            />
-                        </div>
-                        <p class="text-xs text-muted-foreground mt-1">
-                            Share a resource, project, or reference related to this lesson
-                        </p>
-                    </div>
-                </div>
-                
-                <div class="flex justify-end gap-2 pt-4">
-                    <Button variant="outline" @click="closeModal">
-                        Cancel
-                    </Button>
-                    <Button 
-                        @click="submitCompletion"
-                        :disabled="!summary.trim() || isSubmitting"
-                        class="bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                        {{ isSubmitting ? 'Completing...' : 'Complete Lesson' }}
-                    </Button>
-                </div>
-            </DialogContent>
-        </Dialog>
+        <LessonCompletionModal 
+          :is-open="isModalOpen"
+          :lesson="selectedLesson"
+          @update:is-open="isModalOpen = $event"
+          @completed="onLessonCompleted"
+        />
     </AppLayout>
 </template>

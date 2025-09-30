@@ -97,4 +97,73 @@ class Enrollment extends Model
     {
         return $this->completedLessons()->count() === $this->course->lessons_count;
     }
+
+    /**
+     * Check if all lessons are completed (eligible for reflection submission).
+     */
+    public function areAllLessonsCompleted(): bool
+    {
+        return $this->completedLessons()->count() === $this->course->lessons_count;
+    }
+
+    /**
+     * Check if the enrollment is fully completed (all lessons + reflection).
+     */
+    public function isFullyCompleted(): bool
+    {
+        return $this->areAllLessonsCompleted() && 
+               $this->completed_at !== null && 
+               $this->reflection !== null;
+    }
+
+    /**
+     * Complete the enrollment with reflection.
+     */
+    public function completeWithReflection(string $reflection): bool
+    {
+        if (!$this->areAllLessonsCompleted()) {
+            return false; // Cannot complete without all lessons done
+        }
+
+        if ($this->completed_at !== null) {
+            return false; // Already completed
+        }
+
+        $this->update([
+            'completed_at' => now(),
+            'reflection' => $reflection,
+        ]);
+
+        // Award course completion bonus
+        $this->awardCourseCompletionBonus();
+        
+        // Clear user's enrollment_id since course is completed
+        $this->user->update(['enrollment_id' => null]);
+
+        return true;
+    }
+
+    /**
+     * Award course completion bonus points.
+     */
+    private function awardCourseCompletionBonus(): void
+    {
+        $courseBonus = \App\Enums\PointSystemValue::calculateCourseBonus(
+            $this->course->lessons_count, 
+            $this->isCompletedOnTime()
+        );
+
+        if ($courseBonus > 0) {
+            $this->user->increment('points', $courseBonus);
+            
+            // Log the bonus activity
+            \App\Models\LearningActivity::create([
+                'user_id' => $this->user_id,
+                'enrollment_id' => $this->id,
+                'activity_type' => \App\Enums\ActivityType::COURSE_COMPLETED,
+                'points_earned' => $courseBonus,
+                'description' => "Completed course: {$this->course->name}",
+            ]);
+        }
+    }
 }

@@ -94,11 +94,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Get user's latest completed enrollment.
+     * Get user's latest completed enrollment (requires both completed_at and reflection).
      */
     public function latestCompletedEnrollment()
     {
-        return $this->hasOne(Enrollment::class, 'enrollment_id')->where('completed_at')->latest();
+        return $this->hasOne(Enrollment::class, 'user_id')->whereNotNull('completed_at')->whereNotNull('reflection')->latest();
     }
 
     /**

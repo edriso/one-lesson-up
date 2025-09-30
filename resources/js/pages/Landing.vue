@@ -122,7 +122,7 @@ const formatNumber = (num: number): string => {
 
     <!-- Stats Section -->
     <div class="container mx-auto px-4 py-16">
-      <div class="max-w-4xl mx-auto bg-gradient-to-r from-primary/20 to-secondary/20 rounded-2xl p-12 text-center">
+      <div class="max-w-4xl mx-auto bg-gradient-to-l from-primary/20 to-secondary/20 rounded-2xl p-12 text-center">
         <h3 class="text-3xl font-bold text-foreground mb-8">Join the Learning Revolution</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
