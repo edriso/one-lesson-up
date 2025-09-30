@@ -14,13 +14,19 @@ class CourseSeeder extends Seeder
         $users = \App\Models\User::all();
         $tags = \App\Models\Tag::all();
 
-        // Create featured courses
+        // Create featured courses with different creation dates
         \App\Models\Course::factory()
             ->featured()
             ->count(5)
             ->create()
             ->each(function ($course) use ($users, $tags) {
-                $course->update(['creator_id' => $users->random()->id]);
+                // Set different creation dates - some older, some newer
+                $daysAgo = fake()->numberBetween(1, 30); // 1-30 days ago
+                $course->update([
+                    'creator_id' => $users->random()->id,
+                    'created_at' => now()->subDays($daysAgo),
+                    'updated_at' => now()->subDays($daysAgo),
+                ]);
                 
                 // Attach 2-4 random tags to each course
                 $course->tags()->attach(
@@ -28,12 +34,18 @@ class CourseSeeder extends Seeder
                 );
             });
 
-        // Create regular courses
+        // Create regular courses with different creation dates
         \App\Models\Course::factory()
             ->count(15)
             ->create()
             ->each(function ($course) use ($users, $tags) {
-                $course->update(['creator_id' => $users->random()->id]);
+                // Set different creation dates - mix of recent and older courses
+                $daysAgo = fake()->numberBetween(1, 60); // 1-60 days ago
+                $course->update([
+                    'creator_id' => $users->random()->id,
+                    'created_at' => now()->subDays($daysAgo),
+                    'updated_at' => now()->subDays($daysAgo),
+                ]);
                 
                 // Attach 1-3 random tags to each course
                 $course->tags()->attach(
@@ -41,13 +53,19 @@ class CourseSeeder extends Seeder
                 );
             });
 
-        // Create some inactive courses
+        // Create some inactive courses with different creation dates
         \App\Models\Course::factory()
             ->inactive()
             ->count(3)
             ->create()
             ->each(function ($course) use ($users) {
-                $course->update(['creator_id' => $users->random()->id]);
+                // Set different creation dates for inactive courses
+                $daysAgo = fake()->numberBetween(30, 90); // 30-90 days ago (older courses)
+                $course->update([
+                    'creator_id' => $users->random()->id,
+                    'created_at' => now()->subDays($daysAgo),
+                    'updated_at' => now()->subDays($daysAgo),
+                ]);
             });
     }
 }
