@@ -121,8 +121,52 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::get('profile/{username}', function ($username) {
-    // TODO: Load user data from database based on username
-    $user = auth()->user();
+    $user = \App\Models\User::where('username', $username)->firstOrFail();
+    
+    // Get completed classes
+    $completedClasses = \App\Models\Enrollment::where('user_id', $user->id)
+        ->whereNotNull('completed_at')
+        ->with('course')
+        ->get()
+        ->map(function ($enrollment) {
+            return [
+                'id' => $enrollment->course->id,
+                'title' => $enrollment->course->name,
+                'completed_at' => $enrollment->completed_at->toISOString(),
+                'points_earned' => $enrollment->course->lessons_count + \App\Enums\PointSystemValue::calculateCourseBonus($enrollment->course->lessons_count, true),
+                'lessons_count' => $enrollment->course->lessons_count,
+            ];
+        })
+        ->toArray();
+    
+    // Get recent activities
+    $activities = \App\Models\LearningActivity::where('user_id', $user->id)
+        ->with('enrollment.course')
+        ->latest()
+        ->take(10)
+        ->get()
+        ->map(function ($activity) {
+            return [
+                'id' => $activity->id,
+                'type' => $activity->activity_type,
+                'description' => $activity->description,
+                'points_earned' => $activity->points_earned,
+                'created_at' => $activity->created_at->toISOString(),
+            ];
+        })
+        ->toArray();
+    
+    // Get calendar data (last 30 days of activities)
+    $calendarData = \App\Models\LearningActivity::where('user_id', $user->id)
+        ->where('created_at', '>=', now()->subDays(30))
+        ->get()
+        ->groupBy(function ($activity) {
+            return $activity->created_at->format('Y-m-d');
+        })
+        ->map(function ($dayActivities) {
+            return $dayActivities->count();
+        })
+        ->toArray();
     
     return Inertia::render('Profile', [
         'user' => [
@@ -138,13 +182,15 @@ Route::get('profile/{username}', function ($username) {
             'joined_at' => $user->created_at->toISOString(),
             'is_public' => $user->is_public ?? true,
         ],
-        'activities' => [],
-        'completed_classes' => [],
-        'calendar_data' => [],
+        'activities' => $activities,
+        'completed_classes' => $completedClasses,
+        'calendar_data' => $calendarData,
         'stats' => [
             'total_points' => $user->points ?? 0,
-            'total_lessons_completed' => 0,
-            'total_classes_completed' => 0,
+            'total_lessons_completed' => \App\Models\CompletedLesson::whereHas('enrollment', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })->count(),
+            'total_classes_completed' => count($completedClasses),
         ],
     ]);
 })->middleware(['auth', 'verified'])->name('profile');

@@ -50,8 +50,10 @@ interface Props {
     created_at: string;
   };
   is_enrolled: boolean;
+  is_completed: boolean;
   can_join: boolean;
   completed_lessons_count: number;
+  completion_date?: string;
 }
 
 const props = defineProps<Props>();
@@ -226,6 +228,7 @@ const progressText = computed(() => {
           <h1 class="text-4xl font-bold text-foreground mb-2">
             {{ course.title }}
           </h1>
+          
           <p class="text-lg text-muted-foreground">
             {{ course.description }}
           </p>
@@ -288,6 +291,32 @@ const progressText = computed(() => {
               </Badge>
             </div>
             <Progress :model-value="completionPercentage" class="h-2" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Completed Course Status -->
+      <Card v-else-if="is_completed" class="mb-4 p-4 bg-gradient-to-r from-primary/20 to-secondary/20 border border-primary/30 rounded-lg">
+        <CardContent class="p-6">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+              <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                  <Trophy class="h-6 w-6 text-primary" />
+                </div>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-foreground">Congratulations! 🎉</h3>
+                <p class="text-sm text-muted-foreground">
+                  You completed this class on {{ formatDate(completion_date!) }}. 
+                </p>
+              </div>
+            </div>
+              <Badge variant="default" class="bg-primary text-primary-foreground text-lg px-3 py-1">
+                100%
+              </Badge>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -380,7 +409,7 @@ const progressText = computed(() => {
       </div>
 
       <!-- Bottom Actions -->
-      <Card class="border-primary/20">
+      <Card v-if="!is_completed" class="border-primary/20">
         <CardContent class="p-6">
           <div class="flex flex-col md:flex-row items-center justify-between gap-4">
             <div>

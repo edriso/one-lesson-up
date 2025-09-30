@@ -171,6 +171,12 @@ class CourseController extends Controller
             ->whereNull('completed_at')
             ->first();
         
+        // Check if user has completed this course (completed_at is NOT NULL)
+        $completedEnrollment = $user->enrollments()
+            ->where('course_id', $course->id)
+            ->whereNotNull('completed_at')
+            ->first();
+        
         // Get completed lesson IDs if enrolled
         $completedLessonIds = [];
         if ($enrollment) {
@@ -207,8 +213,10 @@ class CourseController extends Controller
                 'created_at' => $course->created_at->toISOString(),
             ],
             'is_enrolled' => (bool) $enrollment,
-            'can_join' => $user->canCreateCourse(),
+            'is_completed' => (bool) $completedEnrollment,
+            'can_join' => $user->canCreateCourse() && !$completedEnrollment,
             'completed_lessons_count' => count($completedLessonIds),
+            'completion_date' => $completedEnrollment ? $completedEnrollment->completed_at->toISOString() : null,
         ]);
     }
 
