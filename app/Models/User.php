@@ -23,7 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'full_name',
-        'profile_picture_url',
+        'avatar',
         'title',
         'bio',
         'linkedin_url',

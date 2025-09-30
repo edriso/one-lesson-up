@@ -26,11 +26,11 @@ test('new users cannot upload profile picture without enough points', function (
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
-        'profile_picture_url' => 'https://example.com/profile.jpg',
+        'avatar' => 'https://example.com/profile.jpg',
     ]);
 
-    $response->assertSessionHasErrors(['profile_picture_url']);
-    $response->assertSessionHasErrors(['profile_picture_url' => 'You need at least 100 points to upload a profile picture.']);
+    $response->assertSessionHasErrors(['avatar']);
+    $response->assertSessionHasErrors(['avatar' => 'You need at least 100 points to upload a profile picture.']);
 });
 
 test('username must be unique case-insensitively', function () {

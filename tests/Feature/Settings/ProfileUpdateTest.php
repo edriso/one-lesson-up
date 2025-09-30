@@ -93,11 +93,11 @@ test('user cannot upload profile picture without enough points', function () {
         ->patch(route('profile.update'), [
             'full_name' => 'Test User',
             'email' => $user->email,
-            'profile_picture_url' => 'https://example.com/profile.jpg',
+            'avatar' => 'https://example.com/profile.jpg',
         ]);
 
     $response
-        ->assertSessionHasErrors(['profile_picture_url'])
+        ->assertSessionHasErrors(['avatar'])
         ->assertRedirect(route('profile.edit'));
 });
 
@@ -109,7 +109,7 @@ test('user can upload profile picture with enough points', function () {
         ->patch(route('profile.update'), [
             'full_name' => 'Test User',
             'email' => $user->email,
-            'profile_picture_url' => 'https://example.com/profile.jpg',
+            'avatar' => 'https://example.com/profile.jpg',
         ]);
 
     $response
@@ -117,5 +117,5 @@ test('user can upload profile picture with enough points', function () {
         ->assertRedirect(route('profile.edit'));
 
     $user->refresh();
-    expect($user->profile_picture_url)->toBe('https://example.com/profile.jpg');
+    expect($user->avatar)->toBe('https://example.com/profile.jpg');
 });

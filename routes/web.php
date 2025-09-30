@@ -52,9 +52,8 @@ Route::get('/', function () {
         }
     }
     
-    // Get recent activities (last 5 learning activities)
-    $recentActivities = \App\Models\LearningActivity::where('user_id', $user->id)
-        ->with('enrollment.course')
+    // Get recent activities (last 5 learning activities from all users)
+    $recentActivities = \App\Models\LearningActivity::with(['user', 'enrollment.course'])
         ->latest()
         ->take(5)
         ->get()
@@ -65,6 +64,12 @@ Route::get('/', function () {
                 'description' => $activity->description,
                 'points_earned' => $activity->points_earned,
                 'created_at' => $activity->created_at->toISOString(),
+                'user' => [
+                    'id' => $activity->user->id,
+                    'full_name' => $activity->user->full_name ?? $activity->user->username,
+                    'username' => $activity->user->username,
+                    'avatar' => $activity->user->avatar,
+                ],
             ];
         })
         ->toArray();
@@ -72,7 +77,7 @@ Route::get('/', function () {
     return Inertia::render('Home', [
         'user' => [
             'id' => $user->id,
-            'full_name' => $user->full_name ?? $user->name,
+            'full_name' => $user->full_name ?? $user->username,
             'username' => $user->username,
             'points' => $user->points ?? 0,
             'current_enrollment' => $user->enrollment ? [
@@ -227,13 +232,13 @@ Route::get('profile/{username}', function ($username) {
     return Inertia::render('Profile', [
         'user' => [
             'id' => $user->id,
-            'full_name' => $user->full_name ?? $user->name,
+            'full_name' => $user->full_name ?? $user->username,
             'username' => $user->username,
             'bio' => $user->bio ?? null,
             'title' => $user->title ?? null,
             'linkedin_url' => $user->linkedin_url ?? null,
             'website_url' => $user->website_url ?? null,
-            'profile_picture_url' => $user->profile_picture_url ?? null,
+            'avatar' => $user->avatar ?? null,
             'points' => $user->points ?? 0,
             'joined_at' => $user->created_at->toISOString(),
             'is_public' => $user->is_public ?? true,

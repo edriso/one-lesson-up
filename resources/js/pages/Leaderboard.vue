@@ -13,7 +13,7 @@ interface LeaderboardEntry {
     id: number;
     full_name: string;
     username: string;
-    profile_picture_url?: string;
+    avatar?: string;
   };
   points: number;
   activities_count: number;

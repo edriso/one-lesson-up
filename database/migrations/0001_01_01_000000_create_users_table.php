@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('username')->unique();
             $table->string('full_name')->nullable();
-            $table->string('profile_picture_url')->nullable();
+            $table->string('avatar')->nullable();
             $table->string('title')->nullable();
             $table->string('bio')->nullable();
             $table->string('linkedin_url')->nullable();

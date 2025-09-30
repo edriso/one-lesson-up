@@ -24,7 +24,7 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
-            'profile_picture_url' => ['nullable', 'string', 'max:255'],
+            'avatar' => ['nullable', 'string', 'max:255'],
             'title' => ['nullable', 'string', 'max:255'],
             'bio' => ['nullable', 'string', 'max:255'],
             'linkedin_url' => ['nullable', 'string', 'max:255'],
@@ -36,12 +36,12 @@ class ProfileUpdateRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            // Validate profile_picture_url only if user has enough points
-            if ($this->has('profile_picture_url') && $this->profile_picture_url) {
+            // Validate avatar only if user has enough points
+            if ($this->has('avatar') && $this->avatar) {
                 $userPoints = $this->user()->points ?? 0;
                 if (!\App\Enums\PointThreshold::PROFILE_PICTURE_UNLOCK->isUnlocked($userPoints)) {
                     $validator->errors()->add(
-                        'profile_picture_url',
+                        'avatar',
                         'You need at least ' . \App\Enums\PointThreshold::PROFILE_PICTURE_UNLOCK->value . ' points to upload a profile picture.'
                     );
                 }

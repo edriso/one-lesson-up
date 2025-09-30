@@ -25,7 +25,7 @@ interface ProfileUser {
   title?: string;
   linkedin_url?: string;
   website_url?: string;
-  profile_picture_url?: string;
+  avatar?: string;
   points: number;
   joined_at: string;
   is_public: boolean;
@@ -164,8 +164,8 @@ const calendarGrid = generateCalendarGrid();
             <!-- Profile Picture -->
             <div class="flex-shrink-0">
               <div class="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center">
-                <img v-if="user.profile_picture_url" 
-                     :src="user.profile_picture_url" 
+                <img v-if="user.avatar" 
+                     :src="user.avatar" 
                      :alt="user.full_name"
                      class="w-24 h-24 rounded-full object-cover" />
                 <span v-else class="text-2xl font-bold text-primary-foreground">

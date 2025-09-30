@@ -305,9 +305,11 @@ const viewCourse = (courseId: number) => {
               <h3 class="font-semibold text-foreground">{{ user.current_enrollment!.class.title }}</h3>
               <p class="text-sm text-muted-foreground">Continue your learning journey</p>
             </div>
-            <Button variant="default">
-              Continue Learning
-            </Button>
+            <Link :href="`/classes/${user.current_enrollment!.class.id}`">
+              <Button variant="default">
+                Continue Learning
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

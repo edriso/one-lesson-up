@@ -27,17 +27,15 @@ export type AppPageProps<
 };
 
 export interface User {
-    id: number;
-    name: string;
+    id?: number;
     full_name?: string;
     username?: string;
-    email: string;
-    avatar?: string;
-    profile_picture_url?: string;
+    email?: string;
+    avatar?: string | null;
     points?: number;
-    email_verified_at: string | null;
-    created_at: string;
-    updated_at: string;
+    email_verified_at?: string | null;
+    created_at?: string;
+    updated_at?: string | null;
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;

@@ -35,7 +35,7 @@ class RegisteredUserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'username' => 'required|string|max:255|min:3',
-            'profile_picture_url' => 'nullable|string|max:255',
+            'avatar' => 'nullable|string|max:255',
             'title' => 'nullable|string|max:255',
             'bio' => 'nullable|string|max:255',
             'linkedin_url' => 'nullable|string|max:255',
@@ -49,12 +49,12 @@ class RegisteredUserController extends Controller
             return back()->withErrors(['username' => 'The username has already been taken.']);
         }
 
-        // Validate profile_picture_url only if user has enough points
-        if ($request->has('profile_picture_url') && $request->profile_picture_url) {
+        // Validate avatar only if user has enough points
+        if ($request->has('avatar') && $request->avatar) {
             $userPoints = 0; // New users start with 0 points
             if (!\App\Enums\PointThreshold::PROFILE_PICTURE_UNLOCK->isUnlocked($userPoints)) {
                 return back()->withErrors([
-                    'profile_picture_url' => 'You need at least ' . \App\Enums\PointThreshold::PROFILE_PICTURE_UNLOCK->value . ' points to upload a profile picture.'
+                    'avatar' => 'You need at least ' . \App\Enums\PointThreshold::PROFILE_PICTURE_UNLOCK->value . ' points to upload a profile picture.'
                 ]);
             }
         }
@@ -65,7 +65,7 @@ class RegisteredUserController extends Controller
                 'full_name' => $request->full_name,
                 'email' => strtolower($request->email), // Convert to lowercase
                 'password' => Hash::make($request->password),
-                'profile_picture_url' => $request->profile_picture_url,
+                'avatar' => $request->avatar,
                 'title' => $request->title,
                 'bio' => $request->bio,
                 'linkedin_url' => $request->linkedin_url,

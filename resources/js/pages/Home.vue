@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Clock, BookOpen, Trophy, TrendingUp, CheckCircle, Circle, Link as LinkIcon } from 'lucide-vue-next';
 import { ref } from 'vue';
+import UserInfo from '@/components/UserInfo.vue';
 
 interface Lesson {
   id: number;
@@ -28,13 +29,21 @@ interface Activity {
   description: string;
   points_earned: number;
   created_at: string;
+  user: {
+    id: number;
+    full_name: string;
+    username: string;
+    avatar?: string;
+  };
 }
 
 interface Props {
   user: {
     id: number;
     full_name: string;
+    username: string;
     points: number;
+    avatar?: string;
     current_enrollment?: {
       id: number;
       class: {
@@ -283,7 +292,7 @@ const getActivityIcon = (type: string) => {
                                 Your learning progress
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent>                            
                             <div v-if="recent_activities.length === 0" class="text-center py-8 text-muted-foreground">
                                 <TrendingUp class="h-12 w-12 mx-auto mb-3 opacity-30" />
                                 <p class="text-sm">No recent activities</p>
@@ -294,11 +303,22 @@ const getActivityIcon = (type: string) => {
                                     <component :is="getActivityIcon(activity.type)" class="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-foreground">{{ activity.description }}</p>
-                                        <div class="flex items-center gap-2 mt-1">
-                                            <span class="text-xs text-muted-foreground">{{ formatDate(activity.created_at) }}</span>
-                                            <span v-if="activity.points_earned > 0" class="text-xs font-medium text-secondary-foreground bg-secondary/20 px-1.5 py-0.5 rounded">
-                                                +{{ activity.points_earned }} pts
-                                            </span>
+                                        <div class="flex items-center justify-between mt-2">
+                                            <div class="flex items-center gap-2">
+                                                <Link :href="`/profile/${activity.user.username}`" class="flex items-center gap-2 hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors">
+                                                    <UserInfo :user="{ 
+                                                        id: activity.user.id, 
+                                                        avatar: activity.user.avatar, 
+                                                        full_name: activity.user.full_name,
+                                                    }" />
+                                                </Link>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs text-muted-foreground">{{ formatDate(activity.created_at) }}</span>
+                                                <span v-if="activity.points_earned > 0" class="text-xs font-medium text-secondary-foreground bg-secondary/20 px-1.5 py-0.5 rounded">
+                                                    +{{ activity.points_earned }} pts
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

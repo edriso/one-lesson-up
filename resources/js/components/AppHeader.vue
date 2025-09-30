@@ -91,8 +91,8 @@ const isActive = (href: string) => {
                         >
                             <Avatar class="h-10 w-10 border-2 border-primary/20">
                                 <AvatarImage
-                                    v-if="user.profile_picture_url"
-                                    :src="user.profile_picture_url"
+                                    v-if="user.avatar"
+                                    :src="user.avatar"
                                     :alt="user.full_name || user.name"
                                 />
                                 <AvatarFallback class="bg-primary text-primary-foreground">
