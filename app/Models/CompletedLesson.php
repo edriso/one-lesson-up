@@ -129,8 +129,8 @@ class CompletedLesson extends Model
         // Calculate bonus points using PointSystemValue enum
         $bonusPoints = PointSystemValue::calculateCourseBonus($lessonCount, $isCompletedOnTime);
         
-        // Award bonus points
-        $user->increment('points', (int) $bonusPoints);
+        // Award bonus points (round to nearest integer)
+        $user->increment('points', round($bonusPoints));
         
         // Create learning activity for course completion
         \App\Models\LearningActivity::createCourseCompleted(

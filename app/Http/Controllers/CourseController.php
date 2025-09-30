@@ -336,7 +336,7 @@ class CourseController extends Controller
             
             // Calculate bonus points using PointSystemValue enum
             $bonusPoints = \App\Enums\PointSystemValue::calculateCourseBonus($lessonCount, $isCompletedOnTime);
-            $pointsToDeduct += $bonusPoints;
+            $pointsToDeduct += round($bonusPoints);
         }
         
         return $pointsToDeduct;
