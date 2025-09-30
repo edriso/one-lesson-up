@@ -9,7 +9,6 @@ import {
   BookOpen, 
   Plus, 
   Users, 
-  Clock, 
   Trophy, 
   Search,
   Eye,
@@ -56,13 +55,6 @@ const props = withDefaults(defineProps<Props>(), {
   user: undefined,
 });
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-};
 
 const canCreateClass = props.can_create_class && !props.user?.current_enrollment;
 
@@ -232,26 +224,8 @@ const viewCourse = (courseId: number) => {
                 </Badge>
               </div>
             </div>
-          </CardHeader>
-          
-          <CardContent class="space-y-4">
-            <!-- Class Stats -->
-            <div class="flex items-center gap-4 text-sm text-muted-foreground">
-              <div class="flex items-center gap-1">
-                <Users class="h-4 w-4" />
-                <span>{{ course.students_count }} students</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <BookOpen class="h-4 w-4" />
-                <span>{{ course.lessons_count }} lessons</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <Clock class="h-4 w-4" />
-                <span>{{ formatDate(course.created_at) }}</span>
-              </div>
-            </div>
 
-            <!-- Tags -->
+            <!-- Tags (moved after description) -->
             <div v-if="course.tags && course.tags.length > 0" class="flex flex-wrap gap-1">
               <Badge 
                 v-for="tag in course.tags" 
@@ -262,8 +236,22 @@ const viewCourse = (courseId: number) => {
                 {{ tag.name }}
               </Badge>
             </div>
+  
+            <!-- Class Stats -->
+            <div class="flex items-center gap-4 text-sm text-muted-foreground mt-4">
+              <div class="flex items-center gap-1">
+                <BookOpen class="h-4 w-4" />
+                <span>{{ course.lessons_count }} lessons</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <Users class="h-4 w-4" />
+                <span>{{ course.students_count }} students</span>
+              </div>
+            </div>
+          </CardHeader>
 
-            <!-- Actions -->
+          <!-- Actions at the very end of the card -->
+          <div class="px-6 pb-6 pt-4 border-t border-border/50">
             <div class="flex gap-2">
               <Button 
                 v-if="!course.is_enrolled && !course.is_creator"
@@ -284,7 +272,7 @@ const viewCourse = (courseId: number) => {
                 {{ course.is_enrolled ? 'View & Continue' : 'View Class' }}
               </Button>
             </div>
-          </CardContent>
+          </div>
         </Card>
       </div>
 
