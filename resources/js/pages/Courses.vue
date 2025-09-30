@@ -67,13 +67,13 @@ const filteredCourses = computed(() => {
 
   const query = searchQuery.value.toLowerCase();
   return props.courses.filter(course => {
-    // Search in title and description
-    const titleMatch = course.title.toLowerCase().includes(query);
-    const descriptionMatch = course.description.toLowerCase().includes(query);
+    // Search in title and description with null checks
+    const titleMatch = course.title?.toLowerCase().includes(query) || false;
+    const descriptionMatch = course.description?.toLowerCase().includes(query) || false;
     
     // Search in tags
     const tagMatch = course.tags?.some(tag => 
-      tag.name.toLowerCase().includes(query)
+      tag.name?.toLowerCase().includes(query)
     ) || false;
     
     return titleMatch || descriptionMatch || tagMatch;
