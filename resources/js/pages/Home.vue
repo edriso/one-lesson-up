@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, BookOpen, Trophy, TrendingUp, CheckCircle, Circle } from 'lucide-vue-next';
+import { Clock, BookOpen, Trophy, TrendingUp, CheckCircle, Circle } from 'lucide-vue-next';
 
 interface Lesson {
   id: number;
@@ -48,7 +48,7 @@ interface Props {
   recent_activities?: Activity[];
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   upcoming_lessons: () => [],
   recent_activities: () => [],
 });
@@ -212,27 +212,6 @@ const getActivityIcon = (type: string) => {
                                     </div>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-
-                    <!-- Quick Actions -->
-                    <Card class="shadow-sm">
-                        <CardHeader>
-                            <CardTitle>Quick Actions</CardTitle>
-                        </CardHeader>
-                        <CardContent class="space-y-2">
-                            <Button variant="default" class="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
-                                <BookOpen class="h-4 w-4 mr-2" />
-                                Browse Classes
-                            </Button>
-                            <Button variant="outline" class="w-full justify-start hover:bg-primary/10 hover:text-primary hover:border-primary">
-                                <Trophy class="h-4 w-4 mr-2" />
-                                View Leaderboard
-                            </Button>
-                            <Button variant="outline" class="w-full justify-start hover:bg-primary/10 hover:text-primary hover:border-primary">
-                                <Calendar class="h-4 w-4 mr-2" />
-                                Learning Calendar
-                            </Button>
                         </CardContent>
                     </Card>
                 </div>

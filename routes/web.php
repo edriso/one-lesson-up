@@ -6,7 +6,16 @@ use Inertia\Inertia;
 Route::get('/', function () {
     // Show Landing page for guests, Home page for authenticated users
     if (!auth()->check()) {
-        return Inertia::render('Landing');
+        // Get dynamic stats for landing page
+        $stats = [
+            'active_learners' => \App\Models\User::count(),
+            'total_classes' => \App\Models\Course::where('is_active', true)->count(),
+            'lessons_completed' => \App\Models\CompletedLesson::count(),
+        ];
+        
+        return Inertia::render('Landing', [
+            'stats' => $stats
+        ]);
     }
     
     $user = auth()->user();
@@ -79,11 +88,8 @@ Route::get('profile/{username}', function ($username) {
         'calendar_data' => [],
         'stats' => [
             'total_points' => $user->points ?? 0,
-            'total_activities' => 0,
             'total_lessons_completed' => 0,
             'total_classes_completed' => 0,
-            'current_streak' => 0,
-            'longest_streak' => 0,
         ],
     ]);
 })->middleware(['auth', 'verified'])->name('profile');

@@ -16,7 +16,6 @@ import {
   Save,
   AlertCircle
 } from 'lucide-vue-next';
-import { ref } from 'vue';
 
 interface Lesson {
   id: string;
@@ -127,7 +126,7 @@ const getTotalLessons = () => {
                 Important Information
               </p>
               <ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                <li>Classes cannot be edited after creation</li>
+                <li>Classes cannot be edited or deleted after creation</li>
                 <li>You will be automatically enrolled in your class</li>
                 <li>You can only be enrolled in one class at a time</li>
                 <li>Each module must have at least one lesson</li>
@@ -340,7 +339,7 @@ const getTotalLessons = () => {
                   Ready to create your class?
                 </p>
                 <p class="text-sm text-muted-foreground">
-                  Review your modules and lessons before submitting. Classes cannot be edited after creation.
+                  Review your modules and lessons before submitting. Classes cannot be edited or deleted after creation.
                 </p>
               </div>
               <div class="flex gap-2 w-full md:w-auto">

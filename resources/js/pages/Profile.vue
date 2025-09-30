@@ -5,20 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { 
-  User, 
   Trophy, 
   Calendar, 
   BookOpen, 
   TrendingUp, 
-  Award, 
   Clock, 
   Target,
   Github,
   ExternalLink,
-  Mail,
-  MapPin,
   Briefcase
 } from 'lucide-vue-next';
 
@@ -66,11 +61,8 @@ interface Props {
   calendar_data?: CalendarDay[];
   stats?: {
     total_points: number;
-    total_activities: number;
     total_lessons_completed: number;
     total_classes_completed: number;
-    current_streak: number;
-    longest_streak: number;
   };
 }
 
@@ -81,11 +73,8 @@ const props = withDefaults(defineProps<Props>(), {
   calendar_data: () => [],
   stats: () => ({
     total_points: 0,
-    total_activities: 0,
     total_lessons_completed: 0,
     total_classes_completed: 0,
-    current_streak: 0,
-    longest_streak: 0,
   }),
 });
 
@@ -204,14 +193,6 @@ const calendarGrid = generateCalendarGrid();
                     <div class="text-2xl font-bold text-primary">{{ user.points }}</div>
                     <div class="text-sm text-muted-foreground">Points</div>
                   </div>
-                  <div class="text-center">
-                    <div class="text-2xl font-bold text-primary">{{ stats.total_activities }}</div>
-                    <div class="text-sm text-muted-foreground">Activities</div>
-                  </div>
-                  <div class="text-center">
-                    <div class="text-2xl font-bold text-primary">{{ stats.current_streak }}</div>
-                    <div class="text-sm text-muted-foreground">Day Streak</div>
-                  </div>
                 </div>
               </div>
               
@@ -269,14 +250,6 @@ const calendarGrid = generateCalendarGrid();
                   <div class="flex justify-between items-center">
                     <span class="text-sm text-muted-foreground">Classes Completed</span>
                     <span class="font-semibold">{{ stats.total_classes_completed }}</span>
-                  </div>
-                  <div class="flex justify-between items-center">
-                    <span class="text-sm text-muted-foreground">Current Streak</span>
-                    <span class="font-semibold">{{ stats.current_streak }} days</span>
-                  </div>
-                  <div class="flex justify-between items-center">
-                    <span class="text-sm text-muted-foreground">Longest Streak</span>
-                    <span class="font-semibold">{{ stats.longest_streak }} days</span>
                   </div>
                 </CardContent>
               </Card>

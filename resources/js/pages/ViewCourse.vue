@@ -12,8 +12,7 @@ import {
   LogOut,
   CheckCircle,
   Circle,
-  Trophy,
-  Users
+  Trophy
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import AppLogo from '@/components/AppLogo.vue';
-import UserInfo from '@/components/UserInfo.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';

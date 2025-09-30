@@ -2,7 +2,34 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { login, register } from '@/routes';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Trophy, Users, TrendingUp } from 'lucide-vue-next';
+import { BookOpen, Trophy, TrendingUp } from 'lucide-vue-next';
+
+interface Props {
+  stats?: {
+    active_learners: number;
+    total_classes: number;
+    lessons_completed: number;
+  };
+}
+
+withDefaults(defineProps<Props>(), {
+  stats: () => ({
+    active_learners: 0,
+    total_classes: 0,
+    lessons_completed: 0,
+  }),
+});
+
+// Format numbers with K, M suffixes
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M+';
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K+';
+  }
+  return num.toString() + '+';
+};
 </script>
 
 <template>
@@ -99,15 +126,15 @@ import { BookOpen, Trophy, Users, TrendingUp } from 'lucide-vue-next';
         <h3 class="text-3xl font-bold text-foreground mb-8">Join the Learning Revolution</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <div class="text-4xl font-bold text-primary mb-2">1000+</div>
+            <div class="text-4xl font-bold text-primary mb-2">{{ formatNumber(stats.active_learners) }}</div>
             <div class="text-muted-foreground">Active Learners</div>
           </div>
           <div>
-            <div class="text-4xl font-bold text-primary mb-2">50+</div>
+            <div class="text-4xl font-bold text-primary mb-2">{{ formatNumber(stats.total_classes) }}</div>
             <div class="text-muted-foreground">Classes</div>
           </div>
           <div>
-            <div class="text-4xl font-bold text-primary mb-2">10K+</div>
+            <div class="text-4xl font-bold text-primary mb-2">{{ formatNumber(stats.lessons_completed) }}</div>
             <div class="text-muted-foreground">Lessons Completed</div>
           </div>
         </div>
