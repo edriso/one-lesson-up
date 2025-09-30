@@ -74,7 +74,56 @@ const formatDate = (dateString: string) => {
 
 const completionPercentage = computed(() => {
   if (props.course.total_lessons === 0) return 0;
-  return Math.round((props.completed_lessons_count / props.course.total_lessons) * 100);
+  
+  // Find the current module (first module with incomplete lessons)
+  const currentModule = props.course.modules.find(module => 
+    module.lessons.some(lesson => !lesson.is_completed)
+  );
+  
+  if (!currentModule) {
+    // All modules completed - show 100%
+    return 100;
+  }
+  
+  // If it's the last module, show overall progress
+  const isLastModule = props.course.modules.indexOf(currentModule) === props.course.modules.length - 1;
+  
+  if (isLastModule) {
+    // Last module - show overall course progress
+    return Math.round((props.completed_lessons_count / props.course.total_lessons) * 100);
+  } else {
+    // Not last module - show current module progress
+    const moduleCompletedLessons = currentModule.lessons.filter(lesson => lesson.is_completed).length;
+    const moduleTotalLessons = currentModule.lessons.length;
+    return Math.round((moduleCompletedLessons / moduleTotalLessons) * 100);
+  }
+});
+
+const progressText = computed(() => {
+  if (props.course.total_lessons === 0) return 'No lessons available';
+  
+  // Find the current module (first module with incomplete lessons)
+  const currentModule = props.course.modules.find(module => 
+    module.lessons.some(lesson => !lesson.is_completed)
+  );
+  
+  if (!currentModule) {
+    // All modules completed
+    return `${props.completed_lessons_count} of ${props.course.total_lessons} lessons completed`;
+  }
+  
+  // If it's the last module, show overall progress
+  const isLastModule = props.course.modules.indexOf(currentModule) === props.course.modules.length - 1;
+  
+  if (isLastModule) {
+    // Last module - show overall course progress
+    return `${props.completed_lessons_count} of ${props.course.total_lessons} lessons completed`;
+  } else {
+    // Not last module - show current module progress
+    const moduleCompletedLessons = currentModule.lessons.filter(lesson => lesson.is_completed).length;
+    const moduleTotalLessons = currentModule.lessons.length;
+    return `${moduleCompletedLessons} of ${moduleTotalLessons} lessons in current module`;
+  }
 });
 
 const completeLesson = (lessonId: number) => {
@@ -162,7 +211,7 @@ const completeLesson = (lessonId: number) => {
                 <div>
                   <p class="font-medium text-foreground">You're enrolled in this class</p>
                   <p class="text-sm text-muted-foreground">
-                    {{ completed_lessons_count }} of {{ course.total_lessons }} lessons completed
+                    {{ progressText }}
                   </p>
                 </div>
               </div>
