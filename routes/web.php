@@ -73,6 +73,7 @@ Route::get('/', function () {
         'user' => [
             'id' => $user->id,
             'full_name' => $user->full_name ?? $user->name,
+            'username' => $user->username,
             'points' => $user->points ?? 0,
             'current_enrollment' => $user->enrollment ? [
                 'id' => $user->enrollment->id,
