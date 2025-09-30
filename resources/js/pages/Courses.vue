@@ -5,14 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { 
   BookOpen, 
   Plus, 
@@ -20,7 +12,6 @@ import {
   Clock, 
   Trophy, 
   Search,
-  Filter,
   Eye,
   X,
   Lock
@@ -37,6 +28,11 @@ interface Course {
   can_join: boolean;
   is_enrolled: boolean;
   is_creator: boolean;
+  is_public?: boolean;
+  tags?: Array<{
+    id: number;
+    name: string;
+  }>;
 }
 
 interface Props {
@@ -70,62 +66,28 @@ const formatDate = (dateString: string) => {
 
 const canCreateClass = props.can_create_class && !props.user?.current_enrollment;
 
-// Search and Filter
+// Search functionality
 const searchQuery = ref('');
-const filterOptions = ref({
-  showMyClasses: false,
-  showEnrolled: false,
-  showAvailable: false,
-  showPublic: true,
-});
 
 const filteredCourses = computed(() => {
-  let filtered = props.courses;
-
-  // Apply search filter
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(course => 
-      course.title.toLowerCase().includes(query) ||
-      course.description.toLowerCase().includes(query)
-    );
+  if (!searchQuery.value) {
+    return props.courses;
   }
 
-  // Apply filters
-  if (filterOptions.value.showMyClasses) {
-    filtered = filtered.filter(course => course.is_creator);
-  }
-
-  if (filterOptions.value.showEnrolled) {
-    filtered = filtered.filter(course => course.is_enrolled);
-  }
-
-  if (filterOptions.value.showAvailable) {
-    filtered = filtered.filter(course => course.can_join && !course.is_enrolled);
-  }
-
-  if (!filterOptions.value.showPublic) {
-    filtered = filtered.filter(course => !course.is_public);
-  }
-
-  return filtered;
+  const query = searchQuery.value.toLowerCase();
+  return props.courses.filter(course => {
+    // Search in title and description
+    const titleMatch = course.title.toLowerCase().includes(query);
+    const descriptionMatch = course.description.toLowerCase().includes(query);
+    
+    // Search in tags
+    const tagMatch = course.tags?.some(tag => 
+      tag.name.toLowerCase().includes(query)
+    ) || false;
+    
+    return titleMatch || descriptionMatch || tagMatch;
+  });
 });
-
-const hasActiveFilters = computed(() => {
-  return filterOptions.value.showMyClasses || 
-         filterOptions.value.showEnrolled || 
-         filterOptions.value.showAvailable ||
-         !filterOptions.value.showPublic;
-});
-
-const clearFilters = () => {
-  filterOptions.value = {
-    showMyClasses: false,
-    showEnrolled: false,
-    showAvailable: false,
-    showPublic: true,
-  };
-};
 
 const clearSearch = () => {
   searchQuery.value = '';
@@ -161,7 +123,7 @@ const viewCourse = (courseId: number) => {
         <!-- Create Class Button -->
         <Link :href="'/classes/create'">
           <Button 
-            variant="primary" 
+            variant="default" 
             :disabled="!canCreateClass"
             class="w-full md:w-auto"
             :title="!canCreateClass ? 'You must leave your current class before creating a new one' : 'Create a new class'"
@@ -193,7 +155,7 @@ const viewCourse = (courseId: number) => {
           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input 
             v-model="searchQuery"
-            placeholder="Search classes by title or description..." 
+            placeholder="Search classes by title, description, or tags..." 
             class="pl-10 pr-10 h-11"
           />
           <Button
@@ -207,76 +169,20 @@ const viewCourse = (courseId: number) => {
           </Button>
         </div>
 
-        <!-- Filter Dropdown -->
-        <DropdownMenu>
-          <DropdownMenuTrigger as-child>
-            <Button variant="outline" class="w-full md:w-auto h-11">
-              <Filter class="h-4 w-4 mr-2" />
-              Filter
-              <Badge v-if="hasActiveFilters" variant="secondary" class="ml-2 text-xs px-1.5">
-                {{ Object.values(filterOptions).filter(v => v === true).length }}
-              </Badge>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="w-56">
-            <DropdownMenuLabel>Filter Classes</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            
-            <DropdownMenuCheckboxItem
-              v-model:checked="filterOptions.showMyClasses"
-            >
-              My Classes
-            </DropdownMenuCheckboxItem>
-            
-            <DropdownMenuCheckboxItem
-              v-model:checked="filterOptions.showEnrolled"
-            >
-              Enrolled Classes
-            </DropdownMenuCheckboxItem>
-            
-            <DropdownMenuCheckboxItem
-              v-model:checked="filterOptions.showAvailable"
-            >
-              Available to Join
-            </DropdownMenuCheckboxItem>
-            
-            <DropdownMenuSeparator />
-            
-            <DropdownMenuCheckboxItem
-              v-model:checked="filterOptions.showPublic"
-            >
-              Public Classes
-            </DropdownMenuCheckboxItem>
-            
-            <template v-if="hasActiveFilters">
-              <DropdownMenuSeparator />
-              <div class="px-2 py-1.5">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  class="w-full justify-center text-xs"
-                  @click="clearFilters"
-                >
-                  Clear Filters
-                </Button>
-              </div>
-            </template>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       <!-- Results Count -->
-      <div v-if="searchQuery || hasActiveFilters" class="mb-4 flex items-center justify-between">
+      <div v-if="searchQuery" class="mb-4 flex items-center justify-between">
         <p class="text-sm text-muted-foreground">
           Showing {{ filteredCourses.length }} of {{ courses.length }} classes
         </p>
         <Button 
-          v-if="searchQuery || hasActiveFilters"
+          v-if="searchQuery"
           variant="ghost" 
           size="sm"
-          @click="() => { clearSearch(); clearFilters(); }"
+          @click="clearSearch"
         >
-          Clear All
+          Clear Search
         </Button>
       </div>
 
@@ -284,24 +190,24 @@ const viewCourse = (courseId: number) => {
       <div v-if="filteredCourses.length === 0" class="text-center py-12">
         <BookOpen class="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
         <h3 class="text-lg font-semibold text-foreground mb-2">
-          {{ searchQuery || hasActiveFilters ? 'No Matching Classes' : 'No Classes Found' }}
+          {{ searchQuery ? 'No Matching Classes' : 'No Classes Found' }}
         </h3>
         <p class="text-muted-foreground mb-4">
-          {{ searchQuery || hasActiveFilters 
-            ? 'Try adjusting your search or filters to find classes.' 
+          {{ searchQuery 
+            ? 'Try adjusting your search terms to find classes.' 
             : 'Be the first to create a class or check back later for new classes.' 
           }}
         </p>
         <div class="flex items-center justify-center gap-2">
           <Button 
-            v-if="searchQuery || hasActiveFilters"
+            v-if="searchQuery"
             variant="outline"
-            @click="() => { clearSearch(); clearFilters(); }"
+            @click="clearSearch"
           >
-            Clear Search & Filters
+            Clear Search
           </Button>
-          <Link v-if="canCreateClass && !searchQuery && !hasActiveFilters" :href="'/classes/create'">
-            <Button variant="primary">
+          <Link v-if="canCreateClass && !searchQuery" :href="'/classes/create'">
+            <Button variant="default">
               <Plus class="h-4 w-4 mr-2" />
               Create First Class
             </Button>
@@ -343,6 +249,18 @@ const viewCourse = (courseId: number) => {
                 <Clock class="h-4 w-4" />
                 <span>{{ formatDate(course.created_at) }}</span>
               </div>
+            </div>
+
+            <!-- Tags -->
+            <div v-if="course.tags && course.tags.length > 0" class="flex flex-wrap gap-1">
+              <Badge 
+                v-for="tag in course.tags" 
+                :key="tag.id" 
+                variant="outline" 
+                class="text-xs"
+              >
+                {{ tag.name }}
+              </Badge>
             </div>
 
             <!-- Actions -->
@@ -387,7 +305,7 @@ const viewCourse = (courseId: number) => {
               <h3 class="font-semibold text-foreground">{{ user.current_enrollment!.class.title }}</h3>
               <p class="text-sm text-muted-foreground">Continue your learning journey</p>
             </div>
-            <Button variant="primary">
+            <Button variant="default">
               Continue Learning
             </Button>
           </div>

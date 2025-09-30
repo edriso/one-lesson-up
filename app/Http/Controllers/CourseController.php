@@ -26,6 +26,7 @@ class CourseController extends Controller
                 $query->whereNull('completed_at');
             }])
             ->withCount('lessons')
+            ->with('tags')
             ->where('is_active', true)
             ->latest()
             ->get()
@@ -46,6 +47,12 @@ class CourseController extends Controller
                     'can_join' => $user->canCreateCourse(),
                     'is_enrolled' => (bool) $enrollment,
                     'is_creator' => $course->creator_id === $user->id,
+                    'tags' => $course->tags->map(function ($tag) {
+                        return [
+                            'id' => $tag->id,
+                            'name' => $tag->name,
+                        ];
+                    }),
                 ];
             });
         
@@ -78,7 +85,14 @@ class CourseController extends Controller
                 ->with('error', 'You cannot create a class while enrolled in another class.');
         }
         
-        return Inertia::render('CreateCourse');
+        // Get available tags for selection
+        $availableTags = \App\Models\Tag::where('is_public', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+        
+        return Inertia::render('CreateCourse', [
+            'available_tags' => $availableTags
+        ]);
     }
 
     /**
@@ -97,6 +111,8 @@ class CourseController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string|max:1000',
             'link' => 'nullable|url|max:500',
+            'tags' => 'nullable|array|max:3',
+            'tags.*' => 'required|string|max:50',
             'modules' => 'required|array|min:1',
             'modules.*.name' => 'required|string|max:255',
             'modules.*.description' => 'nullable|string|max:500',
@@ -117,6 +133,34 @@ class CourseController extends Controller
                 'is_active' => true,
                 'is_featured' => false,
             ]);
+            
+            // Handle tags
+            if (!empty($validated['tags'])) {
+                $tagIds = [];
+                foreach ($validated['tags'] as $tagName) {
+                    $tagName = trim($tagName);
+                    if (empty($tagName)) continue;
+                    
+                    // Check for existing tag (case-insensitive)
+                    $existingTag = \App\Models\Tag::whereRaw('LOWER(name) = ?', [strtolower($tagName)])->first();
+                    
+                    if ($existingTag) {
+                        // Use existing tag
+                        $tagIds[] = $existingTag->id;
+                    } else {
+                        // Create new tag
+                        $tag = \App\Models\Tag::create([
+                            'name' => $tagName,
+                            'is_public' => false, // User-created tags are private by default
+                        ]);
+                        $tagIds[] = $tag->id;
+                    }
+                }
+                
+                if (!empty($tagIds)) {
+                    $course->tags()->attach($tagIds);
+                }
+            }
             
             // Create modules and lessons
             foreach ($validated['modules'] as $moduleIndex => $moduleData) {

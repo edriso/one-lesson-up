@@ -499,7 +499,7 @@ const progressText = computed(() => {
       </div>
 
       <!-- Bottom Actions -->
-      <Card v-if="!is_completed" class="border-primary/20">
+      <Card v-if="!is_completed && (is_enrolled || can_join)" class="border-primary/20">
         <CardContent class="p-6">
           <div class="flex flex-col md:flex-row items-center justify-between gap-4">
             <div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,10 @@ import {
   GripVertical,
   ArrowLeft,
   Save,
-  AlertCircle
+  AlertCircle,
+  Tag,
+  X,
+  ChevronUp
 } from 'lucide-vue-next';
 
 interface Lesson {
@@ -30,10 +34,24 @@ interface Module {
   lessons: Lesson[];
 }
 
+interface Tag {
+  id: number;
+  name: string;
+}
+
+interface Props {
+  available_tags?: Tag[];
+}
+
+const props = defineProps<Props>();
+
+const customTagInput = ref('');
+
 const form = useForm({
   name: '',
   description: '',
   link: '',
+  tags: [] as string[],
   modules: [
     {
       id: crypto.randomUUID(),
@@ -79,6 +97,86 @@ const removeLesson = (moduleId: string, lessonId: string) => {
   if (module && module.lessons.length > 1) {
     module.lessons = module.lessons.filter(l => l.id !== lessonId);
   }
+};
+
+// Tag selection functionality
+const addTag = (tagName: string) => {
+  if (form.tags.length < 3 && !form.tags.includes(tagName)) {
+    form.tags.push(tagName);
+  }
+};
+
+const removeTag = (tagName: string) => {
+  const index = form.tags.indexOf(tagName);
+  if (index > -1) {
+    form.tags.splice(index, 1);
+  }
+};
+
+const addCustomTag = (tagName: string) => {
+  if (tagName.trim() && form.tags.length < 3 && !form.tags.includes(tagName.trim())) {
+    form.tags.push(tagName.trim());
+  }
+};
+
+// Filter available tags based on input
+const filteredAvailableTags = computed(() => {
+  if (!customTagInput.value || !props.available_tags || props.available_tags.length === 0) {
+    return [];
+  }
+  
+  const query = customTagInput.value.toLowerCase().trim();
+  if (query.length === 0) return [];
+  
+  return props.available_tags.filter(tag => {
+    const tagName = tag.name.toLowerCase();
+    const isMatch = tagName.includes(query);
+    const isNotSelected = !form.tags.includes(tag.name);
+    return isMatch && isNotSelected;
+  });
+});
+
+// Handle Enter key in tag input
+const handleTagInputEnter = () => {
+  if (customTagInput.value.trim()) {
+    addCustomTag(customTagInput.value);
+    customTagInput.value = '';
+  }
+};
+
+// Select tag from autocomplete
+const selectTag = (tagName: string) => {
+  addTag(tagName);
+  customTagInput.value = '';
+};
+
+// Handle tag input change
+const onTagInputChange = () => {
+  // This can be used for additional logic if needed
+};
+
+// Add tag from input (either existing or new)
+const addTagFromInput = () => {
+  if (customTagInput.value.trim()) {
+    addTag(customTagInput.value.trim());
+    customTagInput.value = '';
+  }
+};
+
+// Get the appropriate button text
+const getAddButtonText = () => {
+  if (!customTagInput.value.trim()) return 'Add Tag';
+  
+  const isExistingTag = props.available_tags?.some(tag => 
+    tag.name.toLowerCase() === customTagInput.value.toLowerCase().trim()
+  );
+  
+  return isExistingTag ? 'Add Existing Tag' : 'Create New Tag';
+};
+
+// Go to top functionality
+const goToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 const submit = () => {
@@ -186,6 +284,95 @@ const getTotalLessons = () => {
               <p class="text-sm text-muted-foreground">Add a link to course materials, syllabus, or resources</p>
               <p v-if="form.errors.link" class="text-sm text-destructive">{{ form.errors.link }}</p>
             </div>
+          </CardContent>
+        </Card>
+
+        <!-- Tags Selection -->
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2">
+              <Tag class="h-5 w-5" />
+              Tags (Optional)
+            </CardTitle>
+            <CardDescription>
+              Add up to 3 tags to help categorize your class
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <!-- Selected Tags -->
+            <div v-if="form.tags.length > 0" class="space-y-2">
+              <Label>Selected Tags ({{ form.tags.length }}/3)</Label>
+              <div class="flex flex-wrap gap-2">
+                <Badge 
+                  v-for="tag in form.tags" 
+                  :key="tag" 
+                  variant="secondary" 
+                  class="flex items-center gap-1 px-3 py-1"
+                >
+                  {{ tag }}
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    class="h-4 w-4 p-0 hover:bg-destructive/20"
+                    @click="removeTag(tag)"
+                  >
+                    <X class="h-3 w-3" />
+                  </Button>
+                </Badge>
+              </div>
+            </div>
+
+            <!-- Add Tag Input -->
+            <div v-if="form.tags.length < 3" class="space-y-2">
+              <Label for="tag-input">Add Tag</Label>
+              <div class="relative">
+                <Input 
+                  id="tag-input"
+                  v-model="customTagInput"
+                  placeholder="Search existing tags or create new ones..."
+                  @keydown.enter.prevent="handleTagInputEnter"
+                  @input="onTagInputChange"
+                  class="flex-1"
+                />
+                
+                <!-- Autocomplete suggestions -->
+                <div v-if="customTagInput && filteredAvailableTags.length > 0" 
+                     class="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-32 overflow-y-auto">
+                  <div class="px-3 py-2 text-xs font-medium text-muted-foreground border-b border-border">
+                    Existing Tags
+                  </div>
+                  <div v-for="tag in filteredAvailableTags" 
+                       :key="tag.id"
+                       class="px-3 py-2 hover:bg-muted cursor-pointer text-sm border-b border-border last:border-b-0"
+                       @click="selectTag(tag.name)">
+                    <span class="font-medium">{{ tag.name }}</span>
+                  </div>
+                </div>
+                
+                <!-- Create new tag message -->
+                <div v-if="customTagInput && customTagInput.trim().length > 0 && filteredAvailableTags.length === 0 && available_tags && available_tags.length > 0" 
+                     class="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg p-3">
+                  <p class="text-sm text-muted-foreground">
+                    <span class="font-medium">"{{ customTagInput }}"</span> will be created as a new tag
+                  </p>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <Button 
+                  type="button" 
+                  @click="addTagFromInput"
+                  :disabled="!customTagInput.trim()"
+                  class="flex-1"
+                >
+                  {{ getAddButtonText() }}
+                </Button>
+              </div>
+            </div>
+
+            <p v-if="form.tags.length >= 3" class="text-sm text-muted-foreground">
+              Maximum of 3 tags reached
+            </p>
           </CardContent>
         </Card>
 
@@ -365,6 +552,15 @@ const getTotalLessons = () => {
           </CardContent>
         </Card>
       </form>
+
+      <!-- Go to Top Button -->
+      <Button 
+        @click="goToTop"
+        class="fixed bottom-6 right-6 z-50 rounded-full w-12 h-12 shadow-lg bg-primary text-primary-foreground hover:bg-primary/90"
+        size="sm"
+      >
+        <ChevronUp class="h-5 w-5" />
+      </Button>
     </div>
   </AppLayout>
 </template>
