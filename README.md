@@ -1,6 +1,8 @@
 # One Lesson Up 🎯
 
-**Transform online learning into an engaging journey.** Whether you're taking a Udemy course, YouTube series, or any structured program, One Lesson Up keeps you accountable and motivated.
+> **Stop abandoning courses. Start finishing them.**
+
+Transform online learning into an engaging journey with gamification, accountability, and community support. Whether you're taking a Udemy course, YouTube series, or any structured program, One Lesson Up keeps you accountable and motivated.
 
 ## 🚀 What It Does
 
@@ -9,18 +11,20 @@ One Lesson Up gamifies online learning with:
 - **🎯 Points System** - Earn 1 point per lesson, with smart deadline bonuses
 - **⏱️ Smart Deadlines** - Complete courses on time for 50% bonus points
 - **📝 Learning Summaries** - Reinforce knowledge by writing what you learned
-- **🔥 Streak Tracking** - Visual calendar shows your active learning days
+- **🔥 Activity Calendar** - Visual calendar shows your learning activity and progress
 - **👥 Community Feed** - See what other ninjas are learning
 - **🏆 Leaderboards** - Compete with the community and climb the ranks
 - **🎯 Focus Mode** - One course at a time keeps you focused
+- **🏷️ Smart Tag System** - Categorize classes with tags, autocomplete from existing tags, or create new ones
 
 ## 🎮 How It Works
 
-1. **Enroll in a Course** - Add your course name, modules, and lessons (one active course at a time)
+1. **Create or Join a Class** - Add your course name, modules, and lessons with smart tags (one active course at a time)
 2. **Complete & Reflect** - After each lesson, write a summary of what you learned
 3. **Earn Points** - Get 1 point per lesson, with time-based bonuses for completing courses on schedule
 4. **Climb the Leaderboard** - Accumulate points and compete with other ninjas
-5. **Stay Consistent** - Build learning streaks and see your active days visualized
+5. **Track Progress** - See your learning activity and progress over time
+6. **Discover & Organize** - Find relevant classes through tags and organize your learning path
 
 ## 📊 Points System
 
@@ -28,9 +32,14 @@ One Lesson Up gamifies online learning with:
 - **On-time course completion**: 50% bonus points
 - **Late course completion**: 25% bonus points (still rewarding!)
 
-**Deadline formula**: `lesson_count + (lesson_count ÷ 5 × 2)` days
+**Smart Deadline Formula**: `lesson_count + (lesson_count ÷ 5 × 2)` days
 
-**Example**: 30-lesson course = 42-day deadline → Finish on time = 30 + 15 bonus = 45 points ⚡
+This simulates a **5-day work week** learning schedule:
+- **5 days per week** of consistent learning
+- **2 days off** for rest and reflection
+- **Realistic pacing** that prevents burnout while maintaining momentum
+
+**Example**: 30-lesson course = 42-day deadline (6 weeks) → Finish on time = 30 + 15 bonus = 45 points ⚡
 
 ## 🛠️ Tech Stack
 
@@ -57,33 +66,29 @@ One Lesson Up gamifies online learning with:
    cd one-lesson-up
    ```
 
-2. **Install PHP dependencies**
+2. **Install dependencies**
    ```bash
    composer install
-   ```
-
-3. **Install Node.js dependencies**
-   ```bash
    npm install
    ```
 
-4. **Environment setup**
+3. **Environment setup**
    ```bash
    cp .env.example .env
    php artisan key:generate
    ```
 
-5. **Database setup**
+4. **Database setup**
    ```bash
    php artisan migrate
    ```
 
-6. **Build assets**
+5. **Build assets**
    ```bash
    npm run build
    ```
 
-7. **Start the development server**
+6. **Start the development server**
    ```bash
    php artisan serve
    ```
@@ -101,48 +106,6 @@ php artisan serve
 # Terminal 2: Vite dev server
 npm run dev
 ```
-
-## 📁 Project Structure
-
-```
-app/
-├── Models/           # Eloquent models with relationships
-├── Http/Controllers/ # API and web controllers
-└── Providers/        # Service providers
-
-database/
-├── migrations/      # Database schema migrations
-├── factories/      # Model factories for testing
-└── seeders/         # Database seeders
-
-resources/
-├── js/              # Vue.js frontend
-│   ├── components/  # Reusable Vue components
-│   ├── pages/       # Page components
-│   ├── layouts/     # Layout components
-│   └── composables/ # Vue composables
-└── css/             # Stylesheets
-```
-
-## 🗄️ Database Schema
-
-### Core Models
-
-- **Users** - Ninjas with profiles, points, and streaks
-- **Courses** - Learning programs with modules and lessons
-- **Modules** - Course sections containing lessons
-- **Lessons** - Individual learning units
-- **Enrollments** - User course participation
-- **CompletedLessons** - Lesson completion records with summaries
-- **Tags** - Course categorization
-- **CourseTags** - Many-to-many course-tag relationships
-
-### Key Features
-
-- **Focus Mode**: One active enrollment per user
-- **Points System**: Gamified learning with time-based bonuses
-- **Progress Tracking**: Module and course completion percentages
-- **Community**: Public profiles and leaderboards
 
 ## 🧪 Testing
 
@@ -186,8 +149,8 @@ This project is open-sourced software licensed under the [MIT license](https://o
 - Anyone struggling to finish courses they start
 - People who want accountability and structure in their learning
 - Competitive learners who thrive on gamification
-- Students building a portfolio of completed courses
+- Students
 
 ---
 
-**Stop abandoning courses. Start leveling up.** 🚀
+**Consistency beats intensity. One day, one lesson at a time.** 🥷🏆
