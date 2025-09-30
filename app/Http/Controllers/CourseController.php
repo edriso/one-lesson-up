@@ -20,6 +20,12 @@ class CourseController extends Controller
     {
         $user = auth()->user()->load(['enrollment.course', 'enrollments']);
         
+        // Get user's active enrollments to avoid N+1 queries
+        $userEnrollments = $user->enrollments()
+            ->whereNull('completed_at')
+            ->pluck('course_id')
+            ->toArray();
+        
         // Get all active courses with counts
         // Only count active enrollments (where completed_at is NULL)
         $courses = Course::withCount(['enrollments' => function ($query) {
@@ -30,13 +36,7 @@ class CourseController extends Controller
             ->where('is_active', true)
             ->orderBy('enrollments_count', 'desc')
             ->get()
-            ->map(function ($course) use ($user) {
-                // Check if user has active enrollment in this course
-                $enrollment = $user->enrollments()
-                    ->where('course_id', $course->id)
-                    ->whereNull('completed_at')
-                    ->first();
-                
+            ->map(function ($course) use ($user, $userEnrollments) {
                 return [
                     'id' => $course->id,
                     'title' => $course->name,
@@ -45,7 +45,7 @@ class CourseController extends Controller
                     'lessons_count' => $course->lessons_count,
                     'created_at' => $course->created_at->toISOString(),
                     'can_join' => $user->canCreateCourse(),
-                    'is_enrolled' => (bool) $enrollment,
+                    'is_enrolled' => in_array($course->id, $userEnrollments),
                     'is_creator' => $course->creator_id === $user->id,
                     'tags' => $course->tags->map(function ($tag) {
                         return [
@@ -209,17 +209,16 @@ class CourseController extends Controller
         $user = auth()->user()->load('enrollment');
         $course->load(['modules.lessons']);
         
-        // Check if user is enrolled in this course (active = completed_at is NULL)
-        $enrollment = $user->enrollments()
+        // Get all user enrollments for this course in one query
+        $userEnrollments = $user->enrollments()
             ->where('course_id', $course->id)
-            ->whereNull('completed_at')
-            ->first();
+            ->get();
+        
+        // Check if user is enrolled in this course (active = completed_at is NULL)
+        $enrollment = $userEnrollments->whereNull('completed_at')->first();
         
         // Check if user has completed this course (completed_at is NOT NULL)
-        $completedEnrollment = $user->enrollments()
-            ->where('course_id', $course->id)
-            ->whereNotNull('completed_at')
-            ->first();
+        $completedEnrollment = $userEnrollments->whereNotNull('completed_at')->first();
         
         // Get completed lesson IDs if enrolled
         $completedLessonIds = [];
