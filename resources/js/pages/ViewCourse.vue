@@ -596,7 +596,7 @@ const progressText = computed(() => {
         <DialogHeader>
           <DialogTitle>Leave Class</DialogTitle>
           <DialogDescription>
-            Are you sure you want to leave this class? Your progress will be saved but you will need to rejoin to continue.
+            Are you sure you want to leave this class? All points earned will be lost.
           </DialogDescription>
         </DialogHeader>
         

@@ -11,7 +11,6 @@ import {
   Users, 
   Trophy, 
   Search,
-  Eye,
   X,
   Lock
 } from 'lucide-vue-next';
@@ -268,8 +267,7 @@ const viewCourse = (courseId: number) => {
                 class="flex-1"
                 @click="viewCourse(course.id)"
               >
-                <Eye class="h-4 w-4 mr-2" />
-                {{ course.is_enrolled ? 'View & Continue' : 'View Class' }}
+                {{ course.is_enrolled ? 'Continue Learning' : 'View Class' }}
               </Button>
             </div>
           </div>
