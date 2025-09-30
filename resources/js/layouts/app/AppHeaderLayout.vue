@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import AppContent from '@/components/AppContent.vue';
 import AppHeader from '@/components/AppHeader.vue';
-import AppShell from '@/components/AppShell.vue';
 import type { BreadcrumbItemType } from '@/types';
 
 interface Props {
@@ -14,10 +12,10 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-    <AppShell class="flex-col">
-        <AppHeader :breadcrumbs="breadcrumbs" />
-        <AppContent>
+    <div class="min-h-screen bg-background">
+        <AppHeader />
+        <main class="container mx-auto px-4 py-8">
             <slot />
-        </AppContent>
-    </AppShell>
+        </main>
+    </div>
 </template>

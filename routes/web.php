@@ -4,12 +4,88 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome');
+    // Show Landing page for guests, Home page for authenticated users
+    if (!auth()->check()) {
+        return Inertia::render('Landing');
+    }
+    
+    $user = auth()->user();
+    
+    return Inertia::render('Home', [
+        'user' => [
+            'id' => $user->id,
+            'full_name' => $user->full_name ?? $user->name,
+            'points' => $user->points ?? 0,
+            'current_enrollment' => null, // TODO: Load from database
+        ],
+        'upcoming_lessons' => [], // TODO: Load from database
+        'recent_activities' => [], // TODO: Load from database
+    ]);
 })->name('home');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('leaderboard', function () {
+    return Inertia::render('Leaderboard', [
+        'leaderboards' => [
+            'today' => [],
+            'yesterday' => [],
+            'this_month' => [],
+            'last_month' => [],
+            'year' => [],
+            'overall' => [],
+        ],
+        'current_user_rank' => [
+            'today' => 0,
+            'yesterday' => 0,
+            'this_month' => 0,
+            'last_month' => 0,
+            'year' => 0,
+            'overall' => 0,
+        ],
+    ]);
+})->middleware(['auth', 'verified'])->name('leaderboard');
+
+Route::get('classes', function () {
+    return Inertia::render('Courses', [
+        'courses' => [],
+        'can_create_class' => true,
+        'user' => [
+            'id' => auth()->id(),
+            'current_enrollment' => null,
+        ],
+    ]);
+})->middleware(['auth', 'verified'])->name('classes');
+
+Route::get('profile/{username}', function ($username) {
+    // TODO: Load user data from database based on username
+    $user = auth()->user();
+    
+    return Inertia::render('Profile', [
+        'user' => [
+            'id' => $user->id,
+            'full_name' => $user->full_name ?? $user->name,
+            'username' => $user->username,
+            'bio' => $user->bio ?? null,
+            'title' => $user->title ?? null,
+            'linkedin_url' => $user->linkedin_url ?? null,
+            'website_url' => $user->website_url ?? null,
+            'profile_picture_url' => $user->profile_picture_url ?? null,
+            'points' => $user->points ?? 0,
+            'joined_at' => $user->created_at->toISOString(),
+            'is_public' => $user->is_public ?? true,
+        ],
+        'activities' => [],
+        'completed_classes' => [],
+        'calendar_data' => [],
+        'stats' => [
+            'total_points' => $user->points ?? 0,
+            'total_activities' => 0,
+            'total_lessons_completed' => 0,
+            'total_classes_completed' => 0,
+            'current_streak' => 0,
+            'longest_streak' => 0,
+        ],
+    ]);
+})->middleware(['auth', 'verified'])->name('profile');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
