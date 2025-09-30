@@ -99,13 +99,16 @@ class CompletedLesson extends Model
         $totalLessons = $course->lessons_count;
         $completedLessons = $enrollment->completedLessons()->count();
 
-        // Check if all lessons are completed
+        // Check if all lessons are completed and enrollment not yet marked as complete
         if ($completedLessons === $totalLessons && !$enrollment->completed_at) {
-            // Mark enrollment as completed
+            // Mark enrollment as completed (completed_at is the completion date)
             $enrollment->update(['completed_at' => now()]);
             
             // Calculate and award bonus points
             $this->awardCourseCompletionBonus($enrollment, $course);
+            
+            // Clear user's enrollment_id since course is completed
+            $enrollment->user->update(['enrollment_id' => null]);
         }
     }
 
@@ -119,6 +122,7 @@ class CompletedLesson extends Model
         $deadline = $course->deadline_days;
         
         // Check if completed within deadline
+        // start_date = enrollment created_at, deadline calculated from there
         $deadlineDate = $enrollment->created_at->addDays($deadline);
         $isCompletedOnTime = now()->lte($deadlineDate);
         

@@ -19,8 +19,8 @@ class EnrollmentFactory extends Factory
         return [
             'user_id' => \App\Models\User::factory(),
             'course_id' => \App\Models\Course::factory(),
-            'reflection' => fake()->optional(0.3)->paragraph(),
-            'completed_at' => fake()->optional(0.2)->dateTimeBetween('-30 days', 'now'), // 20% chance of being completed
+            'completed_at' => null, // Active enrollment by default
+            'reflection' => null,
         ];
     }
 

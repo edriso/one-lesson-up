@@ -22,6 +22,7 @@ interface Lesson {
   name: string;
   description: string;
   order: number;
+  is_completed: boolean;
 }
 
 interface Module {
@@ -45,6 +46,7 @@ interface Props {
   };
   is_enrolled: boolean;
   can_join: boolean;
+  completed_lessons_count: number;
 }
 
 const props = defineProps<Props>();
@@ -69,6 +71,15 @@ const formatDate = (dateString: string) => {
     day: 'numeric',
     year: 'numeric'
   });
+};
+
+const completionPercentage = computed(() => {
+  if (props.course.total_lessons === 0) return 0;
+  return Math.round((props.completed_lessons_count / props.course.total_lessons) * 100);
+});
+
+const completeLesson = (lessonId: number) => {
+  router.visit(`/lessons/${lessonId}/complete`);
 };
 </script>
 
@@ -142,15 +153,25 @@ const formatDate = (dateString: string) => {
         </div>
       </div>
 
-      <!-- Enrollment Status -->
+      <!-- Enrollment Status & Progress -->
       <Card v-if="is_enrolled" class="border-primary/30 bg-primary/5">
-        <CardContent class="p-4">
-          <div class="flex items-center gap-3">
-            <CheckCircle class="h-5 w-5 text-primary flex-shrink-0" />
-            <div>
-              <p class="font-medium text-foreground">You're enrolled in this class</p>
-              <p class="text-sm text-muted-foreground">Continue learning and complete lessons to earn points</p>
+        <CardContent class="p-6">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <CheckCircle class="h-5 w-5 text-primary flex-shrink-0" />
+                <div>
+                  <p class="font-medium text-foreground">You're enrolled in this class</p>
+                  <p class="text-sm text-muted-foreground">
+                    {{ completed_lessons_count }} of {{ course.total_lessons }} lessons completed
+                  </p>
+                </div>
+              </div>
+              <Badge variant="secondary" class="text-secondary-foreground text-lg px-3 py-1">
+                {{ completionPercentage }}%
+              </Badge>
             </div>
+            <Progress :model-value="completionPercentage" class="h-2" />
           </div>
         </CardContent>
       </Card>
@@ -189,17 +210,40 @@ const formatDate = (dateString: string) => {
                 <div 
                   v-for="(lesson, lessonIndex) in module.lessons" 
                   :key="lesson.id"
-                  class="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                  class="flex items-start gap-3 p-3 rounded-lg transition-colors"
+                  :class="[
+                    lesson.is_completed 
+                      ? 'bg-primary/5 border border-primary/20' 
+                      : 'bg-muted/30 hover:bg-muted/50'
+                  ]"
                 >
-                  <Circle class="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <component 
+                    :is="lesson.is_completed ? CheckCircle : Circle" 
+                    class="h-5 w-5 mt-0.5 flex-shrink-0"
+                    :class="lesson.is_completed ? 'text-primary' : 'text-muted-foreground'"
+                  />
                   <div class="flex-1">
-                    <h4 class="font-medium text-foreground">
-                      {{ lessonIndex + 1 }}. {{ lesson.name }}
-                    </h4>
+                    <div class="flex items-center gap-2">
+                      <h4 class="font-medium text-foreground" :class="{ 'line-through opacity-70': lesson.is_completed }">
+                        {{ lessonIndex + 1 }}. {{ lesson.name }}
+                      </h4>
+                      <Badge v-if="lesson.is_completed" variant="secondary" class="text-xs">
+                        Completed
+                      </Badge>
+                    </div>
                     <p v-if="lesson.description" class="text-sm text-muted-foreground mt-1">
                       {{ lesson.description }}
                     </p>
                   </div>
+                  <Button
+                    v-if="is_enrolled && !lesson.is_completed"
+                    size="sm"
+                    variant="outline"
+                    class="ml-auto"
+                    @click="completeLesson(lesson.id)"
+                  >
+                    Complete
+                  </Button>
                 </div>
               </div>
             </CardContent>

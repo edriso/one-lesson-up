@@ -20,14 +20,19 @@ class CourseController extends Controller
         $user = auth()->user()->load(['enrollment.course', 'enrollments']);
         
         // Get all active courses with counts
-        $courses = Course::withCount(['enrollments', 'lessons'])
+        // Only count active enrollments (where completed_at is NULL)
+        $courses = Course::withCount(['enrollments' => function ($query) {
+                $query->whereNull('completed_at');
+            }])
+            ->withCount('lessons')
             ->where('is_active', true)
             ->latest()
             ->get()
             ->map(function ($course) use ($user) {
+                // Check if user has active enrollment in this course
                 $enrollment = $user->enrollments()
                     ->where('course_id', $course->id)
-                    ->where('is_active', true)
+                    ->whereNull('completed_at')
                     ->first();
                 
                 return [
@@ -37,7 +42,7 @@ class CourseController extends Controller
                     'students_count' => $course->enrollments_count,
                     'lessons_count' => $course->lessons_count,
                     'created_at' => $course->created_at->toISOString(),
-                    'can_join' => $user->canCreateCourse(), // Use method to check
+                    'can_join' => $user->canCreateCourse(),
                     'is_enrolled' => (bool) $enrollment,
                     'is_creator' => $course->creator_id === $user->id,
                 ];
@@ -135,10 +140,6 @@ class CourseController extends Controller
             $enrollment = Enrollment::create([
                 'user_id' => $user->id,
                 'course_id' => $course->id,
-                'start_date' => now(),
-                'end_date' => now()->addDays($course->deadline_days),
-                'is_active' => true,
-                'is_completed' => false,
             ]);
             
             // Update user's enrollment_id
@@ -163,11 +164,19 @@ class CourseController extends Controller
         $user = auth()->user()->load('enrollment');
         $course->load(['modules.lessons']);
         
-        // Check if user is enrolled in this course
+        // Check if user is enrolled in this course (active = completed_at is NULL)
         $enrollment = $user->enrollments()
             ->where('course_id', $course->id)
-            ->where('is_active', true)
+            ->whereNull('completed_at')
             ->first();
+        
+        // Get completed lesson IDs if enrolled
+        $completedLessonIds = [];
+        if ($enrollment) {
+            $completedLessonIds = CompletedLesson::where('enrollment_id', $enrollment->id)
+                ->pluck('lesson_id')
+                ->toArray();
+        }
         
         return Inertia::render('ViewCourse', [
             'course' => [
@@ -175,18 +184,19 @@ class CourseController extends Controller
                 'title' => $course->name,
                 'description' => $course->description,
                 'link' => $course->link,
-                'modules' => $course->modules->map(function ($module) {
+                'modules' => $course->modules->map(function ($module) use ($completedLessonIds) {
                     return [
                         'id' => $module->id,
                         'name' => $module->name,
                         'description' => $module->description,
                         'order' => $module->module_order,
-                        'lessons' => $module->lessons->map(function ($lesson) {
+                        'lessons' => $module->lessons->map(function ($lesson) use ($completedLessonIds) {
                             return [
                                 'id' => $lesson->id,
                                 'name' => $lesson->name,
                                 'description' => $lesson->description,
                                 'order' => $lesson->lesson_order,
+                                'is_completed' => in_array($lesson->id, $completedLessonIds),
                             ];
                         }),
                     ];
@@ -197,6 +207,7 @@ class CourseController extends Controller
             ],
             'is_enrolled' => (bool) $enrollment,
             'can_join' => $user->canCreateCourse(),
+            'completed_lessons_count' => count($completedLessonIds),
         ]);
     }
 
@@ -212,10 +223,10 @@ class CourseController extends Controller
             return back()->with('error', 'You must complete or leave your current class before joining another one.');
         }
         
-        // Check if already enrolled
+        // Check if already enrolled (active enrollment = completed_at is NULL)
         $existingEnrollment = $user->enrollments()
             ->where('course_id', $course->id)
-            ->where('is_active', true)
+            ->whereNull('completed_at')
             ->first();
         
         if ($existingEnrollment) {
@@ -225,14 +236,10 @@ class CourseController extends Controller
         try {
             DB::beginTransaction();
             
-            // Create enrollment
+            // Create enrollment (start_date = created_at, no end_date needed)
             $enrollment = Enrollment::create([
                 'user_id' => $user->id,
                 'course_id' => $course->id,
-                'start_date' => now(),
-                'end_date' => now()->addDays($course->deadline_days),
-                'is_active' => true,
-                'is_completed' => false,
             ]);
             
             // Update user's enrollment_id
@@ -250,16 +257,16 @@ class CourseController extends Controller
     }
 
     /**
-     * Leave a course (deactivate enrollment).
+     * Leave a course (delete enrollment).
      */
     public function leave(Course $course)
     {
         $user = auth()->user()->load('enrollment');
         
-        // Find active enrollment for this course
+        // Find active enrollment for this course (completed_at is NULL)
         $enrollment = $user->enrollments()
             ->where('course_id', $course->id)
-            ->where('is_active', true)
+            ->whereNull('completed_at')
             ->first();
         
         if (!$enrollment) {
@@ -269,17 +276,13 @@ class CourseController extends Controller
         try {
             DB::beginTransaction();
             
-            // Deactivate enrollment
-            $enrollment->update([
-                'is_active' => false,
-                'completed_at' => now(),
-                'is_completed' => false, // Left, not completed
-            ]);
-            
             // Clear user's enrollment_id if it matches this enrollment
             if ($user->enrollment_id === $enrollment->id) {
                 $user->update(['enrollment_id' => null]);
             }
+            
+            // Delete the enrollment record (as per requirement)
+            $enrollment->delete();
             
             DB::commit();
             

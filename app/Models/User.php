@@ -84,23 +84,13 @@ class User extends Authenticatable
 
     /**
      * Check if user can create a new course.
-     * Users can only create if they don't have an active enrollment.
+     * Users can only create/join if they don't have an active enrollment.
+     * Active enrollment = enrollment_id is set (completed_at is NULL in that enrollment)
      */
     public function canCreateCourse(): bool
     {
-        // Check if user has no enrollment_id
-        if (!$this->enrollment_id) {
-            return true;
-        }
-
-        // Check if enrollment exists and is not active
-        $enrollment = $this->enrollment;
-        if (!$enrollment) {
-            return true;
-        }
-
-        // User cannot create if enrollment is active (not completed)
-        return $enrollment->is_completed || $enrollment->completed_at !== null;
+        // If no enrollment_id, user can create/join
+        return !$this->enrollment_id;
     }
 
     /**

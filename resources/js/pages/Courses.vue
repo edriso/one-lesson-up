@@ -22,7 +22,8 @@ import {
   Search,
   Filter,
   Eye,
-  X
+  X,
+  Lock
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 
