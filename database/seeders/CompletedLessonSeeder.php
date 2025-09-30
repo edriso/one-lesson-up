@@ -18,13 +18,19 @@ class CompletedLessonSeeder extends Seeder
             $lessons = $course->lessons;
             
             // If enrollment is completed, complete all lessons
-            if ($enrollment->is_completed) {
-                foreach ($lessons as $lesson) {
+            if ($enrollment->completed_at) {
+                foreach ($lessons as $index => $lesson) {
+                    // Create lessons with different dates, starting from enrollment date
+                    $daysAgo = fake()->numberBetween(0, 30); // 0-30 days ago
+                    $createdAt = $enrollment->created_at->addDays($index)->subDays($daysAgo);
+                    
                     \App\Models\CompletedLesson::create([
                         'enrollment_id' => $enrollment->id,
                         'lesson_id' => $lesson->id,
                         'summary' => fake()->paragraph(),
                         'link' => fake()->optional(0.3)->url(),
+                        'created_at' => $createdAt,
+                        'updated_at' => $createdAt,
                     ]);
                 }
             } else {
@@ -35,12 +41,18 @@ class CompletedLessonSeeder extends Seeder
                 
                 $selectedLessons = $lessons->take($lessonsToComplete);
                 
-                foreach ($selectedLessons as $lesson) {
+                foreach ($selectedLessons as $index => $lesson) {
+                    // Create lessons with different dates, starting from enrollment date
+                    $daysAgo = fake()->numberBetween(0, 30); // 0-30 days ago
+                    $createdAt = $enrollment->created_at->addDays($index)->subDays($daysAgo);
+                    
                     \App\Models\CompletedLesson::create([
                         'enrollment_id' => $enrollment->id,
                         'lesson_id' => $lesson->id,
                         'summary' => fake()->paragraph(),
                         'link' => fake()->optional(0.3)->url(),
+                        'created_at' => $createdAt,
+                        'updated_at' => $createdAt,
                     ]);
                 }
             }

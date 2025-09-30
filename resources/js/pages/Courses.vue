@@ -251,7 +251,7 @@ const viewCourse = (courseId: number) => {
           </CardHeader>
 
           <!-- Actions at the very end of the card -->
-          <div class="px-6 pb-6 pt-4 border-t border-border/50">
+          <div class="px-6 pt-4 border-t border-border/50">
             <div class="flex gap-2">
               <Button 
                 v-if="!course.is_enrolled && !course.is_creator"

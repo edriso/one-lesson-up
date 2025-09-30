@@ -60,23 +60,7 @@ class CompletedLesson extends Model
         return $this->belongsTo(Lesson::class);
     }
 
-    /**
-     * Get the user through the enrollment.
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id')
-            ->through('enrollment');
-    }
 
-    /**
-     * Get the course through the enrollment.
-     */
-    public function course(): BelongsTo
-    {
-        return $this->belongsTo(Course::class, 'course_id', 'id')
-            ->through('enrollment');
-    }
 
     /**
      * Check if the lesson is the last lesson of the course.

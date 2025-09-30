@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Home, Trophy } from 'lucide-vue-next';
+import { BookOpen, Home, Trophy, Rss } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const page = usePage();
@@ -28,6 +28,11 @@ const navLinks = [
         name: 'Classes',
         href: '/classes',
         icon: BookOpen,
+    },
+    {
+        name: 'Feeds',
+        href: '/feeds',
+        icon: Rss,
     },
     {
         name: 'Leaderboard',
@@ -93,10 +98,10 @@ const isActive = (href: string) => {
                                 <AvatarImage
                                     v-if="user.avatar"
                                     :src="user.avatar"
-                                    :alt="user.full_name || user.name"
+                                    :alt="user.full_name"
                                 />
                                 <AvatarFallback class="bg-primary text-primary-foreground">
-                                    {{ (user.full_name || user.name || 'U').charAt(0).toUpperCase() }}
+                                    {{ (user.full_name || 'U').charAt(0).toUpperCase() }}
                                 </AvatarFallback>
                             </Avatar>
                         </Button>

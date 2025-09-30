@@ -110,6 +110,52 @@ Route::get('leaderboard', function () {
     ]);
 })->middleware(['auth', 'verified'])->name('leaderboard');
 
+Route::get('feeds', function () {
+    // Get all completed lesson summaries with related data
+    $lessonSummaries = \App\Models\CompletedLesson::with([
+        'enrollment.user:id,username,full_name',
+        'lesson:id,title,module_id',
+        'lesson.module:id,title,course_id',
+        'lesson.module.course:id,name,link'
+    ])
+    ->whereNotNull('summary')
+    ->where('summary', '!=', '')
+    ->latest()
+    ->take(20)
+    ->get()
+    ->map(function ($completedLesson) {
+        return [
+            'id' => $completedLesson->id,
+            'summary' => $completedLesson->summary,
+            'link' => $completedLesson->link,
+            'created_at' => $completedLesson->created_at->toISOString(),
+            'user' => [
+                'id' => $completedLesson->enrollment->user->id,
+                'username' => $completedLesson->enrollment->user->username,
+                'full_name' => $completedLesson->enrollment->user->full_name ?? $completedLesson->enrollment->user->username,
+            ],
+            'lesson' => [
+                'id' => $completedLesson->lesson->id,
+                'title' => $completedLesson->lesson->title,
+                'module' => [
+                    'id' => $completedLesson->lesson->module->id,
+                    'title' => $completedLesson->lesson->module->title,
+                    'course' => [
+                        'id' => $completedLesson->lesson->module->course->id,
+                        'title' => $completedLesson->lesson->module->course->name,
+                        'link' => $completedLesson->lesson->module->course->link,
+                    ],
+                ],
+            ],
+        ];
+    })
+    ->toArray();
+
+    return Inertia::render('Feeds', [
+        'lesson_summaries' => $lessonSummaries,
+    ]);
+})->middleware(['auth', 'verified'])->name('feeds');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('classes', [App\Http\Controllers\CourseController::class, 'index'])->name('classes');
     Route::get('classes/create', [App\Http\Controllers\CourseController::class, 'create'])->name('classes.create');
