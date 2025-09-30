@@ -1,20 +1,9 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from '@/components/ui/dialog';
 import { 
   BookOpen, 
   Plus, 
@@ -115,44 +104,17 @@ const isJoinButtonDisabled = (course: Course) => {
         </div>
         
         <!-- Create Class Button -->
-        <Dialog>
-          <DialogTrigger as-child>
-            <Button 
-              variant="primary" 
-              :disabled="!canCreateClass"
-              class="w-full md:w-auto"
-            >
-              <Plus class="h-4 w-4 mr-2" />
-              Create Class
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Class</DialogTitle>
-              <DialogDescription>
-                Start a new learning community. You can only create one class at a time.
-              </DialogDescription>
-            </DialogHeader>
-            <form class="space-y-4">
-              <div class="space-y-2">
-                <Label for="title">Class Title</Label>
-                <Input id="title" placeholder="Enter class title" />
-              </div>
-              <div class="space-y-2">
-                <Label for="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  placeholder="Describe what students will learn in this class"
-                  rows="3"
-                />
-              </div>
-              <div class="flex justify-end gap-2">
-                <Button type="button" variant="outline">Cancel</Button>
-                <Button type="submit" variant="primary">Create Class</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Link :href="'/classes/create'">
+          <Button 
+            variant="primary" 
+            :disabled="!canCreateClass"
+            class="w-full md:w-auto"
+            :title="!canCreateClass ? 'You must leave your current class before creating a new one' : 'Create a new class'"
+          >
+            <Plus class="h-4 w-4 mr-2" />
+            Create Class
+          </Button>
+        </Link>
       </div>
 
       <!-- Tooltip for disabled create button -->

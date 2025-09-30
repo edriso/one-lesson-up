@@ -44,16 +44,12 @@ Route::get('leaderboard', function () {
     ]);
 })->middleware(['auth', 'verified'])->name('leaderboard');
 
-Route::get('classes', function () {
-    return Inertia::render('Courses', [
-        'courses' => [],
-        'can_create_class' => true,
-        'user' => [
-            'id' => auth()->id(),
-            'current_enrollment' => null,
-        ],
-    ]);
-})->middleware(['auth', 'verified'])->name('classes');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('classes', [App\Http\Controllers\CourseController::class, 'index'])->name('classes');
+    Route::get('classes/create', [App\Http\Controllers\CourseController::class, 'create'])->name('classes.create');
+    Route::post('classes', [App\Http\Controllers\CourseController::class, 'store'])->name('classes.store');
+    Route::get('classes/{course}', [App\Http\Controllers\CourseController::class, 'show'])->name('classes.show');
+});
 
 Route::get('profile/{username}', function ($username) {
     // TODO: Load user data from database based on username
