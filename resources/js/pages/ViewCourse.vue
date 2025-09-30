@@ -67,6 +67,13 @@ const link = ref('');
 // Leave course modal state
 const isLeaveModalOpen = ref(false);
 
+// Lesson summary modal state
+const isSummaryModalOpen = ref(false);
+const selectedLessonForSummary = ref<Lesson | null>(null);
+const lessonSummary = ref('');
+const lessonLink = ref('');
+const isEditingSummary = ref(false);
+
 const openCompleteModal = (lesson: Lesson) => {
   selectedLesson.value = lesson;
   summary.value = '';
@@ -110,6 +117,80 @@ const confirmLeaveCourse = () => {
       closeLeaveModal();
     },
   });
+};
+
+const openSummaryModal = async (lesson: Lesson) => {
+  selectedLessonForSummary.value = lesson;
+  isSummaryModalOpen.value = true;
+  isEditingSummary.value = false;
+  
+  try {
+    // Fetch lesson summary from backend
+    const response = await fetch(`/lessons/${lesson.id}/summary`, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+      },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      lessonSummary.value = data.summary || '';
+      lessonLink.value = data.link || '';
+    } else {
+      // If no summary exists, start in edit mode
+      lessonSummary.value = '';
+      lessonLink.value = '';
+      isEditingSummary.value = true;
+    }
+  } catch (error) {
+    console.error('Failed to fetch lesson summary:', error);
+    lessonSummary.value = '';
+    lessonLink.value = '';
+    isEditingSummary.value = true;
+  }
+};
+
+const closeSummaryModal = () => {
+  isSummaryModalOpen.value = false;
+  selectedLessonForSummary.value = null;
+  lessonSummary.value = '';
+  lessonLink.value = '';
+  isEditingSummary.value = false;
+};
+
+const startEditingSummary = () => {
+  isEditingSummary.value = true;
+};
+
+const saveSummary = async () => {
+  if (!selectedLessonForSummary.value || !lessonSummary.value.trim()) return;
+  
+  try {
+    const response = await fetch(`/lessons/${selectedLessonForSummary.value.id}/summary`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+      },
+      body: JSON.stringify({
+        summary: lessonSummary.value,
+        link: lessonLink.value,
+      }),
+    });
+    
+    if (response.ok) {
+      closeSummaryModal();
+    } else {
+      const errorData = await response.json();
+      console.error('Failed to save lesson summary:', errorData);
+      alert('Failed to save lesson summary. Please try again.');
+    }
+  } catch (error) {
+    console.error('Failed to save lesson summary:', error);
+    alert('Failed to save lesson summary. Please try again.');
+  }
 };
 
 const joinCourse = () => {
@@ -375,7 +456,7 @@ const progressText = computed(() => {
                   />
                   <div class="flex-1">
                     <div class="flex items-center gap-2">
-                      <h4 class="font-medium text-foreground" :class="{ 'line-through opacity-70': lesson.is_completed }">
+                      <h4 class="font-medium text-foreground" :class="{ 'line-through opacity-70': lesson.is_completed || is_completed }">
                         {{ lessonIndex + 1 }}. {{ lesson.name }}
                       </h4>
                       <Badge v-if="is_enrolled && canCompleteLesson(lesson)" variant="default" class="text-xs bg-secondary text-secondary-foreground">
@@ -393,6 +474,15 @@ const progressText = computed(() => {
                     @click="openCompleteModal(lesson)"
                   >
                     Complete
+                  </Button>
+                  <Button
+                    v-else-if="lesson.is_completed || is_completed"
+                    size="sm"
+                    variant="outline"
+                    class="ml-auto"
+                    @click="openSummaryModal(lesson)"
+                  >
+                    View Summary
                   </Button>
                   <div
                     v-else-if="is_enrolled && !lesson.is_completed && !canCompleteLesson(lesson)"
@@ -521,6 +611,81 @@ const progressText = computed(() => {
             <LogOut class="h-4 w-4 mr-2" />
             Leave Class
           </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Lesson Summary Modal -->
+    <Dialog :open="isSummaryModalOpen" @update:open="closeSummaryModal">
+      <DialogContent class="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Lesson Summary</DialogTitle>
+          <DialogDescription>
+            {{ selectedLessonForSummary?.name }}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div class="space-y-4">
+          <div v-if="!isEditingSummary">
+            <div class="p-4 bg-muted/30 rounded-lg">
+              <h4 class="font-medium mb-2">Summary</h4>
+              <p v-if="lessonSummary" class="text-sm text-foreground">{{ lessonSummary }}</p>
+              <p v-else class="text-sm text-muted-foreground italic">No summary provided</p>
+            </div>
+            
+            <div v-if="lessonLink" class="p-4 bg-muted/30 rounded-lg">
+              <h4 class="font-medium mb-2">Link</h4>
+              <a :href="lessonLink" target="_blank" class="text-sm text-primary hover:underline flex items-center gap-1">
+                <ExternalLink class="h-4 w-4" />
+                {{ lessonLink }}
+              </a>
+            </div>
+            
+            <div class="flex justify-end gap-2">
+              <Button variant="outline" @click="closeSummaryModal">
+                Close
+              </Button>
+              <Button @click="startEditingSummary">
+                Edit Summary
+              </Button>
+            </div>
+          </div>
+          
+          <div v-else class="space-y-4">
+            <div>
+              <Label for="lesson-summary">Summary</Label>
+              <Textarea
+                id="lesson-summary"
+                v-model="lessonSummary"
+                placeholder="Describe what you learned from this lesson..."
+                :rows="4"
+                class="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label for="lesson-link">Optional Link</Label>
+              <div class="relative mt-1">
+                <LinkIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  id="lesson-link" 
+                  v-model="lessonLink"
+                  type="url"
+                  placeholder="https://your-notes.com/lesson-summary" 
+                  class="pl-10"
+                />
+              </div>
+            </div>
+            
+            <div class="flex justify-end gap-2">
+              <Button variant="outline" @click="isEditingSummary = false">
+                Cancel
+              </Button>
+              <Button @click="saveSummary">
+                Save Summary
+              </Button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

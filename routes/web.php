@@ -120,6 +120,52 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('lessons/{lesson}/complete', [App\Http\Controllers\LessonController::class, 'complete'])->name('lessons.complete.store');
 });
 
+// Lesson summary routes
+Route::get('lessons/{lesson}/summary', function ($lessonId) {
+    $user = auth()->user();
+    $lesson = \App\Models\Lesson::findOrFail($lessonId);
+    
+    // Check if user has completed this lesson
+    $completedLesson = \App\Models\CompletedLesson::where('user_id', $user->id)
+        ->where('lesson_id', $lessonId)
+        ->first();
+    
+    if (!$completedLesson) {
+        return response()->json(['error' => 'Lesson not completed'], 404);
+    }
+    
+    return response()->json([
+        'summary' => $completedLesson->summary,
+        'link' => $completedLesson->link,
+    ]);
+})->middleware(['auth', 'verified'])->name('lessons.summary');
+
+Route::put('lessons/{lesson}/summary', function ($lessonId, Request $request) {
+    $user = auth()->user();
+    $lesson = \App\Models\Lesson::findOrFail($lessonId);
+    
+    // Check if user has completed this lesson
+    $completedLesson = \App\Models\CompletedLesson::where('user_id', $user->id)
+        ->where('lesson_id', $lessonId)
+        ->first();
+    
+    if (!$completedLesson) {
+        return response()->json(['error' => 'Lesson not completed'], 404);
+    }
+    
+    $request->validate([
+        'summary' => 'required|string|max:2000',
+        'link' => 'nullable|url|max:500',
+    ]);
+    
+    $completedLesson->update([
+        'summary' => $request->summary,
+        'link' => $request->link,
+    ]);
+    
+    return response()->json(['success' => true]);
+})->middleware(['auth', 'verified'])->name('lessons.summary.update');
+
 Route::get('profile/{username}', function ($username) {
     $user = \App\Models\User::where('username', $username)->firstOrFail();
     
@@ -168,6 +214,15 @@ Route::get('profile/{username}', function ($username) {
         })
         ->toArray();
     
+    // Convert to array format expected by frontend
+    $calendarArray = [];
+    foreach ($calendarData as $date => $count) {
+        $calendarArray[] = [
+            'date' => $date,
+            'count' => $count
+        ];
+    }
+    
     return Inertia::render('Profile', [
         'user' => [
             'id' => $user->id,
@@ -184,7 +239,7 @@ Route::get('profile/{username}', function ($username) {
         ],
         'activities' => $activities,
         'completed_classes' => $completedClasses,
-        'calendar_data' => $calendarData,
+        'calendar_data' => $calendarArray,
         'stats' => [
             'total_points' => $user->points ?? 0,
             'total_lessons_completed' => \App\Models\CompletedLesson::whereHas('enrollment', function ($query) use ($user) {
