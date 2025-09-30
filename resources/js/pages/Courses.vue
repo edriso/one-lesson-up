@@ -1,9 +1,18 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   BookOpen, 
   Plus, 
@@ -12,27 +21,18 @@ import {
   Trophy, 
   Search,
   Filter,
-  MoreHorizontal,
-  Trash2,
-  Edit,
   Eye,
-  Lock,
-  Unlock
+  X
 } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
 
 interface Course {
   id: number;
   title: string;
   description: string;
-  created_by: {
-    id: number;
-    full_name: string;
-    username: string;
-  };
   students_count: number;
   lessons_count: number;
   created_at: string;
-  is_public: boolean;
   can_join: boolean;
   is_enrolled: boolean;
   is_creator: boolean;
@@ -69,21 +69,75 @@ const formatDate = (dateString: string) => {
 
 const canCreateClass = props.can_create_class && !props.user?.current_enrollment;
 
-const getJoinButtonText = (course: Course) => {
-  if (course.is_enrolled) return 'Enrolled';
-  if (course.is_creator) return 'Created by you';
-  if (!course.can_join) return 'Full';
-  return 'Join Class';
+// Search and Filter
+const searchQuery = ref('');
+const filterOptions = ref({
+  showMyClasses: false,
+  showEnrolled: false,
+  showAvailable: false,
+  showPublic: true,
+});
+
+const filteredCourses = computed(() => {
+  let filtered = props.courses;
+
+  // Apply search filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(course => 
+      course.title.toLowerCase().includes(query) ||
+      course.description.toLowerCase().includes(query)
+    );
+  }
+
+  // Apply filters
+  if (filterOptions.value.showMyClasses) {
+    filtered = filtered.filter(course => course.is_creator);
+  }
+
+  if (filterOptions.value.showEnrolled) {
+    filtered = filtered.filter(course => course.is_enrolled);
+  }
+
+  if (filterOptions.value.showAvailable) {
+    filtered = filtered.filter(course => course.can_join && !course.is_enrolled);
+  }
+
+  if (!filterOptions.value.showPublic) {
+    filtered = filtered.filter(course => !course.is_public);
+  }
+
+  return filtered;
+});
+
+const hasActiveFilters = computed(() => {
+  return filterOptions.value.showMyClasses || 
+         filterOptions.value.showEnrolled || 
+         filterOptions.value.showAvailable ||
+         !filterOptions.value.showPublic;
+});
+
+const clearFilters = () => {
+  filterOptions.value = {
+    showMyClasses: false,
+    showEnrolled: false,
+    showAvailable: false,
+    showPublic: true,
+  };
 };
 
-const getJoinButtonVariant = (course: Course) => {
-  if (course.is_enrolled || course.is_creator) return 'secondary';
-  if (!course.can_join) return 'outline';
-  return 'primary';
+const clearSearch = () => {
+  searchQuery.value = '';
 };
 
-const isJoinButtonDisabled = (course: Course) => {
-  return course.is_enrolled || course.is_creator || !course.can_join;
+const joinCourse = (courseId: number) => {
+  router.post(`/classes/${courseId}/join`, {}, {
+    preserveScroll: true,
+  });
+};
+
+const viewCourse = (courseId: number) => {
+  router.visit(`/classes/${courseId}`);
 };
 </script>
 
@@ -133,34 +187,129 @@ const isJoinButtonDisabled = (course: Course) => {
 
       <!-- Search and Filter -->
       <div class="flex flex-col md:flex-row gap-4 mb-6">
+        <!-- Search Input -->
         <div class="relative flex-1">
-          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input 
-            placeholder="Search classes..." 
-            class="pl-10"
+            v-model="searchQuery"
+            placeholder="Search classes by title or description..." 
+            class="pl-10 pr-10 h-11"
           />
+          <Button
+            v-if="searchQuery"
+            variant="ghost"
+            size="sm"
+            class="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+            @click="clearSearch"
+          >
+            <X class="h-4 w-4" />
+          </Button>
         </div>
-        <Button variant="outline" class="w-full md:w-auto">
-          <Filter class="h-4 w-4 mr-2" />
-          Filter
+
+        <!-- Filter Dropdown -->
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="outline" class="w-full md:w-auto h-11">
+              <Filter class="h-4 w-4 mr-2" />
+              Filter
+              <Badge v-if="hasActiveFilters" variant="secondary" class="ml-2 text-xs px-1.5">
+                {{ Object.values(filterOptions).filter(v => v === true).length }}
+              </Badge>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-56">
+            <DropdownMenuLabel>Filter Classes</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuCheckboxItem
+              v-model:checked="filterOptions.showMyClasses"
+            >
+              My Classes
+            </DropdownMenuCheckboxItem>
+            
+            <DropdownMenuCheckboxItem
+              v-model:checked="filterOptions.showEnrolled"
+            >
+              Enrolled Classes
+            </DropdownMenuCheckboxItem>
+            
+            <DropdownMenuCheckboxItem
+              v-model:checked="filterOptions.showAvailable"
+            >
+              Available to Join
+            </DropdownMenuCheckboxItem>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuCheckboxItem
+              v-model:checked="filterOptions.showPublic"
+            >
+              Public Classes
+            </DropdownMenuCheckboxItem>
+            
+            <template v-if="hasActiveFilters">
+              <DropdownMenuSeparator />
+              <div class="px-2 py-1.5">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  class="w-full justify-center text-xs"
+                  @click="clearFilters"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </template>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <!-- Results Count -->
+      <div v-if="searchQuery || hasActiveFilters" class="mb-4 flex items-center justify-between">
+        <p class="text-sm text-muted-foreground">
+          Showing {{ filteredCourses.length }} of {{ courses.length }} classes
+        </p>
+        <Button 
+          v-if="searchQuery || hasActiveFilters"
+          variant="ghost" 
+          size="sm"
+          @click="() => { clearSearch(); clearFilters(); }"
+        >
+          Clear All
         </Button>
       </div>
 
       <!-- Classes Grid -->
-      <div v-if="courses.length === 0" class="text-center py-12">
+      <div v-if="filteredCourses.length === 0" class="text-center py-12">
         <BookOpen class="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-        <h3 class="text-lg font-semibold text-foreground mb-2">No Classes Found</h3>
+        <h3 class="text-lg font-semibold text-foreground mb-2">
+          {{ searchQuery || hasActiveFilters ? 'No Matching Classes' : 'No Classes Found' }}
+        </h3>
         <p class="text-muted-foreground mb-4">
-          Be the first to create a class or check back later for new classes.
+          {{ searchQuery || hasActiveFilters 
+            ? 'Try adjusting your search or filters to find classes.' 
+            : 'Be the first to create a class or check back later for new classes.' 
+          }}
         </p>
-        <Button v-if="canCreateClass" variant="primary">
-          <Plus class="h-4 w-4 mr-2" />
-          Create First Class
-        </Button>
+        <div class="flex items-center justify-center gap-2">
+          <Button 
+            v-if="searchQuery || hasActiveFilters"
+            variant="outline"
+            @click="() => { clearSearch(); clearFilters(); }"
+          >
+            Clear Search & Filters
+          </Button>
+          <Link v-if="canCreateClass && !searchQuery && !hasActiveFilters" :href="'/classes/create'">
+            <Button variant="primary">
+              <Plus class="h-4 w-4 mr-2" />
+              Create First Class
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card v-for="course in courses" :key="course.id" 
+        <Card v-for="course in filteredCourses" :key="course.id" 
               class="hover:shadow-lg transition-shadow duration-200">
           <CardHeader>
             <div class="flex items-start justify-between">
@@ -171,17 +320,12 @@ const isJoinButtonDisabled = (course: Course) => {
                 </CardDescription>
               </div>
               <div class="flex items-center gap-2 ml-4">
-                <Badge v-if="course.is_public" variant="secondary" class="text-secondary-foreground">
-                  <Unlock class="h-3 w-3 mr-1" />
-                  Public
+                <Badge v-if="course.is_enrolled" variant="secondary" class="text-secondary-foreground">
+                  Enrolled
                 </Badge>
-                <Badge v-else variant="outline">
-                  <Lock class="h-3 w-3 mr-1" />
-                  Private
+                <Badge v-else-if="course.is_creator" variant="outline" class="border-primary text-primary">
+                  Your Class
                 </Badge>
-                <Button variant="ghost" size="sm" class="h-8 w-8 p-0">
-                  <MoreHorizontal class="h-4 w-4" />
-                </Button>
               </div>
             </div>
           </CardHeader>
@@ -203,32 +347,25 @@ const isJoinButtonDisabled = (course: Course) => {
               </div>
             </div>
 
-            <!-- Creator Info -->
-            <div class="flex items-center gap-2 text-sm">
-              <span class="text-muted-foreground">Created by</span>
-              <span class="font-medium text-foreground">{{ course.created_by.full_name }}</span>
-              <span class="text-muted-foreground">@{{ course.created_by.username }}</span>
-            </div>
-
             <!-- Actions -->
             <div class="flex gap-2">
               <Button 
-                :variant="getJoinButtonVariant(course)"
-                :disabled="isJoinButtonDisabled(course)"
-                class="flex-1"
+                v-if="!course.is_enrolled && !course.is_creator"
+                :variant="course.can_join ? 'default' : 'outline'"
+                :disabled="!course.can_join"
+                class="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                @click="joinCourse(course.id)"
               >
-                {{ getJoinButtonText(course) }}
-              </Button>
-              <Button variant="outline" size="sm">
-                <Eye class="h-4 w-4" />
+                {{ course.can_join ? 'Join Class' : 'Cannot Join' }}
               </Button>
               <Button 
-                v-if="course.is_creator" 
-                variant="outline" 
-                size="sm"
-                class="text-destructive hover:text-destructive"
+                v-else
+                variant="outline"
+                class="flex-1"
+                @click="viewCourse(course.id)"
               >
-                <Trash2 class="h-4 w-4" />
+                <Eye class="h-4 w-4 mr-2" />
+                {{ course.is_enrolled ? 'View & Continue' : 'View Class' }}
               </Button>
             </div>
           </CardContent>

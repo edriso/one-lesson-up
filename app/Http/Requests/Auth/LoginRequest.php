@@ -41,10 +41,16 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        /** @var User|null $user */
-        $user = Auth::getProvider()->retrieveByCredentials($this->only('email', 'password'));
+        // Convert email to lowercase for case-insensitive login
+        $credentials = [
+            'email' => strtolower($this->input('email')),
+            'password' => $this->input('password'),
+        ];
 
-        if (! $user || ! Auth::getProvider()->validateCredentials($user, $this->only('password'))) {
+        /** @var User|null $user */
+        $user = Auth::getProvider()->retrieveByCredentials($credentials);
+
+        if (! $user || ! Auth::getProvider()->validateCredentials($user, ['password' => $this->input('password')])) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

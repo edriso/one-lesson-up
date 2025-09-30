@@ -29,6 +29,7 @@ class User extends Authenticatable
         'linkedin_url',
         'website_url',
         'is_public',
+        'enrollment_id',
     ];
 
     /**
@@ -71,6 +72,35 @@ class User extends Authenticatable
     public function currentEnrollment()
     {
         return $this->hasOne(Enrollment::class)->whereNull('completed_at')->latest('created_at');
+    }
+
+    /**
+     * Get user's active enrollment (via enrollment_id foreign key).
+     */
+    public function enrollment()
+    {
+        return $this->belongsTo(Enrollment::class, 'enrollment_id');
+    }
+
+    /**
+     * Check if user can create a new course.
+     * Users can only create if they don't have an active enrollment.
+     */
+    public function canCreateCourse(): bool
+    {
+        // Check if user has no enrollment_id
+        if (!$this->enrollment_id) {
+            return true;
+        }
+
+        // Check if enrollment exists and is not active
+        $enrollment = $this->enrollment;
+        if (!$enrollment) {
+            return true;
+        }
+
+        // User cannot create if enrollment is active (not completed)
+        return $enrollment->is_completed || $enrollment->completed_at !== null;
     }
 
     /**

@@ -32,7 +32,7 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'full_name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'username' => 'required|string|max:255|unique:'.User::class,
             'profile_picture_url' => 'nullable|string|max:255',
@@ -56,7 +56,7 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'username' => $request->username,
             'full_name' => $request->full_name,
-            'email' => $request->email,
+            'email' => strtolower($request->email), // Convert to lowercase
             'password' => Hash::make($request->password),
             'profile_picture_url' => $request->profile_picture_url,
             'title' => $request->title,
@@ -70,6 +70,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return to_route('dashboard');
+        return to_route('home');
     }
 }

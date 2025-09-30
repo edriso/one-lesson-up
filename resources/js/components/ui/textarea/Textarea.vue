@@ -8,7 +8,7 @@ interface Props {
   rows?: number;
   disabled?: boolean;
   readonly?: boolean;
-  value?: string;
+  modelValue?: string;
   defaultValue?: string;
 }
 
@@ -16,6 +16,8 @@ const props = withDefaults(defineProps<Props>(), {
   rows: 3,
   disabled: false,
   readonly: false,
+  modelValue: '',
+  defaultValue: '',
 });
 
 const emit = defineEmits<{
@@ -32,6 +34,12 @@ const textareaClass = computed(() =>
     props.class
   )
 );
+
+const handleInput = (event: Event) => {
+  const value = (event.target as HTMLTextAreaElement).value;
+  emit('update:modelValue', value);
+  emit('input', event);
+};
 </script>
 
 <template>
@@ -41,8 +49,8 @@ const textareaClass = computed(() =>
     :rows="rows"
     :disabled="disabled"
     :readonly="readonly"
-    :value="value || defaultValue"
-    @input="emit('input', $event); emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+    :value="modelValue"
+    @input="handleInput"
     @change="emit('change', $event)"
     @focus="emit('focus', $event)"
     @blur="emit('blur', $event)"

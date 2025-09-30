@@ -7,7 +7,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-// No dashboard route needed, we use '/' directly
 import { Link } from '@inertiajs/vue3';
 
 defineProps<{

@@ -49,6 +49,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('classes/create', [App\Http\Controllers\CourseController::class, 'create'])->name('classes.create');
     Route::post('classes', [App\Http\Controllers\CourseController::class, 'store'])->name('classes.store');
     Route::get('classes/{course}', [App\Http\Controllers\CourseController::class, 'show'])->name('classes.show');
+    Route::post('classes/{course}/join', [App\Http\Controllers\CourseController::class, 'join'])->name('classes.join');
+    Route::post('classes/{course}/leave', [App\Http\Controllers\CourseController::class, 'leave'])->name('classes.leave');
 });
 
 Route::get('profile/{username}', function ($username) {

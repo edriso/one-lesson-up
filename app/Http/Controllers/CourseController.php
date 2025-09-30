@@ -17,11 +17,10 @@ class CourseController extends Controller
      */
     public function index()
     {
-        $user = auth()->user();
+        $user = auth()->user()->load(['enrollment.course', 'enrollments']);
         
-        // Get all public courses with creator info and counts
-        $courses = Course::with(['creator:id,full_name,username'])
-            ->withCount(['enrollments', 'lessons'])
+        // Get all active courses with counts
+        $courses = Course::withCount(['enrollments', 'lessons'])
             ->where('is_active', true)
             ->latest()
             ->get()
@@ -35,16 +34,10 @@ class CourseController extends Controller
                     'id' => $course->id,
                     'title' => $course->name,
                     'description' => $course->description,
-                    'created_by' => [
-                        'id' => $course->creator->id,
-                        'full_name' => $course->creator->full_name,
-                        'username' => $course->creator->username,
-                    ],
                     'students_count' => $course->enrollments_count,
                     'lessons_count' => $course->lessons_count,
                     'created_at' => $course->created_at->toISOString(),
-                    'is_public' => true,
-                    'can_join' => !$user->enrollment_id, // Can only join if not enrolled in any course
+                    'can_join' => $user->canCreateCourse(), // Use method to check
                     'is_enrolled' => (bool) $enrollment,
                     'is_creator' => $course->creator_id === $user->id,
                 ];
@@ -52,14 +45,14 @@ class CourseController extends Controller
         
         return Inertia::render('Courses', [
             'courses' => $courses,
-            'can_create_class' => !$user->enrollment_id, // Can only create if not enrolled
+            'can_create_class' => $user->canCreateCourse(),
             'user' => [
                 'id' => $user->id,
-                'current_enrollment' => $user->currentEnrollment ? [
-                    'id' => $user->currentEnrollment->id,
+                'current_enrollment' => $user->enrollment ? [
+                    'id' => $user->enrollment->id,
                     'class' => [
-                        'id' => $user->currentEnrollment->course->id,
-                        'title' => $user->currentEnrollment->course->name,
+                        'id' => $user->enrollment->course->id,
+                        'title' => $user->enrollment->course->name,
                     ],
                 ] : null,
             ],
@@ -71,10 +64,10 @@ class CourseController extends Controller
      */
     public function create()
     {
-        $user = auth()->user();
+        $user = auth()->user()->load('enrollment');
         
-        // Check if user is already enrolled in a course
-        if ($user->enrollment_id) {
+        // Check if user can create a course
+        if (!$user->canCreateCourse()) {
             return redirect()->route('classes')
                 ->with('error', 'You cannot create a class while enrolled in another class.');
         }
@@ -87,10 +80,10 @@ class CourseController extends Controller
      */
     public function store(Request $request)
     {
-        $user = auth()->user();
+        $user = auth()->user()->load('enrollment');
         
-        // Check if user is already enrolled
-        if ($user->enrollment_id) {
+        // Final check: user cannot create if already enrolled
+        if (!$user->canCreateCourse()) {
             return back()->withErrors(['error' => 'You cannot create a class while enrolled in another class.']);
         }
         
@@ -167,7 +160,14 @@ class CourseController extends Controller
      */
     public function show(Course $course)
     {
-        $course->load(['modules.lessons', 'creator:id,full_name,username']);
+        $user = auth()->user()->load('enrollment');
+        $course->load(['modules.lessons']);
+        
+        // Check if user is enrolled in this course
+        $enrollment = $user->enrollments()
+            ->where('course_id', $course->id)
+            ->where('is_active', true)
+            ->first();
         
         return Inertia::render('ViewCourse', [
             'course' => [
@@ -175,11 +175,6 @@ class CourseController extends Controller
                 'title' => $course->name,
                 'description' => $course->description,
                 'link' => $course->link,
-                'created_by' => [
-                    'id' => $course->creator->id,
-                    'full_name' => $course->creator->full_name,
-                    'username' => $course->creator->username,
-                ],
                 'modules' => $course->modules->map(function ($module) {
                     return [
                         'id' => $module->id,
@@ -196,8 +191,104 @@ class CourseController extends Controller
                         }),
                     ];
                 }),
+                'total_lessons' => $course->lessons_count,
+                'total_modules' => $course->modules_count,
                 'created_at' => $course->created_at->toISOString(),
             ],
+            'is_enrolled' => (bool) $enrollment,
+            'can_join' => $user->canCreateCourse(),
         ]);
+    }
+
+    /**
+     * Join a course (enroll user).
+     */
+    public function join(Course $course)
+    {
+        $user = auth()->user()->load('enrollment');
+        
+        // Check if user can join
+        if (!$user->canCreateCourse()) {
+            return back()->with('error', 'You must complete or leave your current class before joining another one.');
+        }
+        
+        // Check if already enrolled
+        $existingEnrollment = $user->enrollments()
+            ->where('course_id', $course->id)
+            ->where('is_active', true)
+            ->first();
+        
+        if ($existingEnrollment) {
+            return back()->with('error', 'You are already enrolled in this class.');
+        }
+        
+        try {
+            DB::beginTransaction();
+            
+            // Create enrollment
+            $enrollment = Enrollment::create([
+                'user_id' => $user->id,
+                'course_id' => $course->id,
+                'start_date' => now(),
+                'end_date' => now()->addDays($course->deadline_days),
+                'is_active' => true,
+                'is_completed' => false,
+            ]);
+            
+            // Update user's enrollment_id
+            $user->update(['enrollment_id' => $enrollment->id]);
+            
+            DB::commit();
+            
+            return redirect()->route('classes')
+                ->with('success', 'Successfully joined ' . $course->name . '!');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to join class: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Leave a course (deactivate enrollment).
+     */
+    public function leave(Course $course)
+    {
+        $user = auth()->user()->load('enrollment');
+        
+        // Find active enrollment for this course
+        $enrollment = $user->enrollments()
+            ->where('course_id', $course->id)
+            ->where('is_active', true)
+            ->first();
+        
+        if (!$enrollment) {
+            return back()->with('error', 'You are not enrolled in this class.');
+        }
+        
+        try {
+            DB::beginTransaction();
+            
+            // Deactivate enrollment
+            $enrollment->update([
+                'is_active' => false,
+                'completed_at' => now(),
+                'is_completed' => false, // Left, not completed
+            ]);
+            
+            // Clear user's enrollment_id if it matches this enrollment
+            if ($user->enrollment_id === $enrollment->id) {
+                $user->update(['enrollment_id' => null]);
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('classes')
+                ->with('success', 'You have left ' . $course->name . '.');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to leave class: ' . $e->getMessage());
+        }
     }
 }

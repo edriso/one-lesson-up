@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
-// No dashboard route needed, we use '/' directly
 import { Link } from '@inertiajs/vue3';
 
 defineProps<{
