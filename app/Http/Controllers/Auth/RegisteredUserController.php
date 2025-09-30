@@ -34,7 +34,7 @@ class RegisteredUserController extends Controller
             'full_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'username' => 'required|string|max:255|unique:users,username',
+            'username' => 'required|string|max:255',
             'profile_picture_url' => 'nullable|string|max:255',
             'title' => 'nullable|string|max:255',
             'bio' => 'nullable|string|max:255',
@@ -42,6 +42,12 @@ class RegisteredUserController extends Controller
             'website_url' => 'nullable|string|max:255',
             'is_public' => 'nullable|boolean',
         ]);
+
+        // Check for case-insensitive username uniqueness
+        $existingUser = User::whereRaw('LOWER(username) = ?', [strtolower($request->username)])->first();
+        if ($existingUser) {
+            return back()->withErrors(['username' => 'The username has already been taken.']);
+        }
 
         // Validate profile_picture_url only if user has enough points
         if ($request->has('profile_picture_url') && $request->profile_picture_url) {
