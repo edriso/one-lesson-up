@@ -267,7 +267,7 @@ const getTotalLessons = () => {
                 placeholder="Describe what students will learn in this class"
                 :rows="4"
                 required
-                :class="{ 'border-destructive': form.errors.description }"
+                :class="form.errors.description ? 'border-destructive' : ''"
               />
               <p v-if="form.errors.description" class="text-sm text-destructive">{{ form.errors.description }}</p>
             </div>

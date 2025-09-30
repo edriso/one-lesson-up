@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import ModalAlert from '@/components/ModalAlert.vue';
 import { 
   BookOpen, 
   ArrowLeft, 
@@ -73,6 +74,9 @@ const selectedLessonForSummary = ref<Lesson | null>(null);
 const lessonSummary = ref('');
 const lessonLink = ref('');
 const isEditingSummary = ref(false);
+const summaryError = ref('');
+const summarySuccess = ref('');
+const isSaving = ref(false);
 
 const openCompleteModal = (lesson: Lesson) => {
   selectedLesson.value = lesson;
@@ -127,7 +131,9 @@ const openSummaryModal = async (lesson: Lesson) => {
   try {
     // Fetch lesson summary from backend
     const response = await fetch(`/lessons/${lesson.id}/summary`, {
+      method: 'GET',
       headers: {
+        'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
       },
@@ -137,11 +143,17 @@ const openSummaryModal = async (lesson: Lesson) => {
       const data = await response.json();
       lessonSummary.value = data.summary || '';
       lessonLink.value = data.link || '';
-    } else {
-      // If no summary exists, start in edit mode
+      // If there's no summary, automatically start editing
+      if (!data.summary) {
+        isEditingSummary.value = true;
+      }
+    } else if (response.status === 404) {
+      // Lesson not completed or no summary exists, start in edit mode
       lessonSummary.value = '';
       lessonLink.value = '';
       isEditingSummary.value = true;
+    } else {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
   } catch (error) {
     console.error('Failed to fetch lesson summary:', error);
@@ -157,39 +169,71 @@ const closeSummaryModal = () => {
   lessonSummary.value = '';
   lessonLink.value = '';
   isEditingSummary.value = false;
+  summaryError.value = '';
+  summarySuccess.value = '';
+  isSaving.value = false;
 };
 
 const startEditingSummary = () => {
   isEditingSummary.value = true;
+  summaryError.value = '';
+  summarySuccess.value = '';
 };
 
 const saveSummary = async () => {
-  if (!selectedLessonForSummary.value || !lessonSummary.value.trim()) return;
+  if (!selectedLessonForSummary.value || !lessonSummary.value.trim()) {
+    summaryError.value = 'Please provide a summary before saving.';
+    return;
+  }
+  
+  isSaving.value = true;
+  summaryError.value = '';
+  summarySuccess.value = '';
   
   try {
     const response = await fetch(`/lessons/${selectedLessonForSummary.value.id}/summary`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
       },
       body: JSON.stringify({
-        summary: lessonSummary.value,
-        link: lessonLink.value,
+        summary: lessonSummary.value.trim(),
+        link: lessonLink.value.trim() || null,
       }),
     });
     
-    if (response.ok) {
-      closeSummaryModal();
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      isEditingSummary.value = false;
+      summarySuccess.value = data.message || 'Summary saved successfully!';
+      // Update the displayed data
+      if (data.data) {
+        lessonSummary.value = data.data.summary || lessonSummary.value;
+        lessonLink.value = data.data.link || lessonLink.value;
+      }
     } else {
-      const errorData = await response.json();
-      console.error('Failed to save lesson summary:', errorData);
-      alert('Failed to save lesson summary. Please try again.');
+      // Handle different types of errors
+      if (data.errors) {
+        // Validation errors
+        const errorMessages = Object.values(data.errors).flat();
+        summaryError.value = errorMessages.join(', ');
+      } else if (data.message) {
+        summaryError.value = data.message;
+      } else if (data.error) {
+        summaryError.value = data.error;
+      } else {
+        summaryError.value = `Failed to save summary. Server responded with status ${response.status}.`;
+      }
     }
   } catch (error) {
     console.error('Failed to save lesson summary:', error);
-    alert('Failed to save lesson summary. Please try again.');
+    summaryError.value = 'Failed to save summary. Please check your connection and try again.';
+  } finally {
+    isSaving.value = false;
   }
 };
 
@@ -348,7 +392,7 @@ const progressText = computed(() => {
             rel="noopener noreferrer"
           >
             <ExternalLink class="h-4 w-4 mr-2" />
-            Resources
+            View Class
           </Button>
         </div>
       </div>
@@ -625,6 +669,19 @@ const progressText = computed(() => {
           </DialogDescription>
         </DialogHeader>
         
+        <!-- Success/Error Messages -->
+        <ModalAlert 
+          v-if="summarySuccess" 
+          type="success" 
+          :message="summarySuccess" 
+        />
+        
+        <ModalAlert 
+          v-if="summaryError" 
+          type="error" 
+          :message="summaryError" 
+        />
+        
         <div class="space-y-4">
           <div v-if="!isEditingSummary">
             <div class="p-4 bg-muted/30 rounded-lg">
@@ -678,11 +735,11 @@ const progressText = computed(() => {
             </div>
             
             <div class="flex justify-end gap-2">
-              <Button variant="outline" @click="isEditingSummary = false">
+              <Button variant="outline" @click="isEditingSummary = false" :disabled="isSaving">
                 Cancel
               </Button>
-              <Button @click="saveSummary">
-                Save Summary
+              <Button @click="saveSummary" :disabled="isSaving">
+                {{ isSaving ? 'Saving...' : 'Save Summary' }}
               </Button>
             </div>
           </div>

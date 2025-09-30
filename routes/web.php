@@ -93,29 +93,16 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
-Route::get('leaderboard', function () {
-    return Inertia::render('Leaderboard', [
-        'leaderboards' => [
-            'today' => [],
-            'yesterday' => [],
-            'this_month' => [],
-            'overall' => [],
-        ],
-        'current_user_rank' => [
-            'today' => 0,
-            'yesterday' => 0,
-            'this_month' => 0,
-            'overall' => 0,
-        ],
-    ]);
-})->middleware(['auth', 'verified'])->name('leaderboard');
+Route::get('leaderboard', [\App\Http\Controllers\LeaderboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('leaderboard');
 
 Route::get('feeds', function () {
     // Get all completed lesson summaries with related data
     $lessonSummaries = \App\Models\CompletedLesson::with([
         'enrollment.user:id,username,full_name',
-        'lesson:id,title,module_id',
-        'lesson.module:id,title,course_id',
+        'lesson:id,name,module_id',
+        'lesson.module:id,name,course_id',
         'lesson.module.course:id,name,link'
     ])
     ->whereNotNull('summary')
@@ -136,10 +123,10 @@ Route::get('feeds', function () {
             ],
             'lesson' => [
                 'id' => $completedLesson->lesson->id,
-                'title' => $completedLesson->lesson->title,
+                'title' => $completedLesson->lesson->name,  // Use 'name' field from lesson table
                 'module' => [
                     'id' => $completedLesson->lesson->module->id,
-                    'title' => $completedLesson->lesson->module->title,
+                    'title' => $completedLesson->lesson->module->name,  // Use 'name' field from module table
                     'course' => [
                         'id' => $completedLesson->lesson->module->course->id,
                         'title' => $completedLesson->lesson->module->course->name,
@@ -173,45 +160,83 @@ Route::get('lessons/{lesson}/summary', function ($lessonId) {
     $user = auth()->user();
     $lesson = \App\Models\Lesson::findOrFail($lessonId);
     
+    // Check if user has an enrollment
+    if (!$user->enrollment_id) {
+        return response()->json([
+            'error' => 'Not enrolled in any class',
+            'message' => 'You must be enrolled in a class to view lesson summaries.'
+        ], 403);
+    }
+    
     // Check if user has completed this lesson
-    $completedLesson = \App\Models\CompletedLesson::where('user_id', $user->id)
+    $completedLesson = \App\Models\CompletedLesson::where('enrollment_id', $user->enrollment_id)
         ->where('lesson_id', $lessonId)
         ->first();
     
     if (!$completedLesson) {
-        return response()->json(['error' => 'Lesson not completed'], 404);
+        return response()->json([
+            'error' => 'Lesson not completed yet',
+            'message' => 'You must complete this lesson before viewing or editing its summary.'
+        ], 404);
     }
     
     return response()->json([
         'summary' => $completedLesson->summary,
         'link' => $completedLesson->link,
+        'completed_at' => $completedLesson->created_at,
     ]);
 })->middleware(['auth', 'verified'])->name('lessons.summary');
 
-Route::put('lessons/{lesson}/summary', function ($lessonId, Request $request) {
+Route::put('lessons/{lesson}/summary', function ($lessonId, \Illuminate\Http\Request $request) {
     $user = auth()->user();
     $lesson = \App\Models\Lesson::findOrFail($lessonId);
     
+    // Check if user has an enrollment
+    if (!$user->enrollment_id) {
+        return response()->json([
+            'error' => 'Not enrolled in any class',
+            'message' => 'You must be enrolled in a class to edit lesson summaries.'
+        ], 403);
+    }
+    
     // Check if user has completed this lesson
-    $completedLesson = \App\Models\CompletedLesson::where('user_id', $user->id)
+    $completedLesson = \App\Models\CompletedLesson::where('enrollment_id', $user->enrollment_id)
         ->where('lesson_id', $lessonId)
         ->first();
     
     if (!$completedLesson) {
-        return response()->json(['error' => 'Lesson not completed'], 404);
+        return response()->json([
+            'error' => 'Lesson not completed yet',
+            'message' => 'You must complete this lesson before editing its summary.'
+        ], 404);
     }
     
-    $request->validate([
-        'summary' => 'required|string|max:2000',
-        'link' => 'nullable|url|max:500',
-    ]);
+    try {
+        $validated = $request->validate([
+            'summary' => 'required|string|max:2000',
+            'link' => 'nullable|url|max:500',
+        ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'error' => 'Validation failed',
+            'message' => 'Please check your input and try again.',
+            'errors' => $e->errors()
+        ], 422);
+    }
     
     $completedLesson->update([
-        'summary' => $request->summary,
-        'link' => $request->link,
+        'summary' => $validated['summary'],
+        'link' => $validated['link'],
     ]);
     
-    return response()->json(['success' => true]);
+    return response()->json([
+        'success' => true,
+        'message' => 'Lesson summary updated successfully.',
+        'data' => [
+            'summary' => $completedLesson->summary,
+            'link' => $completedLesson->link,
+        ]
+    ]);
 })->middleware(['auth', 'verified'])->name('lessons.summary.update');
 
 Route::get('profile/{username}', function ($username) {

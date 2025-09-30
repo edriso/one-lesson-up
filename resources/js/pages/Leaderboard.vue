@@ -2,9 +2,9 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Medal, Award, Crown, TrendingUp, Calendar } from 'lucide-vue-next';
+import { Trophy, TrendingUp, Calendar, Crown } from 'lucide-vue-next';
+import LeaderboardList from '@/components/LeaderboardList.vue';
 
 interface LeaderboardEntry {
   id: number;
@@ -32,9 +32,14 @@ interface Props {
     this_month: number;
     overall: number;
   };
+  user?: {
+    id: number;
+    full_name: string;
+    username: string;
+  };
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   leaderboards: () => ({
     today: [],
     yesterday: [],
@@ -47,34 +52,14 @@ withDefaults(defineProps<Props>(), {
     this_month: 0,
     overall: 0,
   }),
+  user: undefined,
 });
 
-const getRankIcon = (rank: number) => {
-  switch (rank) {
-    case 1:
-      return Crown;
-    case 2:
-      return Trophy;
-    case 3:
-      return Medal;
-    default:
-      return Award;
-  }
+const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) => {
+  const rank = props.current_user_rank?.[period];
+  if (!rank || rank === 0) return 'Unranked';
+  return `#${rank}`;
 };
-
-const getRankColor = (rank: number) => {
-  switch (rank) {
-    case 1:
-      return 'text-yellow-500';
-    case 2:
-      return 'text-gray-400';
-    case 3:
-      return 'text-amber-600';
-    default:
-      return 'text-muted-foreground';
-  }
-};
-
 </script>
 
 <template>
@@ -90,6 +75,41 @@ const getRankColor = (rank: number) => {
         <p class="text-muted-foreground">
           See how you stack up against other learners
         </p>
+      </div>
+
+      <!-- Current User Ranking Summary -->
+      <div v-if="user" class="mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2">
+              <Trophy class="h-5 w-5 text-primary" />
+              Your Current Rankings
+            </CardTitle>
+            <CardDescription>
+              Your position across different time periods
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="text-center p-3 rounded-lg bg-primary/10">
+                <p class="text-sm text-muted-foreground">Today</p>
+                <p class="text-lg font-bold text-foreground">{{ getCurrentUserRankText('today') }}</p>
+              </div>
+              <div class="text-center p-3 rounded-lg bg-primary/10">
+                <p class="text-sm text-muted-foreground">Yesterday</p>
+                <p class="text-lg font-bold text-foreground">{{ getCurrentUserRankText('yesterday') }}</p>
+              </div>
+              <div class="text-center p-3 rounded-lg bg-primary/10">
+                <p class="text-sm text-muted-foreground">This Month</p>
+                <p class="text-lg font-bold text-foreground">{{ getCurrentUserRankText('this_month') }}</p>
+              </div>
+              <div class="text-center p-3 rounded-lg bg-primary/10">
+                <p class="text-sm text-muted-foreground">Overall</p>
+                <p class="text-lg font-bold text-foreground">{{ getCurrentUserRankText('overall') }}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <!-- Time Period Tabs -->
@@ -114,41 +134,11 @@ const getRankColor = (rank: number) => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div v-if="leaderboards.today.length === 0" class="text-center py-8 text-muted-foreground">
-                <Trophy class="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No activities today</p>
-              </div>
-              <div v-else class="space-y-3">
-                <div v-for="entry in leaderboards.today" :key="entry.id" 
-                     class="flex items-center justify-between p-4 rounded-lg border"
-                     :class="entry.rank <= 3 ? 'bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20' : 'bg-background border-border'">
-                  <div class="flex items-center gap-4">
-                    <div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20">
-                      <component :is="getRankIcon(entry.rank)" class="h-4 w-4" :class="getRankColor(entry.rank)" />
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span class="text-sm font-semibold text-primary-foreground">
-                          {{ entry.user.full_name.charAt(0).toUpperCase() }}
-                        </span>
-                      </div>
-                      <div>
-                        <h4 class="font-semibold text-foreground">{{ entry.user.full_name }}</h4>
-                        <p class="text-sm text-muted-foreground">@{{ entry.user.username }}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-4">
-                    <div class="text-right">
-                      <p class="font-bold text-foreground">{{ entry.points }} pts</p>
-                      <p class="text-sm text-muted-foreground">{{ entry.activities_count }} activities</p>
-                    </div>
-                    <Badge v-if="entry.rank <= 3" variant="secondary" class="text-secondary-foreground">
-                      #{{ entry.rank }}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+              <LeaderboardList 
+                :entries="leaderboards.today"
+                :current-user-id="user?.id"
+                empty-message="No activities today"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -166,41 +156,11 @@ const getRankColor = (rank: number) => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div v-if="leaderboards.yesterday.length === 0" class="text-center py-8 text-muted-foreground">
-                <Trophy class="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No activities yesterday</p>
-              </div>
-              <div v-else class="space-y-3">
-                <div v-for="entry in leaderboards.yesterday" :key="entry.id" 
-                     class="flex items-center justify-between p-4 rounded-lg border"
-                     :class="entry.rank <= 3 ? 'bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20' : 'bg-background border-border'">
-                  <div class="flex items-center gap-4">
-                    <div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20">
-                      <component :is="getRankIcon(entry.rank)" class="h-4 w-4" :class="getRankColor(entry.rank)" />
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span class="text-sm font-semibold text-primary-foreground">
-                          {{ entry.user.full_name.charAt(0).toUpperCase() }}
-                        </span>
-                      </div>
-                      <div>
-                        <h4 class="font-semibold text-foreground">{{ entry.user.full_name }}</h4>
-                        <p class="text-sm text-muted-foreground">@{{ entry.user.username }}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-4">
-                    <div class="text-right">
-                      <p class="font-bold text-foreground">{{ entry.points }} pts</p>
-                      <p class="text-sm text-muted-foreground">{{ entry.activities_count }} activities</p>
-                    </div>
-                    <Badge v-if="entry.rank <= 3" variant="secondary" class="text-secondary-foreground">
-                      #{{ entry.rank }}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+              <LeaderboardList 
+                :entries="leaderboards.yesterday"
+                :current-user-id="user?.id"
+                empty-message="No activities yesterday"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -218,45 +178,14 @@ const getRankColor = (rank: number) => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div v-if="leaderboards.this_month.length === 0" class="text-center py-8 text-muted-foreground">
-                <Trophy class="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No activities this month</p>
-              </div>
-              <div v-else class="space-y-3">
-                <div v-for="entry in leaderboards.this_month" :key="entry.id" 
-                     class="flex items-center justify-between p-4 rounded-lg border"
-                     :class="entry.rank <= 3 ? 'bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20' : 'bg-background border-border'">
-                  <div class="flex items-center gap-4">
-                    <div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20">
-                      <component :is="getRankIcon(entry.rank)" class="h-4 w-4" :class="getRankColor(entry.rank)" />
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span class="text-sm font-semibold text-primary-foreground">
-                          {{ entry.user.full_name.charAt(0).toUpperCase() }}
-                        </span>
-                      </div>
-                      <div>
-                        <h4 class="font-semibold text-foreground">{{ entry.user.full_name }}</h4>
-                        <p class="text-sm text-muted-foreground">@{{ entry.user.username }}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-4">
-                    <div class="text-right">
-                      <p class="font-bold text-foreground">{{ entry.points }} pts</p>
-                      <p class="text-sm text-muted-foreground">{{ entry.activities_count }} activities</p>
-                    </div>
-                    <Badge v-if="entry.rank <= 3" variant="secondary" class="text-secondary-foreground">
-                      #{{ entry.rank }}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+              <LeaderboardList 
+                :entries="leaderboards.this_month"
+                :current-user-id="user?.id"
+                empty-message="No activities this month"
+              />
             </CardContent>
           </Card>
         </TabsContent>
-
 
         <!-- Overall Leaderboard -->
         <TabsContent value="overall" class="mt-6">
@@ -271,41 +200,11 @@ const getRankColor = (rank: number) => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div v-if="leaderboards.overall.length === 0" class="text-center py-8 text-muted-foreground">
-                <Trophy class="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No activities yet</p>
-              </div>
-              <div v-else class="space-y-3">
-                <div v-for="entry in leaderboards.overall" :key="entry.id" 
-                     class="flex items-center justify-between p-4 rounded-lg border"
-                     :class="entry.rank <= 3 ? 'bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20' : 'bg-background border-border'">
-                  <div class="flex items-center gap-4">
-                    <div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20">
-                      <component :is="getRankIcon(entry.rank)" class="h-4 w-4" :class="getRankColor(entry.rank)" />
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span class="text-sm font-semibold text-primary-foreground">
-                          {{ entry.user.full_name.charAt(0).toUpperCase() }}
-                        </span>
-                      </div>
-                      <div>
-                        <h4 class="font-semibold text-foreground">{{ entry.user.full_name }}</h4>
-                        <p class="text-sm text-muted-foreground">@{{ entry.user.username }}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-4">
-                    <div class="text-right">
-                      <p class="font-bold text-foreground">{{ entry.points }} pts</p>
-                      <p class="text-sm text-muted-foreground">{{ entry.activities_count }} activities</p>
-                    </div>
-                    <Badge v-if="entry.rank <= 3" variant="secondary" class="text-secondary-foreground">
-                      #{{ entry.rank }}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+              <LeaderboardList 
+                :entries="leaderboards.overall"
+                :current-user-id="user?.id"
+                empty-message="No activities yet"
+              />
             </CardContent>
           </Card>
         </TabsContent>

@@ -2,15 +2,13 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   BookOpen, 
   ExternalLink, 
-  Calendar,
-  User
+  GraduationCap,
 } from 'lucide-vue-next';
 import { Link } from '@inertiajs/vue3';
-import { type BreadcrumbItem } from '@/types';
 
 interface LessonSummary {
   id: number;
@@ -24,13 +22,13 @@ interface LessonSummary {
   };
   lesson: {
     id: number;
-    title: string;
+    title: string; // Receives lesson.name from backend
     module: {
       id: number;
-      title: string;
+      title: string; // Receives module.name from backend
       course: {
         id: number;
-        title: string;
+        title: string; // Receives course.name from backend
         link?: string;
       };
     };
@@ -41,132 +39,124 @@ interface Props {
   lesson_summaries?: LessonSummary[];
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   lesson_summaries: () => [],
 });
 
-const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'Home',
-    href: '/',
-  },
-  {
-    title: 'Feeds',
-    href: '/feeds',
-  },
-];
+const { lesson_summaries } = props;
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+  
+  return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    year: 'numeric'
   });
-};
-
-const getLessonNumber = (lesson: LessonSummary['lesson']) => {
-  // For now, we'll use a simple approach
-  // In a real implementation, this would be calculated based on the lesson's position in the module
-  return `Lesson ${lesson.id}`;
 };
 </script>
 
 <template>
-  <Head title="Feeds" />
+  <Head title="Learning Feeds" />
 
-  <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="flex h-full flex-1 flex-col gap-6 p-6 bg-gradient-to-br from-primary/5 to-secondary/5">
+  <AppLayout>
+    <div class="space-y-6">
       <!-- Header -->
-      <div class="mb-4">
-        <h1 class="text-4xl font-bold text-foreground mb-2">
+      <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-foreground mb-3">
           Learning Feeds
         </h1>
-        <p class="text-muted-foreground">
-          Discover what others are learning from completed lessons
+        <p class="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Discover insights and learnings shared by the community
         </p>
       </div>
 
-      <!-- Feeds Content -->
-      <div v-if="lesson_summaries.length === 0" class="text-center py-12 text-muted-foreground">
-        <BookOpen class="h-16 w-16 mx-auto mb-4 opacity-30" />
-        <p class="text-lg font-medium">No lesson summaries yet</p>
-        <p class="text-sm mt-1">Complete some lessons to see summaries here!</p>
+      <!-- Empty State -->
+      <div v-if="props.lesson_summaries.length === 0" class="text-center py-16">
+        <div class="mx-auto w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+          <GraduationCap class="h-12 w-12 text-primary" />
+        </div>
+        <h3 class="text-xl font-semibold text-foreground mb-2">No learning summaries yet</h3>
+        <p class="text-muted-foreground mb-6 max-w-md mx-auto">
+          Be the first to share your learning experience! Complete a lesson and add a summary to inspire others.
+        </p>
+        <Button asChild>
+          <Link href="/classes">
+            Explore Classes
+          </Link>
+        </Button>
       </div>
 
-      <div v-else class="space-y-6">
+      <!-- Feed Items -->
+      <div v-else class="max-w-2xl mx-auto space-y-6">
         <Card v-for="summary in lesson_summaries" :key="summary.id" 
-              class="hover:shadow-lg transition-shadow duration-200">
-          <CardHeader>
-            <!-- Course and Module Info -->
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex-1">
+              class="overflow-hidden hover:shadow-md transition-all duration-200 border-l-4 border-l-primary/20">
+          
+          <!-- Header -->
+          <CardHeader class="pb-4">
+            <div class="flex items-start gap-4">
+              <!-- Course Info -->
+              <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-2">
-                  <BookOpen class="h-4 w-4 text-primary" />
+                  <BookOpen class="h-5 w-5 text-primary" />
                   <Link 
+                    v-if="summary.lesson?.module?.course?.id"
                     :href="`/classes/${summary.lesson.module.course.id}`"
-                    class="font-semibold text-foreground hover:text-primary transition-colors"
+                    class="font-semibold text-lg text-foreground hover:text-primary transition-colors"
                   >
-                    {{ summary.lesson.module.course.title }}
+                    {{ summary.lesson?.module?.course?.title || 'Unknown Course' }}
                   </Link>
-                  <Badge variant="outline" class="text-xs">
-                    {{ summary.lesson.module.title }}
-                  </Badge>
+                  <span v-else class="font-semibold text-lg text-foreground">
+                    {{ summary.lesson?.module?.course?.title || 'Unknown Course' }}
+                  </span>
                 </div>
-                <div class="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>{{ getLessonNumber(summary.lesson) }}</span>
+                
+                <div class="text-sm text-muted-foreground">
+                  <span class="font-medium">{{ summary.lesson?.title || 'Unknown Lesson' }}</span>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
-                <a 
-                  v-if="summary.link"
-                  :href="summary.link"
-                  target="_blank"
-                  class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-foreground bg-background border border-input rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-                >
-                  <ExternalLink class="h-4 w-4" />
-                  External Link
-                </a>
+              
+              <!-- Time -->
+              <div class="text-sm text-muted-foreground">
+                {{ formatDate(summary.created_at) }}
               </div>
             </div>
           </CardHeader>
 
-          <CardContent>
-            <!-- Lesson Summary -->
-            <div class="mb-6">
-              <h3 class="font-semibold text-foreground mb-2">What I Learned:</h3>
-              <p class="text-foreground leading-relaxed">{{ summary.summary }}</p>
+          <!-- Content -->
+          <CardContent class="pt-0">
+            <!-- Summary -->
+            <div class="mb-4">
+              <p class="text-foreground leading-relaxed">{{ summary.summary || '' }}</p>
             </div>
 
-            <!-- Lesson Link (if exists) -->
-            <div v-if="summary.link" class="mb-6">
-              <h4 class="font-medium text-foreground mb-2">External Link:</h4>
+            <!-- External Link -->
+            <div v-if="summary.link" class="mb-4">
               <a 
                 :href="summary.link" 
                 target="_blank" 
-                class="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+                class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-muted rounded-lg hover:bg-muted/80 transition-colors group"
               >
-                <ExternalLink class="h-4 w-4" />
-                {{ summary.link }}
+                <ExternalLink class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span class="font-medium">View Resource</span>
               </a>
             </div>
 
-            <!-- Footer with User and Date -->
-            <div class="flex items-center justify-between pt-4 border-t border-border/50">
-              <div class="flex items-center gap-2">
-                <User class="h-4 w-4 text-muted-foreground" />
-                <Link 
-                  :href="`/profile/${summary.user.username}`"
-                  class="text-sm font-medium text-foreground hover:text-primary transition-colors"
-                >
-                  @{{ summary.user.username }}
-                </Link>
-              </div>
-              <div class="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar class="h-4 w-4" />
-                <span>{{ formatDate(summary.created_at) }}</span>
-              </div>
+            <!-- Footer Actions -->
+            <div class="flex items-center gap-4 pt-4 border-t border-border/50">
+              <Link 
+                :href="`/profile/${summary.user?.username || ''}`"
+                class="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                <span>@{{ summary.user?.username || 'unknown' }}</span>
+              </Link>
             </div>
           </CardContent>
         </Card>
