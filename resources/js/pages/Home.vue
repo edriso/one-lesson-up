@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Clock, BookOpen, Trophy, TrendingUp, CheckCircle, Circle } from 'lucide-vue-next';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Clock, BookOpen, Trophy, TrendingUp, CheckCircle, Circle, Link as LinkIcon } from 'lucide-vue-next';
+import { ref } from 'vue';
 
 interface Lesson {
   id: number;
@@ -52,6 +57,40 @@ withDefaults(defineProps<Props>(), {
   upcoming_lessons: () => [],
   recent_activities: () => [],
 });
+
+// Modal state
+const isModalOpen = ref(false);
+const selectedLesson = ref<Lesson | null>(null);
+const summary = ref('');
+const link = ref('');
+
+const openCompleteModal = (lesson: Lesson) => {
+  selectedLesson.value = lesson;
+  summary.value = '';
+  link.value = '';
+  isModalOpen.value = true;
+};
+
+const closeModal = () => {
+  isModalOpen.value = false;
+  selectedLesson.value = null;
+  summary.value = '';
+  link.value = '';
+};
+
+const submitCompletion = () => {
+  if (!selectedLesson.value || !summary.value.trim()) return;
+  
+  router.post(`/lessons/${selectedLesson.value.id}/complete`, {
+    summary: summary.value,
+    link: link.value,
+  }, {
+    onSuccess: () => {
+      closeModal();
+    },
+    preserveScroll: true,
+  });
+};
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -169,8 +208,8 @@ const getActivityIcon = (type: string) => {
                                         <Badge v-if="lesson.due_date" variant="outline" class="text-xs">
                                             Due {{ formatDate(lesson.due_date) }}
                                         </Badge>
-                                        <Button v-if="!lesson.completed" size="sm" class="bg-primary text-primary-foreground hover:bg-primary/90">
-                                            Start Lesson
+                                        <Button v-if="!lesson.completed" size="sm" class="bg-primary text-primary-foreground hover:bg-primary/90" @click="openCompleteModal(lesson)">
+                                            Complete Lesson
                                         </Button>
                                     </div>
                                 </div>
@@ -217,5 +256,59 @@ const getActivityIcon = (type: string) => {
                 </div>
             </div>
         </div>
+
+        <!-- Complete Lesson Modal -->
+        <Dialog :open="isModalOpen" @update:open="closeModal">
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Complete Lesson</DialogTitle>
+                    <DialogDescription>
+                        Share what you learned from "{{ selectedLesson?.title }}"
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div class="space-y-4">
+                    <div>
+                        <Label for="summary">Summary *</Label>
+                        <Textarea
+                            id="summary"
+                            v-model="summary"
+                            placeholder="Describe what you learned and key takeaways..."
+                            :rows="4"
+                            class="mt-1"
+                        />
+                    </div>
+                    
+                    <div>
+                        <Label for="link">Optional Link</Label>
+                        <div class="relative mt-1">
+                            <LinkIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                id="link"
+                                v-model="link"
+                                placeholder="https://example.com"
+                                class="pl-10"
+                            />
+                        </div>
+                        <p class="text-xs text-muted-foreground mt-1">
+                            Share a resource, project, or reference related to this lesson
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" @click="closeModal">
+                        Cancel
+                    </Button>
+                    <Button 
+                        @click="submitCompletion"
+                        :disabled="!summary.trim()"
+                        class="bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                        Complete Lesson
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

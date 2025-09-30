@@ -18,17 +18,72 @@ Route::get('/', function () {
         ]);
     }
     
-    $user = auth()->user();
+    $user = auth()->user()->load(['enrollment.course.modules.lessons']);
+    
+    // Get upcoming lessons (next incomplete lesson only)
+    $upcomingLessons = [];
+    if ($user->enrollment) {
+        // Get completed lesson IDs for this enrollment
+        $completedLessonIds = \App\Models\CompletedLesson::where('enrollment_id', $user->enrollment->id)
+            ->pluck('lesson_id')
+            ->toArray();
+        
+        // Find the next incomplete lesson (sequential learning)
+        $nextLesson = null;
+        foreach ($user->enrollment->course->modules as $module) {
+            foreach ($module->lessons as $lesson) {
+                if (!in_array($lesson->id, $completedLessonIds)) {
+                    $nextLesson = [
+                        'id' => $lesson->id,
+                        'title' => $lesson->name,
+                        'completed' => false,
+                        'module_title' => $module->name,
+                        'class_title' => $module->course->name,
+                        'due_date' => null,
+                    ];
+                    break 2; // Break out of both loops
+                }
+            }
+        }
+        
+        // Only show the next lesson if there is one
+        if ($nextLesson) {
+            $upcomingLessons = [$nextLesson];
+        }
+    }
+    
+    // Get recent activities (last 5 learning activities)
+    $recentActivities = \App\Models\LearningActivity::where('user_id', $user->id)
+        ->with('enrollment.course')
+        ->latest()
+        ->take(5)
+        ->get()
+        ->map(function ($activity) {
+            return [
+                'id' => $activity->id,
+                'type' => $activity->activity_type,
+                'description' => $activity->description,
+                'points_earned' => $activity->points_earned,
+                'created_at' => $activity->created_at->toISOString(),
+            ];
+        })
+        ->toArray();
     
     return Inertia::render('Home', [
         'user' => [
             'id' => $user->id,
             'full_name' => $user->full_name ?? $user->name,
             'points' => $user->points ?? 0,
-            'current_enrollment' => null, // TODO: Load from database
+            'current_enrollment' => $user->enrollment ? [
+                'id' => $user->enrollment->id,
+                'class' => [
+                    'id' => $user->enrollment->course->id,
+                    'title' => $user->enrollment->course->name,
+                ],
+            ] : null,
         ],
-        'upcoming_lessons' => [], // TODO: Load from database
-        'recent_activities' => [], // TODO: Load from database
+        'upcoming_lessons' => $upcomingLessons,
+        'recent_activities' => $recentActivities,
     ]);
 })->name('home');
 

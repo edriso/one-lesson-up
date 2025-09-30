@@ -5,6 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   BookOpen, 
   ArrowLeft, 
@@ -12,9 +16,10 @@ import {
   LogOut,
   CheckCircle,
   Circle,
-  Trophy
+  Trophy,
+  Link as LinkIcon
 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 interface Lesson {
   id: number;
@@ -50,12 +55,58 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const leaveCourse = () => {
-  if (confirm('Are you sure you want to leave this class? Your progress will be saved but you will need to rejoin to continue.')) {
-    router.post(`/classes/${props.course.id}/leave`, {}, {
-      preserveScroll: false,
-    });
-  }
+// Modal state
+const isModalOpen = ref(false);
+const selectedLesson = ref<Lesson | null>(null);
+const summary = ref('');
+const link = ref('');
+
+// Leave course modal state
+const isLeaveModalOpen = ref(false);
+
+const openCompleteModal = (lesson: Lesson) => {
+  selectedLesson.value = lesson;
+  summary.value = '';
+  link.value = '';
+  isModalOpen.value = true;
+};
+
+const closeModal = () => {
+  isModalOpen.value = false;
+  selectedLesson.value = null;
+  summary.value = '';
+  link.value = '';
+};
+
+const submitCompletion = () => {
+  if (!selectedLesson.value || !summary.value.trim()) return;
+  
+  router.post(`/lessons/${selectedLesson.value.id}/complete`, {
+    summary: summary.value,
+    link: link.value,
+  }, {
+    onSuccess: () => {
+      closeModal();
+    },
+    preserveScroll: true,
+  });
+};
+
+const openLeaveModal = () => {
+  isLeaveModalOpen.value = true;
+};
+
+const closeLeaveModal = () => {
+  isLeaveModalOpen.value = false;
+};
+
+const confirmLeaveCourse = () => {
+  router.post(`/classes/${props.course.id}/leave`, {}, {
+    preserveScroll: false,
+    onSuccess: () => {
+      closeLeaveModal();
+    },
+  });
 };
 
 const joinCourse = () => {
@@ -73,11 +124,12 @@ const formatDate = (dateString: string) => {
 };
 
 const completionPercentage = computed(() => {
-  if (props.course.total_lessons === 0) return 0;
+  // Add safety checks
+  if (!props.course || !props.course.modules || props.course.total_lessons === 0) return 0;
   
   // Find the current module (first module with incomplete lessons)
   const currentModule = props.course.modules.find(module => 
-    module.lessons.some(lesson => !lesson.is_completed)
+    module.lessons && module.lessons.some(lesson => !lesson.is_completed)
   );
   
   if (!currentModule) {
@@ -90,7 +142,9 @@ const completionPercentage = computed(() => {
   
   if (isLastModule) {
     // Last module - show overall course progress
-    return Math.round((props.completed_lessons_count / props.course.total_lessons) * 100);
+    const completed = props.completed_lessons_count || 0;
+    const total = props.course.total_lessons || 1;
+    return Math.round((completed / total) * 100);
   } else {
     // Not last module - show current module progress
     const moduleCompletedLessons = currentModule.lessons.filter(lesson => lesson.is_completed).length;
@@ -98,6 +152,31 @@ const completionPercentage = computed(() => {
     return Math.round((moduleCompletedLessons / moduleTotalLessons) * 100);
   }
 });
+
+// Find the next available lesson (first incomplete lesson in sequence)
+const nextAvailableLesson = computed(() => {
+  if (!props.course || !props.course.modules) return null;
+  
+  // Go through modules in order
+  for (const module of props.course.modules) {
+    if (!module.lessons) continue;
+    
+    // Go through lessons in order within the module
+    for (const lesson of module.lessons) {
+      if (!lesson.is_completed) {
+        return lesson;
+      }
+    }
+  }
+  
+  return null; // All lessons completed
+});
+
+// Check if a lesson can be completed (only the next available lesson)
+const canCompleteLesson = (lesson: any) => {
+  const nextLesson = nextAvailableLesson.value;
+  return nextLesson && nextLesson.id === lesson.id;
+};
 
 const progressText = computed(() => {
   if (props.course.total_lessons === 0) return 'No lessons available';
@@ -126,9 +205,6 @@ const progressText = computed(() => {
   }
 });
 
-const completeLesson = (lessonId: number) => {
-  router.visit(`/lessons/${lessonId}/complete`);
-};
 </script>
 
 <template>
@@ -171,16 +247,7 @@ const completeLesson = (lessonId: number) => {
         <!-- Action Buttons -->
         <div class="flex flex-col gap-2">
           <Button 
-            v-if="is_enrolled"
-            variant="outline"
-            @click="leaveCourse"
-            class="text-destructive hover:text-destructive"
-          >
-            <LogOut class="h-4 w-4 mr-2" />
-            Leave Class
-          </Button>
-          <Button 
-            v-else-if="can_join"
+            v-if="can_join"
             variant="default"
             @click="joinCourse"
             class="bg-primary text-primary-foreground hover:bg-primary/90"
@@ -262,7 +329,9 @@ const completeLesson = (lessonId: number) => {
                   :class="[
                     lesson.is_completed 
                       ? 'bg-primary/5 border border-primary/20' 
-                      : 'bg-muted/30 hover:bg-muted/50'
+                      : canCompleteLesson(lesson)
+                      ? 'bg-secondary/10 border border-secondary/30 ring-2 ring-secondary/20'
+                      : 'bg-muted/30 opacity-60'
                   ]"
                 >
                   <component 
@@ -275,8 +344,8 @@ const completeLesson = (lessonId: number) => {
                       <h4 class="font-medium text-foreground" :class="{ 'line-through opacity-70': lesson.is_completed }">
                         {{ lessonIndex + 1 }}. {{ lesson.name }}
                       </h4>
-                      <Badge v-if="lesson.is_completed" variant="secondary" class="text-xs">
-                        Completed
+                      <Badge v-if="canCompleteLesson(lesson)" variant="default" class="text-xs bg-secondary text-secondary-foreground">
+                        Next
                       </Badge>
                     </div>
                     <p v-if="lesson.description" class="text-sm text-muted-foreground mt-1">
@@ -284,14 +353,20 @@ const completeLesson = (lessonId: number) => {
                     </p>
                   </div>
                   <Button
-                    v-if="is_enrolled && !lesson.is_completed"
+                    v-if="is_enrolled && !lesson.is_completed && canCompleteLesson(lesson)"
                     size="sm"
-                    variant="outline"
-                    class="ml-auto"
-                    @click="completeLesson(lesson.id)"
+                    class="ml-auto bg-primary text-primary-foreground hover:bg-primary/90"
+                    @click="openCompleteModal(lesson)"
                   >
                     Complete
                   </Button>
+                  <div
+                    v-else-if="is_enrolled && !lesson.is_completed && !canCompleteLesson(lesson)"
+                    class="ml-auto text-sm text-muted-foreground flex items-center gap-1"
+                  >
+                    <Lock class="h-4 w-4" />
+                    Complete previous lessons first
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -327,7 +402,7 @@ const completeLesson = (lessonId: number) => {
               <Button 
                 v-else-if="is_enrolled"
                 variant="outline"
-                @click="leaveCourse"
+                @click="openLeaveModal"
                 class="text-destructive hover:text-destructive"
               >
                 <LogOut class="h-4 w-4 mr-2" />
@@ -338,5 +413,82 @@ const completeLesson = (lessonId: number) => {
         </CardContent>
       </Card>
     </div>
+
+    <!-- Complete Lesson Modal -->
+    <Dialog :open="isModalOpen" @update:open="closeModal">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Complete Lesson: {{ selectedLesson?.name }}</DialogTitle>
+          <DialogDescription>
+            Share your insights and mark this lesson as complete.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div class="space-y-4">
+          <div class="space-y-2">
+            <Label for="summary">Your Summary *</Label>
+            <Textarea 
+              id="summary" 
+              v-model="summary"
+              placeholder="e.g., I learned about Vue 3's Composition API, reactive state management with ref and reactive, and how to use computed properties for derived state."
+              :rows="4"
+              required
+            />
+          </div>
+
+          <div class="space-y-2">
+            <Label for="link">Optional Resource Link</Label>
+            <div class="relative">
+              <LinkIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                id="link" 
+                v-model="link"
+                type="url"
+                placeholder="https://your-notes.com/lesson-summary" 
+                class="pl-10"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4">
+          <Button variant="outline" @click="closeModal">
+            Cancel
+          </Button>
+          <Button 
+            @click="submitCompletion"
+            :disabled="!summary.trim()"
+          >
+            <CheckCircle class="h-4 w-4 mr-2" />
+            Mark as Complete
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Leave Course Confirmation Modal -->
+    <Dialog :open="isLeaveModalOpen" @update:open="closeLeaveModal">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Leave Class</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to leave this class? Your progress will be saved but you will need to rejoin to continue.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div class="flex justify-end gap-2 pt-4">
+          <Button variant="outline" @click="closeLeaveModal">
+            Cancel
+          </Button>
+          <Button 
+            variant="destructive"
+            @click="confirmLeaveCourse"
+          >
+            <LogOut class="h-4 w-4 mr-2" />
+            Leave Class
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
 </template>

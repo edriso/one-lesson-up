@@ -324,9 +324,6 @@ const viewCourse = (courseId: number) => {
                 <Badge v-if="course.is_enrolled" variant="secondary" class="text-secondary-foreground">
                   Enrolled
                 </Badge>
-                <Badge v-else-if="course.is_creator" variant="outline" class="border-primary text-primary">
-                  Your Class
-                </Badge>
               </div>
             </div>
           </CardHeader>

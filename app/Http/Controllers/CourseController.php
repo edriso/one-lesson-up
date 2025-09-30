@@ -248,7 +248,7 @@ class CourseController extends Controller
             
             DB::commit();
             
-            return redirect()->route('classes')
+            return redirect()->route('classes.show', $course->id)
                 ->with('success', 'Successfully joined ' . $course->name . '!');
                 
         } catch (\Exception $e) {

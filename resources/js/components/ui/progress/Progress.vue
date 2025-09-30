@@ -4,12 +4,14 @@ import { computed } from 'vue';
 
 interface Props {
   value?: number;
+  modelValue?: number;
   max?: number;
   class?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   value: 0,
+  modelValue: 0,
   max: 100,
 });
 
@@ -20,9 +22,10 @@ const progressClass = computed(() =>
   )
 );
 
-const percentage = computed(() => 
-  Math.min(Math.max((props.value / props.max) * 100, 0), 100)
-);
+const percentage = computed(() => {
+  const currentValue = props.modelValue ?? props.value ?? 0;
+  return Math.min(Math.max((currentValue / props.max) * 100, 0), 100);
+});
 </script>
 
 <template>
