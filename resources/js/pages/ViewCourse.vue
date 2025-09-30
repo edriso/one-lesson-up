@@ -17,7 +17,8 @@ import {
   CheckCircle,
   Circle,
   Trophy,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Lock
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
@@ -330,8 +331,12 @@ const progressText = computed(() => {
                     lesson.is_completed 
                       ? 'bg-primary/5 border border-primary/20' 
                       : canCompleteLesson(lesson)
-                      ? 'bg-secondary/10 border border-secondary/30 ring-2 ring-secondary/20'
-                      : 'bg-muted/30 opacity-60'
+                      ? is_enrolled 
+                        ? 'bg-secondary/10 border border-secondary/30 ring-2 ring-secondary/20'
+                        : 'bg-muted/30'
+                      : is_enrolled 
+                      ? 'bg-muted/30 opacity-60'
+                      : 'bg-muted/30'
                   ]"
                 >
                   <component 
@@ -344,7 +349,7 @@ const progressText = computed(() => {
                       <h4 class="font-medium text-foreground" :class="{ 'line-through opacity-70': lesson.is_completed }">
                         {{ lessonIndex + 1 }}. {{ lesson.name }}
                       </h4>
-                      <Badge v-if="canCompleteLesson(lesson)" variant="default" class="text-xs bg-secondary text-secondary-foreground">
+                      <Badge v-if="is_enrolled && canCompleteLesson(lesson)" variant="default" class="text-xs bg-secondary text-secondary-foreground">
                         Next
                       </Badge>
                     </div>

@@ -277,6 +277,14 @@ class CourseController extends Controller
         try {
             DB::beginTransaction();
             
+            // Calculate points to deduct (points earned from this course)
+            $pointsToDeduct = $this->calculatePointsToDeduct($enrollment);
+            
+            // Deduct points from user
+            if ($pointsToDeduct > 0) {
+                $user->decrement('points', $pointsToDeduct);
+            }
+            
             // Clear user's enrollment_id if it matches this enrollment
             if ($user->enrollment_id === $enrollment->id) {
                 $user->update(['enrollment_id' => null]);
@@ -294,5 +302,35 @@ class CourseController extends Controller
             DB::rollBack();
             return back()->with('error', 'Failed to leave class: ' . $e->getMessage());
         }
+    }
+    
+    /**
+     * Calculate points to deduct when leaving a course.
+     */
+    private function calculatePointsToDeduct($enrollment)
+    {
+        $pointsToDeduct = 0;
+        
+        // Count completed lessons (1 point each)
+        $completedLessonsCount = $enrollment->completedLessons()->count();
+        $pointsToDeduct += $completedLessonsCount;
+        
+        // Check if course was completed (bonus points)
+        if ($enrollment->completed_at) {
+            // Calculate course completion bonus that was awarded
+            $course = $enrollment->course;
+            $lessonCount = $course->lessons_count;
+            $deadline = $course->deadline_days;
+            
+            // Check if completed within deadline
+            $deadlineDate = $enrollment->created_at->addDays($deadline);
+            $isCompletedOnTime = $enrollment->completed_at->lte($deadlineDate);
+            
+            // Calculate bonus points using PointSystemValue enum
+            $bonusPoints = \App\Enums\PointSystemValue::calculateCourseBonus($lessonCount, $isCompletedOnTime);
+            $pointsToDeduct += $bonusPoints;
+        }
+        
+        return $pointsToDeduct;
     }
 }

@@ -127,9 +127,9 @@ const getTotalLessons = () => {
               </p>
               <ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                 <li>Classes cannot be edited or deleted after creation</li>
+                <li>Leaving a class later will deduct all points earned from that class</li>
                 <li>You will be automatically enrolled in your class</li>
                 <li>You can only be enrolled in one class at a time</li>
-                <li>Each module must have at least one lesson</li>
               </ul>
             </div>
           </div>
@@ -167,7 +167,7 @@ const getTotalLessons = () => {
                 id="description" 
                 v-model="form.description"
                 placeholder="Describe what students will learn in this class"
-                rows="4"
+                :rows="4"
                 required
                 :class="{ 'border-destructive': form.errors.description }"
               />
@@ -245,7 +245,7 @@ const getTotalLessons = () => {
                           :id="`module-${module.id}-description`"
                           v-model="module.description"
                           placeholder="Brief description of this module"
-                          rows="2"
+                          :rows="2"
                         />
                       </div>
                     </div>
@@ -308,7 +308,7 @@ const getTotalLessons = () => {
                       <Textarea 
                         v-model="lesson.description"
                         placeholder="Lesson description (optional)"
-                        rows="2"
+                        :rows="2"
                         class="bg-background"
                       />
                     </div>

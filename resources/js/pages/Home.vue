@@ -63,11 +63,14 @@ const isModalOpen = ref(false);
 const selectedLesson = ref<Lesson | null>(null);
 const summary = ref('');
 const link = ref('');
+const isSubmitting = ref(false);
+const errorMessage = ref('');
 
 const openCompleteModal = (lesson: Lesson) => {
   selectedLesson.value = lesson;
   summary.value = '';
   link.value = '';
+  errorMessage.value = '';
   isModalOpen.value = true;
 };
 
@@ -76,17 +79,55 @@ const closeModal = () => {
   selectedLesson.value = null;
   summary.value = '';
   link.value = '';
+  errorMessage.value = '';
 };
 
 const submitCompletion = () => {
-  if (!selectedLesson.value || !summary.value.trim()) return;
+  if (!selectedLesson.value || !summary.value.trim() || isSubmitting.value) return;
   
-  router.post(`/lessons/${selectedLesson.value.id}/complete`, {
+  // Clear any previous errors
+  errorMessage.value = '';
+  isSubmitting.value = true;
+  
+  // Prepare data - only include link if it's not empty and looks like a URL
+  const data: any = {
     summary: summary.value,
-    link: link.value,
-  }, {
+  };
+  
+  // Only include link if it's not empty and looks like a valid URL
+  if (link.value.trim()) {
+    // Basic URL validation
+    try {
+      new URL(link.value.trim());
+      data.link = link.value.trim();
+    } catch (e) {
+        const error = e as Error;
+        errorMessage.value = error.message.includes('Invalid URL')
+        ? 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.'
+        : error.message;
+        isSubmitting.value = false;
+        return;
+    }
+  }
+  
+  router.post(`/lessons/${selectedLesson.value.id}/complete`, data, {
     onSuccess: () => {
       closeModal();
+    },
+    onError: (errors) => {
+      console.error('Lesson completion failed:', errors);
+      // Show user-friendly error message
+      if (errors.link) {
+        errorMessage.value = 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.';
+      } else if (errors.summary) {
+        errorMessage.value = errors.summary;
+      } else {
+        errorMessage.value = 'Failed to complete lesson. Please try again.';
+      }
+      isSubmitting.value = false;
+    },
+    onFinish: () => {
+      isSubmitting.value = false;
     },
     preserveScroll: true,
   });
@@ -146,7 +187,7 @@ const getActivityIcon = (type: string) => {
                 <!-- Main Content -->
                 <div class="lg:col-span-2 space-y-6">
                     <!-- Current Class Progress -->
-                    <Card v-if="user.current_enrollment" class="border-primary/20 shadow-sm">
+                    <Card v-if="user.current_enrollment" class="border-primary/20 shadow-sm hover:shadow-md transition-shadow cursor-pointer" @click="router.visit(`/classes/${user.current_enrollment.class.id}`)">
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
                                 <BookOpen class="h-5 w-5 text-primary" />
@@ -189,7 +230,10 @@ const getActivityIcon = (type: string) => {
                             <div v-else class="space-y-3">
                                 <div v-for="lesson in upcoming_lessons" :key="lesson.id" 
                                      class="flex items-center justify-between p-4 rounded-lg border transition-all hover:shadow-md"
-                                     :class="lesson.completed ? 'bg-muted/50 border-muted' : 'bg-background border-border hover:border-primary/30'">
+                                     :class="[
+                                        lesson.completed ? 'bg-muted/50 border-muted' : 'bg-background border-border hover:border-primary/30',
+                                        !user.current_enrollment ? 'opacity-50' : ''
+                                     ]">
                                     <div class="flex items-center gap-3">
                                         <div class="flex-shrink-0">
                                             <CheckCircle v-if="lesson.completed" class="h-5 w-5 text-green-500" />
@@ -208,9 +252,17 @@ const getActivityIcon = (type: string) => {
                                         <Badge v-if="lesson.due_date" variant="outline" class="text-xs">
                                             Due {{ formatDate(lesson.due_date) }}
                                         </Badge>
-                                        <Button v-if="!lesson.completed" size="sm" class="bg-primary text-primary-foreground hover:bg-primary/90" @click="openCompleteModal(lesson)">
+                                        <Button 
+                                            v-if="!lesson.completed && user.current_enrollment" 
+                                            size="sm" 
+                                            class="bg-primary text-primary-foreground hover:bg-primary/90" 
+                                            @click="openCompleteModal(lesson)"
+                                        >
                                             Complete Lesson
                                         </Button>
+                                        <div v-else-if="!lesson.completed && !user.current_enrollment" class="text-sm text-muted-foreground">
+                                            Join a class to complete lessons
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -268,6 +320,11 @@ const getActivityIcon = (type: string) => {
                 </DialogHeader>
                 
                 <div class="space-y-4">
+                    <!-- Error Message -->
+                    <div v-if="errorMessage" class="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                        <p class="text-sm text-destructive">{{ errorMessage }}</p>
+                    </div>
+                    
                     <div>
                         <Label for="summary">Summary *</Label>
                         <Textarea
@@ -286,6 +343,7 @@ const getActivityIcon = (type: string) => {
                             <Input
                                 id="link"
                                 v-model="link"
+                                type="url"
                                 placeholder="https://example.com"
                                 class="pl-10"
                             />
@@ -302,10 +360,10 @@ const getActivityIcon = (type: string) => {
                     </Button>
                     <Button 
                         @click="submitCompletion"
-                        :disabled="!summary.trim()"
+                        :disabled="!summary.trim() || isSubmitting"
                         class="bg-primary text-primary-foreground hover:bg-primary/90"
                     >
-                        Complete Lesson
+                        {{ isSubmitting ? 'Completing...' : 'Complete Lesson' }}
                     </Button>
                 </div>
             </DialogContent>
