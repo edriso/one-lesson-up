@@ -99,16 +99,12 @@ Route::get('leaderboard', function () {
             'today' => [],
             'yesterday' => [],
             'this_month' => [],
-            'last_month' => [],
-            'year' => [],
             'overall' => [],
         ],
         'current_user_rank' => [
             'today' => 0,
             'yesterday' => 0,
             'this_month' => 0,
-            'last_month' => 0,
-            'year' => 0,
             'overall' => 0,
         ],
     ]);
