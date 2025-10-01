@@ -98,7 +98,7 @@ class User extends Authenticatable
      */
     public function latestCompletedEnrollment()
     {
-        return $this->hasOne(Enrollment::class, 'user_id')->whereNotNull('completed_at')->whereNotNull('reflection')->latest();
+        return $this->hasOne(Enrollment::class, 'user_id')->whereNotNull('completed_at')->whereNotNull('course_reflection')->latest();
     }
 
     /**

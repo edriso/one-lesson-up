@@ -30,13 +30,13 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'full_name' => fake()->optional(0.7)->name(),
-            'avatar' => fake()->optional(0.3)->imageUrl(200, 200, 'people'),
+            'avatar' => null, // No default avatar for new users
             'title' => fake()->optional(0.5)->jobTitle(),
             'bio' => fake()->optional(0.6)->paragraph(),
             'linkedin_url' => fake()->optional(0.4)->url(),
             'website_url' => fake()->optional(0.3)->url(),
-            'is_public' => fake()->boolean(80), // 80% chance of being public
-            'is_active' => fake()->boolean(95), // 95% chance of being active
+            'is_public' => fake()->boolean(100), // 100% chance of being public
+            'is_active' => fake()->boolean(98), // 98% chance of being active
         ];
     }
 
@@ -47,6 +47,16 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Create a user with an avatar.
+     */
+    public function withAvatar(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'avatar' => fake()->optional(0.3)->imageUrl(200, 200, 'people'),
         ]);
     }
 }

@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import LessonCompletionModal from '@/components/LessonCompletionModal.vue';
-import { Clock, BookOpen, Trophy, TrendingUp, CheckCircle, Circle } from 'lucide-vue-next';
-import { ref } from 'vue';
 import UserInfo from '@/components/UserInfo.vue';
+import { useDateFormatter } from '@/composables/useDateFormatter';
+import { Clock, BookOpen, Trophy, TrendingUp, CheckCircle, Circle } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
+import type { Component } from 'vue';
 
 interface Lesson {
   id: number;
@@ -57,10 +59,12 @@ interface Props {
   recent_activities?: Activity[];
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   upcoming_lessons: () => [],
   recent_activities: () => [],
 });
+
+const { formatShortDateTime } = useDateFormatter();
 
 // Modal state
 const isModalOpen = ref(false);
@@ -77,32 +81,26 @@ const onLessonCompleted = () => {
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Home',
-        href: '/',
-    },
+  {
+    title: 'Home',
+    href: '/',
+  },
 ];
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+// Computed property for better readability
+const hasActiveLessons = computed(() => props.upcoming_lessons.length > 0);
+const hasActivities = computed(() => props.recent_activities.length > 0);
+const isEnrolled = computed(() => !!props.user.enrollment_id);
+
+// Map activity types to icons
+const activityIconMap: Record<string, Component> = {
+  lesson_completed: CheckCircle,
+  course_completed: Trophy,
+  course_started: BookOpen,
 };
 
-const getActivityIcon = (type: string) => {
-  switch (type) {
-    case 'lesson_completed':
-      return CheckCircle;
-    case 'course_completed':
-      return Trophy;
-    case 'course_started':
-      return BookOpen;
-    default:
-      return TrendingUp;
-  }
+const getActivityIcon = (type: string): Component => {
+  return activityIconMap[type] ?? TrendingUp;
 };
 </script>
 
@@ -165,7 +163,7 @@ const getActivityIcon = (type: string) => {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div v-if="upcoming_lessons.length === 0" class="text-center py-12 text-muted-foreground">
+                            <div v-if="!hasActiveLessons" class="text-center py-12 text-muted-foreground">
                                 <BookOpen class="h-16 w-16 mx-auto mb-4 opacity-30" />
                                 <p class="text-lg font-medium">No upcoming lessons</p>
                                 <p class="text-sm mt-1">Join a class to start learning!</p>
@@ -175,7 +173,7 @@ const getActivityIcon = (type: string) => {
                                      class="flex flex-wrap gap-y-4 items-center justify-between p-4 rounded-lg border transition-all hover:shadow-md"
                                      :class="[
                                         lesson.completed ? 'bg-muted/50 border-muted' : 'bg-background border-border hover:border-primary/30',
-                                        !user.enrollment_id ? 'opacity-50' : ''
+                                        !isEnrolled ? 'opacity-50' : ''
                                      ]">
                                     <div class="flex items-center gap-3">
                                         <div class="flex-shrink-0">
@@ -193,17 +191,17 @@ const getActivityIcon = (type: string) => {
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <Badge v-if="lesson.due_date" variant="outline" class="text-xs">
-                                            Due {{ formatDate(lesson.due_date) }}
+                                            Due {{ formatShortDateTime(lesson.due_date) }}
                                         </Badge>
                                         <Button 
-                                            v-if="!lesson.completed && user.enrollment_id" 
+                                            v-if="!lesson.completed && isEnrolled" 
                                             size="sm" 
                                             class="bg-primary text-primary-foreground hover:bg-primary/90" 
                                             @click="openCompleteModal(lesson)"
                                         >
                                             Complete Lesson
                                         </Button>
-                                        <div v-else-if="!lesson.completed && !user.enrollment_id" class="text-sm text-muted-foreground">
+                                        <div v-else-if="!lesson.completed && !isEnrolled" class="text-sm text-muted-foreground">
                                             Join a class to complete lessons
                                         </div>
                                     </div>
@@ -227,7 +225,7 @@ const getActivityIcon = (type: string) => {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>                            
-                            <div v-if="recent_activities.length === 0" class="text-center py-8 text-muted-foreground">
+                            <div v-if="!hasActivities" class="text-center py-8 text-muted-foreground">
                                 <TrendingUp class="h-12 w-12 mx-auto mb-3 opacity-30" />
                                 <p class="text-sm">No recent activities</p>
                             </div>
@@ -248,7 +246,7 @@ const getActivityIcon = (type: string) => {
                                                 </Link>
                                             </div>
                                             <div class="flex items-center gap-2">
-                                                <span class="text-xs text-muted-foreground">{{ formatDate(activity.created_at) }}</span>
+                                                <span class="text-xs text-muted-foreground">{{ formatShortDateTime(activity.created_at) }}</span>
                                                 <span v-if="activity.points_earned > 0" class="text-xs font-medium text-secondary-foreground bg-secondary/20 px-1.5 py-0.5 rounded">
                                                     +{{ activity.points_earned }} pts
                                                 </span>

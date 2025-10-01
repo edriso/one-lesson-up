@@ -67,9 +67,9 @@ class LeaderboardController extends Controller
 
     private function getLeaderboardForPeriod($startDate = null, $endDate = null)
     {
-        $query = LearningActivity::with(['user:id,username,full_name'])
+        $query = LearningActivity::with(['user:id,username,full_name,avatar'])
             ->select('user_id')
-            ->selectRaw('SUM(points_earned) as total_points')
+            ->selectRaw('SUM(COALESCE(points_earned, 0)) as total_points')
             ->selectRaw('COUNT(*) as activities_count')
             ->groupBy('user_id');
 
@@ -82,9 +82,10 @@ class LeaderboardController extends Controller
             ->limit(50) // Top 50 users
             ->get();
 
-        // Filter users who meet the leaderboard visibility threshold
+        // Filter users who meet the leaderboard visibility threshold and have points > 0
         $visibleResults = $results->filter(function ($result) {
-            return $result->total_points >= PointThreshold::LEADERBOARD_VISIBILITY->value;
+            return $result->total_points > 0 && 
+                   $result->total_points >= PointThreshold::LEADERBOARD_VISIBILITY->value;
         });
 
         // Add ranking
@@ -96,9 +97,9 @@ class LeaderboardController extends Controller
                     'id' => $result->user->id,
                     'full_name' => $result->user->full_name,
                     'username' => $result->user->username,
-                    'avatar' => null, // TODO: Add avatar support
+                    'avatar' => $result->user->avatar,
                 ],
-                'points' => $result->total_points,
+                'points' => (int) $result->total_points,
                 'activities_count' => $result->activities_count,
             ];
         })->take(20); // Show top 20

@@ -23,4 +23,16 @@ enum ActivityType: string
     {
         return self::from($value);
     }
+
+    /**
+     * Get human-readable description.
+     */
+    public function description(): string
+    {
+        return match($this) {
+            self::LESSON_COMPLETED => 'Completed a lesson',
+            self::COURSE_STARTED => 'Started a new course',
+            self::COURSE_COMPLETED => 'Completed a course',
+        };
+    }
 }

@@ -59,30 +59,33 @@ const props = withDefaults(defineProps<Props>(), {
 // Search functionality
 const searchQuery = ref('');
 
+// Memoized current class ID
+const currentClassId = computed(() => props.user?.current_class?.id);
+
+// Optimized filtering and sorting
 const filteredCourses = computed(() => {
   let courses = props.courses;
   
   // Apply search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    courses = courses.filter(course => 
-      course.title?.toLowerCase().includes(query) ||
-      course.description?.toLowerCase().includes(query) ||
-      course.tags?.some(tag => tag.name?.toLowerCase().includes(query))
-    );
+    courses = courses.filter(course => {
+      const titleMatch = course.title?.toLowerCase().includes(query);
+      const descMatch = course.description?.toLowerCase().includes(query);
+      const tagMatch = course.tags?.some(tag => tag.name?.toLowerCase().includes(query));
+      return titleMatch || descMatch || tagMatch;
+    });
   }
 
   // Sort courses: current enrollment first, then enrolled, then by student count
-  const currentId = props.user?.current_class?.id;
-  
-  return courses.sort((a, b) => {
+  return [...courses].sort((a, b) => {
     // Current enrollment first
-    if (a.id === currentId) return -1;
-    if (b.id === currentId) return 1;
+    const aIsCurrent = a.id === currentClassId.value;
+    const bIsCurrent = b.id === currentClassId.value;
+    if (aIsCurrent !== bIsCurrent) return aIsCurrent ? -1 : 1;
     
     // Enrolled courses next
-    if (a.is_enrolled && !b.is_enrolled) return -1;
-    if (b.is_enrolled && !a.is_enrolled) return 1;
+    if (a.is_enrolled !== b.is_enrolled) return a.is_enrolled ? -1 : 1;
     
     // Sort by popularity (student count) for non-enrolled courses
     if (!a.is_enrolled && !b.is_enrolled) {
@@ -97,22 +100,24 @@ const clearSearch = () => {
   searchQuery.value = '';
 };
 
+// Simplified student count text
 const getStudentCountText = (course: Course): string => {
-  // If we have detailed counts, show them
-  if (course.active_students_count !== undefined && course.completed_students_count !== undefined) {
-    const total = course.students_count;
-    if (total === 0) return '0 students';
-    if (course.active_students_count === 0) return `${total} completed`;
-    if (course.completed_students_count === 0) return `${total} active`;
-    return `${total} total (${course.active_students_count} active, ${course.completed_students_count} completed)`;
+  const { students_count, active_students_count, completed_students_count } = course;
+  
+  if (active_students_count === undefined || completed_students_count === undefined) {
+    return `${students_count} student${students_count !== 1 ? 's' : ''}`;
   }
   
-  // Fallback to the basic count
-  return `${course.students_count} student${course.students_count !== 1 ? 's' : ''}`;
+  if (students_count === 0) return '0 students';
+  if (active_students_count === 0) return `${students_count} completed`;
+  if (completed_students_count === 0) return `${students_count} active`;
+  
+  return `${students_count} total (${active_students_count} active, ${completed_students_count} completed)`;
 };
 
+// Get course status badge
 const getCourseStatus = (course: Course) => {
-  if (course.id === props.user?.current_class?.id) {
+  if (course.id === currentClassId.value) {
     return { label: 'Current', variant: 'secondary' as const };
   }
   if (course.is_enrolled) {
@@ -121,18 +126,20 @@ const getCourseStatus = (course: Course) => {
   return null;
 };
 
+// Get button text based on course state
 const getButtonText = (course: Course): string => {
   if (!course.is_enrolled) {
     return course.can_join ? 'Join Class' : 'Cannot Join';
   }
-  return course.id === props.user?.current_class?.id ? 'Continue Learning' : 'View Class';
+  return course.id === currentClassId.value ? 'Continue Learning' : 'View Class';
 };
 
+// Get button variant based on course state
 const getButtonVariant = (course: Course) => {
   if (!course.is_enrolled) {
     return course.can_join ? 'default' : 'outline';
   }
-  return course.id === props.user?.current_class?.id ? 'default' : 'outline';
+  return course.id === currentClassId.value ? 'default' : 'outline';
 };
 
 const joinCourse = (courseId: number) => {

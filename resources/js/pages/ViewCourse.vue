@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import ModalAlert from '@/components/ModalAlert.vue';
 import LessonCompletionModal from '@/components/LessonCompletionModal.vue';
+import CourseReflectionModal from '@/components/CourseReflectionModal.vue';
+import { useDateFormatter } from '@/composables/useDateFormatter';
 import { 
   BookOpen, 
   ArrowLeft, 
@@ -46,6 +48,7 @@ interface Props {
     title: string;
     description: string;
     link?: string;
+    course_reflection?: string;
     modules: Module[];
     total_lessons: number;
     total_modules: number;
@@ -59,6 +62,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const { formatLongDate } = useDateFormatter();
 
 // Modal state
 const isModalOpen = ref(false);
@@ -75,6 +79,9 @@ const lessonLink = ref('');
 const isEditingSummary = ref(false);
 const summaryError = ref('');
 const isSaving = ref(false);
+
+// Course reflection modal state
+const isReflectionModalOpen = ref(false);
 
 const openCompleteModal = (lesson: Lesson) => {
   selectedLesson.value = lesson;
@@ -219,94 +226,83 @@ const joinCourse = () => {
   });
 };
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
-  });
+const openReflectionModal = () => {
+  isReflectionModalOpen.value = true;
 };
 
-const completionPercentage = computed(() => {
-  // Add safety checks
-  if (!props.course || !props.course.modules || props.course.total_lessons === 0) return 0;
+const closeReflectionModal = () => {
+  isReflectionModalOpen.value = false;
+};
+
+const onCourseCompleted = () => {
+  // This will be called when the course is successfully completed
+  // The page will already be refreshed by Inertia
+};
+
+// Memoized computation for current module to avoid recalculation
+const currentModule = computed(() => {
+  if (!props.course?.modules?.length) return null;
   
-  // Find the current module (first module with incomplete lessons)
-  const currentModule = props.course.modules.find(module => 
-    module.lessons && module.lessons.some(lesson => !lesson.is_completed)
+  return props.course.modules.find(module => 
+    module.lessons?.some(lesson => !lesson.is_completed)
   );
+});
+
+// Check if current module is the last one
+const isLastModule = computed(() => {
+  if (!currentModule.value || !props.course?.modules?.length) return false;
+  return props.course.modules.indexOf(currentModule.value) === props.course.modules.length - 1;
+});
+
+// Calculate completion percentage based on current module context
+const completionPercentage = computed(() => {
+  if (!props.course?.total_lessons) return 0;
   
-  if (!currentModule) {
-    // All modules completed - show 100%
-    return 100;
+  // All modules completed
+  if (!currentModule.value) return 100;
+  
+  // Last module - show overall course progress
+  if (isLastModule.value) {
+    return Math.round((props.completed_lessons_count / props.course.total_lessons) * 100);
   }
   
-  // If it's the last module, show overall progress
-  const isLastModule = props.course.modules.indexOf(currentModule) === props.course.modules.length - 1;
-  
-  if (isLastModule) {
-    // Last module - show overall course progress
-    const completed = props.completed_lessons_count || 0;
-    const total = props.course.total_lessons || 1;
-    return Math.round((completed / total) * 100);
-  } else {
-    // Not last module - show current module progress
-    const moduleCompletedLessons = currentModule.lessons.filter(lesson => lesson.is_completed).length;
-    const moduleTotalLessons = currentModule.lessons.length;
-    return Math.round((moduleCompletedLessons / moduleTotalLessons) * 100);
-  }
+  // Not last module - show current module progress
+  const completedInModule = currentModule.value.lessons.filter(l => l.is_completed).length;
+  const totalInModule = currentModule.value.lessons.length || 1;
+  return Math.round((completedInModule / totalInModule) * 100);
 });
 
 // Find the next available lesson (first incomplete lesson in sequence)
 const nextAvailableLesson = computed(() => {
-  if (!props.course || !props.course.modules) return null;
+  if (!props.course?.modules?.length) return null;
   
-  // Go through modules in order
   for (const module of props.course.modules) {
-    if (!module.lessons) continue;
-    
-    // Go through lessons in order within the module
-    for (const lesson of module.lessons) {
-      if (!lesson.is_completed) {
-        return lesson;
-      }
-    }
+    const nextLesson = module.lessons?.find(lesson => !lesson.is_completed);
+    if (nextLesson) return nextLesson;
   }
   
   return null; // All lessons completed
 });
 
 // Check if a lesson can be completed (only the next available lesson)
-const canCompleteLesson = (lesson: any) => {
-  const nextLesson = nextAvailableLesson.value;
-  return nextLesson && nextLesson.id === lesson.id;
+const canCompleteLesson = (lesson: Lesson): boolean => {
+  return nextAvailableLesson.value?.id === lesson.id;
 };
 
+// Get progress text based on current module
 const progressText = computed(() => {
-  if (props.course.total_lessons === 0) return 'No lessons available';
+  if (!props.course?.total_lessons) return 'No lessons available';
   
-  // Find the current module (first module with incomplete lessons)
-  const currentModule = props.course.modules.find(module => 
-    module.lessons.some(lesson => !lesson.is_completed)
-  );
-  
-  if (!currentModule) {
-    // All modules completed
+  if (!currentModule.value) {
     return `${props.completed_lessons_count} of ${props.course.total_lessons} lessons completed`;
   }
   
-  // If it's the last module, show overall progress
-  const isLastModule = props.course.modules.indexOf(currentModule) === props.course.modules.length - 1;
-  
-  if (isLastModule) {
-    // Last module - show overall course progress
+  if (isLastModule.value) {
     return `${props.completed_lessons_count} of ${props.course.total_lessons} lessons completed`;
-  } else {
-    // Not last module - show current module progress
-    const moduleCompletedLessons = currentModule.lessons.filter(lesson => lesson.is_completed).length;
-    const moduleTotalLessons = currentModule.lessons.length;
-    return `${moduleCompletedLessons} of ${moduleTotalLessons} lessons in current module`;
   }
+  
+  const completedInModule = currentModule.value.lessons.filter(l => l.is_completed).length;
+  return `${completedInModule} of ${currentModule.value.lessons.length} lessons in current module`;
 });
 
 </script>
@@ -320,7 +316,7 @@ const progressText = computed(() => {
       <div class="flex items-start justify-between gap-4">
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-2">
-            <Button variant="ghost" size="sm" @click="router.visit('/classes')" class="cursor-pointer">>
+            <Button variant="ghost" size="sm" @click="router.visit('/classes')" class="cursor-pointer">
               <ArrowLeft class="h-4 w-4 mr-2" />
               Back to Classes
             </Button>
@@ -344,7 +340,7 @@ const progressText = computed(() => {
               <span>{{ course.total_lessons }} lessons</span>
             </div>
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Created {{ formatDate(course.created_at) }}</span>
+              <span>Created {{ formatLongDate(course.created_at) }}</span>
             </div>
           </div>
         </div>
@@ -374,8 +370,45 @@ const progressText = computed(() => {
         </div>
       </div>
 
+      <!-- Completed Course Status -->
+      <Card v-if="is_completed" class="bg-gradient-to-l from-primary/20 to-secondary/20 border border-primary/30 rounded-lg">
+        <CardContent class="p-6">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="flex-shrink-0">
+                  <div class="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                    <Trophy class="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold text-foreground">Congratulations! 🎉</h3>
+                  <p class="text-sm text-muted-foreground">
+                    You completed this class on {{ formatLongDate(completion_date!) }}. 
+                  </p>
+                </div>
+              </div>
+              <Badge variant="secondary" class="text-secondary-foreground text-lg px-3 py-1">
+                100%
+              </Badge>
+            </div>
+            
+            <!-- Course Reflection Display -->
+            <div v-if="course.course_reflection" class="mt-4 p-4 bg-background/50 rounded-lg border border-primary/20">
+              <div class="flex items-start gap-3">
+                <BookOpen class="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div class="flex-1">
+                  <h4 class="font-medium text-foreground mb-2">Your Course Reflection</h4>
+                  <p class="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{{ course.course_reflection }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <!-- Enrollment Status & Progress -->
-      <Card v-if="is_enrolled" class="border-primary/30 bg-primary/5">
+      <Card v-else-if="is_enrolled" class="border-primary/30 bg-primary/5">
         <CardContent class="p-6">
           <div class="space-y-4">
             <div class="flex items-center justify-between">
@@ -393,31 +426,26 @@ const progressText = computed(() => {
               </Badge>
             </div>
             <Progress :model-value="completionPercentage" class="h-2" />
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- Completed Course Status -->
-      <Card v-else-if="is_completed" class="mb-4 p-4 bg-gradient-to-l from-primary/20 to-secondary/20 border border-primary/30 rounded-lg">
-        <CardContent class="p-6">
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-              <div class="flex-shrink-0">
-                <div class="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                  <Trophy class="h-6 w-6 text-primary" />
+            
+            <!-- Reflection Prompt when all lessons completed but course not finished -->
+            <div v-if="completionPercentage === 100 && !is_completed" class="mt-4 p-4 bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-lg">
+              <div class="flex items-start gap-3">
+                <div class="flex-shrink-0">
+                  <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                    <BookOpen class="h-5 w-5 text-primary" />
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <h3 class="font-semibold text-foreground mb-1">Almost There! 🎯</h3>
+                  <p class="text-sm text-muted-foreground mb-3">
+                    You've completed all lessons! The final step is to write a reflection about what you learned in this course to mark it as completed.
+                  </p>
+                  <Button @click="openReflectionModal" class="bg-primary hover:bg-primary/90">
+                    <BookOpen class="h-4 w-4 mr-2" />
+                    Write Course Reflection
+                  </Button>
                 </div>
               </div>
-              <div class="flex-1">
-                <h3 class="text-lg font-semibold text-foreground">Congratulations! 🎉</h3>
-                <p class="text-sm text-muted-foreground">
-                  You completed this class on {{ formatDate(completion_date!) }}. 
-                </p>
-              </div>
-            </div>
-              <Badge variant="secondary" class="text-secondary-foreground text-lg px-3 py-1">
-                100%
-              </Badge>
             </div>
           </div>
         </CardContent>
@@ -673,5 +701,13 @@ const progressText = computed(() => {
         </div>
       </DialogContent>
     </Dialog>
+
+    <!-- Course Reflection Modal -->
+    <CourseReflectionModal
+      :is-open="isReflectionModalOpen"
+      :course="course"
+      @close="closeReflectionModal"
+      @success="onCourseCompleted"
+    />
   </AppLayout>
 </template>

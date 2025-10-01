@@ -5,6 +5,7 @@ namespace App\Enums;
 enum PointSystemValue: int
 {
     case LESSON_COMPLETED = 1;
+    case COURSE_COMPLETED = 5; // Base points for completing a course
     case COURSE_ON_TIME_BONUS_MULTIPLIER = 50; // 50% bonus
     case COURSE_LATE_BONUS_MULTIPLIER = 25; // 25% bonus
 
@@ -38,6 +39,7 @@ enum PointSystemValue: int
     {
         return match($this) {
             self::LESSON_COMPLETED => 'Lesson completed',
+            self::COURSE_COMPLETED => 'Course completed',
             self::COURSE_ON_TIME_BONUS_MULTIPLIER => 'Course completed on time (50% bonus)',
             self::COURSE_LATE_BONUS_MULTIPLIER => 'Course completed late (25% bonus)',
         };

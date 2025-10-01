@@ -6,140 +6,19 @@ use Inertia\Inertia;
 Route::get('/', function () {
     // Show Landing page for guests, Home page for authenticated users
     if (!auth()->check()) {
-        // Get dynamic stats for landing page
-        $stats = [
-            'active_learners' => \App\Models\User::count(),
-            'total_classes' => \App\Models\Course::where('is_active', true)->count(),
-            'lessons_completed' => \App\Models\CompletedLesson::count(),
-        ];
-        
-        return Inertia::render('Landing', [
-            'stats' => $stats
-        ]);
+        return app(\App\Http\Controllers\HomeController::class)->landing();
     }
     
-    $user = auth()->user()->load(['enrollment.course.modules.lessons']);
-    
-    // Get upcoming lessons (next incomplete lesson only)
-    $upcomingLessons = [];
-    if ($user->enrollment) {
-        // Get completed lesson IDs for this enrollment
-        $completedLessonIds = \App\Models\CompletedLesson::where('enrollment_id', $user->enrollment->id)
-            ->pluck('lesson_id')
-            ->toArray();
-        
-        // Find the next incomplete lesson (sequential learning)
-        $nextLesson = null;
-        foreach ($user->enrollment->course->modules as $module) {
-            foreach ($module->lessons as $lesson) {
-                if (!in_array($lesson->id, $completedLessonIds)) {
-                    $nextLesson = [
-                        'id' => $lesson->id,
-                        'title' => $lesson->name,
-                        'completed' => false,
-                        'module_title' => $module->name,
-                        'class_title' => $module->course->name,
-                        'due_date' => null,
-                    ];
-                    break 2; // Break out of both loops
-                }
-            }
-        }
-        
-        // Only show the next lesson if there is one
-        if ($nextLesson) {
-            $upcomingLessons = [$nextLesson];
-        }
-    }
-    
-    // Get recent activities (last 5 learning activities from all users)
-    $recentActivities = \App\Models\LearningActivity::with(['user', 'enrollment.course'])
-        ->latest()
-        ->take(5)
-        ->get()
-        ->map(function ($activity) {
-            return [
-                'id' => $activity->id,
-                'type' => $activity->activity_type,
-                'description' => $activity->description,
-                'points_earned' => $activity->points_earned,
-                'created_at' => $activity->created_at->toISOString(),
-                'user' => [
-                    'id' => $activity->user->id,
-                    'full_name' => $activity->user->full_name ?? $activity->user->username,
-                    'username' => $activity->user->username,
-                    'avatar' => $activity->user->avatar,
-                ],
-            ];
-        })
-        ->toArray();
-    
-    return Inertia::render('Home', [
-        'user' => [
-            'id' => $user->id,
-            'full_name' => $user->full_name ?? $user->username,
-            'username' => $user->username,
-            'points' => $user->points ?? 0,
-            'enrollment_id' => $user->enrollment_id,
-            'current_class' => $user->enrollment ? [
-                'id' => $user->enrollment->course->id,
-                'title' => $user->enrollment->course->name,
-            ] : null,
-        ],
-        'upcoming_lessons' => $upcomingLessons,
-        'recent_activities' => $recentActivities,
-    ]);
+    return app(\App\Http\Controllers\HomeController::class)->index(request());
 })->name('home');
 
 Route::get('leaderboard', [\App\Http\Controllers\LeaderboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('leaderboard');
 
-Route::get('feeds', function () {
-    // Get all completed lesson summaries with related data
-    $lessonSummaries = \App\Models\CompletedLesson::with([
-        'enrollment.user:id,username,full_name',
-        'lesson:id,name,module_id',
-        'lesson.module:id,name,course_id',
-        'lesson.module.course:id,name,link'
-    ])
-    ->whereNotNull('summary')
-    ->where('summary', '!=', '')
-    ->latest()
-    ->take(20)
-    ->get()
-    ->map(function ($completedLesson) {
-        return [
-            'id' => $completedLesson->id,
-            'summary' => $completedLesson->summary,
-            'link' => $completedLesson->link,
-            'created_at' => $completedLesson->created_at->toISOString(),
-            'user' => [
-                'id' => $completedLesson->enrollment->user->id,
-                'username' => $completedLesson->enrollment->user->username,
-                'full_name' => $completedLesson->enrollment->user->full_name ?? $completedLesson->enrollment->user->username,
-            ],
-            'lesson' => [
-                'id' => $completedLesson->lesson->id,
-                'title' => $completedLesson->lesson->name,  // Use 'name' field from lesson table
-                'module' => [
-                    'id' => $completedLesson->lesson->module->id,
-                    'title' => $completedLesson->lesson->module->name,  // Use 'name' field from module table
-                    'course' => [
-                        'id' => $completedLesson->lesson->module->course->id,
-                        'title' => $completedLesson->lesson->module->course->name,
-                        'link' => $completedLesson->lesson->module->course->link,
-                    ],
-                ],
-            ],
-        ];
-    })
-    ->toArray();
-
-    return Inertia::render('Feeds', [
-        'lesson_summaries' => $lessonSummaries,
-    ]);
-})->middleware(['auth', 'verified'])->name('feeds');
+Route::get('feeds', [\App\Http\Controllers\FeedsController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('feeds');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('classes', [App\Http\Controllers\CourseController::class, 'index'])->name('classes');
@@ -148,7 +27,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('classes/{course}', [App\Http\Controllers\CourseController::class, 'show'])->name('classes.show');
     Route::post('classes/{course}/join', [App\Http\Controllers\CourseController::class, 'join'])->name('classes.join');
     Route::post('classes/{course}/leave', [App\Http\Controllers\CourseController::class, 'leave'])->name('classes.leave');
-    Route::post('classes/{course}/complete', [App\Http\Controllers\CourseController::class, 'completeWithReflection'])->name('classes.complete');
+    Route::post('classes/{course}/complete', [App\Http\Controllers\CourseController::class, 'complete'])->name('classes.complete');
     
     Route::get('lessons/{lesson}/complete', [App\Http\Controllers\LessonController::class, 'showCompleteForm'])->name('lessons.complete');
     Route::post('lessons/{lesson}/complete', [App\Http\Controllers\LessonController::class, 'complete'])->name('lessons.complete.store');
@@ -241,10 +120,10 @@ Route::put('lessons/{lesson}/summary', function ($lessonId, \Illuminate\Http\Req
 Route::get('profile/{username}', function ($username) {
     $user = \App\Models\User::where('username', $username)->firstOrFail();
     
-    // Get completed classes (both completed_at and reflection required)
+    // Get completed classes (both completed_at and course_reflection required)
     $completedClasses = \App\Models\Enrollment::where('user_id', $user->id)
         ->whereNotNull('completed_at')
-        ->whereNotNull('reflection')
+        ->whereNotNull('course_reflection')
         ->with('course')
         ->get()
         ->map(function ($enrollment) {

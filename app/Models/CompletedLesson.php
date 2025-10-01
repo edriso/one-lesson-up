@@ -25,24 +25,26 @@ class CompletedLesson extends Model
     {
         // Award 1 point when a lesson is completed
         static::created(function ($completedLesson) {
-            $completedLesson->enrollment->user->increment('points');
+            $pointsEarned = PointSystemValue::LESSON_COMPLETED->value;
+            $completedLesson->enrollment->user->increment('points', $pointsEarned);
 
-            // Create learning activity for tracking (without points to avoid double-counting)
+            // Create learning activity for tracking
             \App\Models\LearningActivity::create([
                 'user_id' => $completedLesson->enrollment->user_id,
                 'enrollment_id' => $completedLesson->enrollment_id,
                 'lesson_id' => $completedLesson->lesson_id,
                 'activity_type' => \App\Enums\ActivityType::LESSON_COMPLETED,
-                'points_earned' => null, // Points are awarded via user.points increment above
+                'points_earned' => $pointsEarned, // Track points for leaderboard
             ]);
             
             // Check if this was the last lesson of the course
             $completedLesson->checkCourseCompletion();
         });
 
-        // Remove 1 point when a lesson completion is deleted
+        // Remove points when a lesson completion is deleted
         static::deleted(function ($completedLesson) {
-            $completedLesson->enrollment->user->decrement('points');
+            $pointsToRemove = PointSystemValue::LESSON_COMPLETED->value;
+            $completedLesson->enrollment->user->decrement('points', $pointsToRemove);
         });
     }
 

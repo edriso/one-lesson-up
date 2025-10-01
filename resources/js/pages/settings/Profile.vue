@@ -10,9 +10,14 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
+import { Trophy, Info } from 'lucide-vue-next';
+import { computed } from 'vue';
 
 interface Props {
     mustVerifyEmail: boolean;
@@ -30,6 +35,10 @@ const breadcrumbItems: BreadcrumbItem[] = [
 
 const page = usePage();
 const user = page.props.auth.user;
+
+// Point thresholds
+const PROFILE_PICTURE_POINTS = 5;
+const canUploadAvatar = computed(() => user.points >= PROFILE_PICTURE_POINTS);
 </script>
 
 <template>
@@ -40,7 +49,7 @@ const user = page.props.auth.user;
             <div class="flex flex-col space-y-6">
                 <HeadingSmall
                     title="Profile information"
-                    description="Update your name and email address"
+                    description="Update your profile details and settings"
                 />
 
                 <Form
@@ -48,6 +57,15 @@ const user = page.props.auth.user;
                     class="space-y-6"
                     v-slot="{ errors, processing, recentlySuccessful }"
                 >
+                    <!-- Points Display -->
+                    <Alert>
+                        <Trophy class="h-4 w-4 text-primary" />
+                        <AlertDescription>
+                            You have <strong>{{ user.points }} points</strong>. Complete lessons to earn more!
+                        </AlertDescription>
+                    </Alert>
+
+                    <!-- Full Name -->
                     <div class="grid gap-2">
                         <Label for="full_name">Name</Label>
                         <Input
@@ -62,6 +80,7 @@ const user = page.props.auth.user;
                         <InputError class="mt-2" :message="errors.full_name" />
                     </div>
 
+                    <!-- Email -->
                     <div class="grid gap-2">
                         <Label for="email">Email address</Label>
                         <Input
@@ -96,6 +115,101 @@ const user = page.props.auth.user;
                             A new verification link has been sent to your email
                             address.
                         </div>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="grid gap-2">
+                        <Label for="title">Title / Job Role</Label>
+                        <Input
+                            id="title"
+                            class="mt-1 block w-full"
+                            name="title"
+                            :default-value="user.title"
+                            placeholder="e.g., Software Engineer, Student"
+                        />
+                        <InputError class="mt-2" :message="errors.title" />
+                    </div>
+
+                    <!-- Bio -->
+                    <div class="grid gap-2">
+                        <Label for="bio">Bio</Label>
+                        <Textarea
+                            id="bio"
+                            class="mt-1 block w-full"
+                            name="bio"
+                            :default-value="user.bio"
+                            placeholder="Tell us about yourself..."
+                            :rows="4"
+                        />
+                        <InputError class="mt-2" :message="errors.bio" />
+                    </div>
+
+                    <!-- Avatar URL -->
+                    <div class="grid gap-2">
+                        <Label for="avatar">Profile Picture URL</Label>
+                        <Input
+                            id="avatar"
+                            type="url"
+                            class="mt-1 block w-full"
+                            name="avatar"
+                            :default-value="user.avatar"
+                            :disabled="!canUploadAvatar"
+                            placeholder="https://example.com/your-photo.jpg"
+                        />
+                        <Alert v-if="!canUploadAvatar" variant="destructive">
+                            <Info class="h-4 w-4" />
+                            <AlertDescription>
+                                You need at least {{ PROFILE_PICTURE_POINTS }} points to set a profile picture. 
+                                You currently have {{ user.points }} points.
+                            </AlertDescription>
+                        </Alert>
+                        <p v-else class="text-xs text-muted-foreground">
+                            Enter a direct URL to your profile picture
+                        </p>
+                        <InputError class="mt-2" :message="errors.avatar" />
+                    </div>
+
+                    <!-- LinkedIn URL -->
+                    <div class="grid gap-2">
+                        <Label for="linkedin_url">LinkedIn Profile</Label>
+                        <Input
+                            id="linkedin_url"
+                            type="url"
+                            class="mt-1 block w-full"
+                            name="linkedin_url"
+                            :default-value="user.linkedin_url"
+                            placeholder="https://linkedin.com/in/yourprofile"
+                        />
+                        <InputError class="mt-2" :message="errors.linkedin_url" />
+                    </div>
+
+                    <!-- Website URL -->
+                    <div class="grid gap-2">
+                        <Label for="website_url">Personal Website</Label>
+                        <Input
+                            id="website_url"
+                            type="url"
+                            class="mt-1 block w-full"
+                            name="website_url"
+                            :default-value="user.website_url"
+                            placeholder="https://yourwebsite.com"
+                        />
+                        <InputError class="mt-2" :message="errors.website_url" />
+                    </div>
+
+                    <!-- Public Profile Toggle -->
+                    <div class="flex items-center justify-between rounded-lg border p-4">
+                        <div class="space-y-0.5">
+                            <Label for="is_public" class="text-base">Public Profile</Label>
+                            <p class="text-sm text-muted-foreground">
+                                Make your profile visible to other users
+                            </p>
+                        </div>
+                        <Switch
+                            id="is_public"
+                            name="is_public"
+                            :default-checked="user.is_public"
+                        />
                     </div>
 
                     <div class="flex items-center gap-4">

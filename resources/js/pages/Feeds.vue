@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useDateFormatter } from '@/composables/useDateFormatter';
 import { 
   BookOpen, 
   ExternalLink, 
   GraduationCap,
 } from 'lucide-vue-next';
-import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 interface LessonSummary {
   id: number;
@@ -43,23 +44,24 @@ const props = withDefaults(defineProps<Props>(), {
   lesson_summaries: () => [],
 });
 
-const { lesson_summaries } = props;
+const { formatRelativeDate } = useDateFormatter();
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+// Computed properties for better readability
+const hasSummaries = computed(() => props.lesson_summaries.length > 0);
 
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
-  
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
+// Helper to safely get course title
+const getCourseTitle = (summary: LessonSummary): string => {
+  return summary.lesson?.module?.course?.title || 'Unknown Course';
+};
+
+// Helper to safely get lesson title
+const getLessonTitle = (summary: LessonSummary): string => {
+  return summary.lesson?.title || 'Unknown Lesson';
+};
+
+// Helper to safely get course ID
+const getCourseId = (summary: LessonSummary): number | null => {
+  return summary.lesson?.module?.course?.id || null;
 };
 </script>
 
@@ -79,7 +81,7 @@ const formatDate = (dateString: string) => {
       </div>
 
       <!-- Empty State -->
-      <div v-if="props.lesson_summaries.length === 0" class="text-center py-16">
+      <div v-if="!hasSummaries" class="text-center py-16">
         <div class="mx-auto w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6">
           <GraduationCap class="h-12 w-12 text-primary" />
         </div>
@@ -95,7 +97,7 @@ const formatDate = (dateString: string) => {
       </div>
 
       <!-- Feed Items -->
-      <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div v-else class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Card v-for="summary in lesson_summaries" :key="summary.id" 
               class="overflow-hidden hover:shadow-md transition-all duration-200 border-l-4 border-l-primary/20">
           
@@ -104,28 +106,23 @@ const formatDate = (dateString: string) => {
             <div class="flex items-start gap-4">
               <!-- Course Info -->
               <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-2">
-                  <BookOpen class="h-5 w-5 text-primary" />
+                <div class="flex items-center gap-2">
+                  <BookOpen class="h-5 w-5 text-primary flex-shrink-0" />
                   <Link 
-                    v-if="summary.lesson?.module?.course?.id"
-                    :href="`/classes/${summary.lesson.module.course.id}`"
-                    class="font-semibold text-lg text-foreground hover:text-primary transition-colors cursor-pointer"
+                    v-if="getCourseId(summary)"
+                    :href="`/classes/${getCourseId(summary)}`"
+                    class="font-semibold text-lg text-foreground hover:text-primary transition-colors cursor-pointer truncate"
                   >
-                    {{ summary.lesson?.module?.course?.title || 'Unknown Course' }}
+                    {{ getCourseTitle(summary) }}
                   </Link>
-                  <span v-else class="font-semibold text-lg text-foreground">
-                    {{ summary.lesson?.module?.course?.title || 'Unknown Course' }}
+                  <span v-else class="font-semibold text-lg text-foreground truncate">
+                    {{ getCourseTitle(summary) }}
                   </span>
-                </div>
-                
-                <div class="text-sm text-muted-foreground">
-                  <span class="font-medium">{{ summary.lesson?.title || 'Unknown Lesson' }}</span>
                 </div>
               </div>
               
-              <!-- Time -->
-              <div class="text-sm text-muted-foreground">
-                {{ formatDate(summary.created_at) }}
+              <div class="text-sm text-muted-foreground whitespace-nowrap">
+                Lesson: <span class="font-medium">{{ getLessonTitle(summary) }}</span>
               </div>
             </div>
           </CardHeader>
@@ -134,14 +131,15 @@ const formatDate = (dateString: string) => {
           <CardContent class="pt-0">
             <!-- Summary -->
             <div class="mb-4">
-              <p class="text-foreground leading-relaxed">{{ summary.summary || '' }}</p>
+              <p class="text-foreground leading-relaxed">{{ summary.summary }}</p>
             </div>
 
             <!-- External Link -->
             <div v-if="summary.link" class="mb-4">
               <a 
                 :href="summary.link" 
-                target="_blank" 
+                target="_blank"
+                rel="noopener noreferrer"
                 class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-accent text-muted-foreground hover:bg-primary hover:text-accent-foreground rounded-lg transition-colors cursor-pointer"
               >
                 <ExternalLink class="h-4 w-4" />
@@ -150,13 +148,18 @@ const formatDate = (dateString: string) => {
             </div>
 
             <!-- Footer Actions -->
-            <div class="flex items-center gap-4 pt-4 border-t border-border/50">
+            <div class="flex items-center justify-between gap-4 pt-4 border-t border-border/50">
               <Link 
                 :href="`/profile/${summary.user?.username || ''}`"
                 class="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer"
               >
                 <span>@{{ summary.user?.username || 'unknown' }}</span>
               </Link>
+
+              <!-- Time -->
+              <div class="text-sm text-muted-foreground whitespace-nowrap">
+                {{ formatRelativeDate(summary.created_at) }}
+              </div>
             </div>
           </CardContent>
         </Card>

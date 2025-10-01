@@ -32,7 +32,7 @@ class CourseController extends Controller
                     $query->whereNull('completed_at');
                 },
                 'enrollments as completed_students_count' => function ($query) {
-                    $query->whereNotNull('completed_at')->whereNotNull('reflection');
+                    $query->whereNotNull('completed_at')->whereNotNull('course_reflection');
                 }
             ])
             ->withCount('lessons')
@@ -221,8 +221,8 @@ class CourseController extends Controller
         // Check if user is enrolled in this course (active = completed_at is NULL)
         $enrollment = $userEnrollments->whereNull('completed_at')->first();
         
-        // Check if user has completed this course (both completed_at AND reflection required)
-        $completedEnrollment = $userEnrollments->whereNotNull('completed_at')->whereNotNull('reflection')->first();
+        // Check if user has completed this course (both completed_at AND course_reflection required)
+        $completedEnrollment = $userEnrollments->whereNotNull('completed_at')->whereNotNull('course_reflection')->first();
         
         // Get completed lesson IDs if enrolled
         $completedLessonIds = [];
@@ -238,6 +238,7 @@ class CourseController extends Controller
                 'title' => $course->name,
                 'description' => $course->description,
                 'link' => $course->link,
+                'course_reflection' => $completedEnrollment ? $completedEnrollment->course_reflection : null,
                 'modules' => $course->modules->map(function ($module) use ($completedLessonIds) {
                     return [
                         'id' => $module->id,
@@ -392,10 +393,10 @@ class CourseController extends Controller
     /**
      * Complete a course with reflection.
      */
-    public function completeWithReflection(Course $course, Request $request)
+    public function complete(Course $course, Request $request)
     {
         $request->validate([
-            'reflection' => 'required|string|min:10|max:1000',
+            'reflection' => 'required|string|min:50|max:2000',
         ]);
 
         $user = auth()->user();
@@ -411,17 +412,46 @@ class CourseController extends Controller
         }
 
         // Check if all lessons are completed
-        if (!$enrollment->areAllLessonsCompleted()) {
+        $completedLessonsCount = $enrollment->completedLessons()->count();
+        $totalLessonsCount = $course->lessons_count;
+        
+        if ($completedLessonsCount < $totalLessonsCount) {
             return back()->with('error', 'You must complete all lessons before submitting your reflection.');
         }
 
-        // Complete the enrollment with reflection
-        $success = $enrollment->completeWithReflection($request->reflection);
-        
-        if ($success) {
-            return redirect()->route('classes')
+        try {
+            DB::beginTransaction();
+            
+            // Update enrollment with reflection and completion
+            $enrollment->update([
+                'course_reflection' => $request->reflection,
+                'completed_at' => now(),
+                'reflection_completed_at' => now(),
+            ]);
+
+            // Clear user's enrollment_id so they can join new classes
+            $user->update(['enrollment_id' => null]);
+
+            // Award course completion points
+            $courseCompletionPoints = \App\Enums\PointSystemValue::COURSE_COMPLETED->value;
+            $user->increment('points', $courseCompletionPoints);
+
+            // Create learning activity for course completion
+            \App\Models\LearningActivity::create([
+                'user_id' => $user->id,
+                'enrollment_id' => $enrollment->id,
+                'activity_type' => \App\Enums\ActivityType::COURSE_COMPLETED,
+                'description' => "Completed course: {$course->name}",
+                'points_earned' => $courseCompletionPoints,
+            ]);
+
+            DB::commit();
+            
+            return redirect()->route('classes.show', $course->id)
                 ->with('success', 'Congratulations! You have successfully completed the course with your reflection.');
-        } else {
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
             return back()->with('error', 'Failed to complete the course. Please try again.');
         }
     }

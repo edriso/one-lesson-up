@@ -34,36 +34,55 @@ const completionError = ref('');
 const isCompletingLesson = ref(false);
 
 const lessonName = computed(() => props.lesson?.name || props.lesson?.title || 'Unknown Lesson');
+const isSummaryValid = computed(() => summary.value.trim().length > 0);
+
+// Validate URL format
+const isValidUrl = (url: string): boolean => {
+  if (!url.trim()) return true; // Empty is valid (optional field)
+  try {
+    new URL(url.trim());
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const closeModal = () => {
   emit('update:isOpen', false);
+  // Reset state
   summary.value = '';
   link.value = '';
   completionError.value = '';
 };
 
 const submitCompletion = () => {
-  if (!props.lesson || !summary.value.trim()) {
+  // Validation
+  if (!props.lesson) {
+    completionError.value = 'Invalid lesson selected.';
+    return;
+  }
+
+  if (!isSummaryValid.value) {
     completionError.value = 'Please provide a summary before completing the lesson.';
     return;
   }
 
+  // Validate URL if provided
+  if (link.value.trim() && !isValidUrl(link.value)) {
+    completionError.value = 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.';
+    return;
+  }
+
   isCompletingLesson.value = true;
-  completionError.value = '';  // Prepare data - only include link if it's not empty and looks like a URL
-  const data: any = {
-    summary: summary.value,
+  completionError.value = '';
+  
+  const data: { summary: string; link?: string } = {
+    summary: summary.value.trim(),
   };
   
-  // Only include link if it's not empty and looks like a valid URL
+  // Only include link if it's not empty
   if (link.value.trim()) {
-    try {
-      new URL(link.value.trim());
-      data.link = link.value.trim();
-    } catch {
-      completionError.value = 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.';
-      isCompletingLesson.value = false;
-      return;
-    }
+    data.link = link.value.trim();
   }
   
   router.post(`/lessons/${props.lesson.id}/complete`, data, {
@@ -72,10 +91,13 @@ const submitCompletion = () => {
       closeModal();
     },
     onError: (errors: any) => {
+      // Better error handling
       if (errors.summary) {
         completionError.value = Array.isArray(errors.summary) ? errors.summary[0] : errors.summary;
       } else if (errors.link) {
-        completionError.value = 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.';
+        completionError.value = Array.isArray(errors.link) ? errors.link[0] : 'Please enter a valid URL or leave the link field empty.';
+      } else if (errors.message) {
+        completionError.value = errors.message;
       } else {
         completionError.value = 'Failed to complete lesson. Please try again.';
       }
@@ -150,7 +172,7 @@ watch(() => props.isOpen, (newValue) => {
         </Button>
         <Button 
           @click="submitCompletion"
-          :disabled="!summary.trim() || isCompletingLesson"
+          :disabled="!isSummaryValid || isCompletingLesson"
         >
           <CheckCircle v-if="!isCompletingLesson" class="h-4 w-4 mr-2" />
           <div v-else class="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
