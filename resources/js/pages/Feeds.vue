@@ -9,7 +9,7 @@ import {
   ExternalLink, 
   GraduationCap,
 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 
 interface LessonSummary {
   id: number;
@@ -47,7 +47,16 @@ const props = withDefaults(defineProps<Props>(), {
 const { formatRelativeDate } = useDateFormatter();
 
 // Computed properties for better readability
-const hasSummaries = computed(() => props.lesson_summaries.length > 0);
+const hasSummaries = computed(() => allSummaries.value.length > 0);
+
+// Infinite scroll state
+const allSummaries = ref<LessonSummary[]>([]);
+const currentPage = ref(1);
+const isLoading = ref(false);
+const hasMore = ref(true);
+
+// Initialize summaries with the initial data
+allSummaries.value = props.lesson_summaries || [];
 
 // Helper to safely get course title
 const getCourseTitle = (summary: LessonSummary): string => {
@@ -63,6 +72,42 @@ const getLessonTitle = (summary: LessonSummary): string => {
 const getCourseId = (summary: LessonSummary): number | null => {
   return summary.lesson?.module?.course?.id || null;
 };
+
+// Load more summaries function
+const loadMoreSummaries = async () => {
+  if (isLoading.value || !hasMore.value) return;
+  
+  isLoading.value = true;
+  currentPage.value += 1;
+  
+  try {
+    const response = await fetch(`/api/feeds/load-more?page=${currentPage.value}`);
+    const data = await response.json();
+    
+    allSummaries.value.push(...data.summaries);
+    hasMore.value = data.hasMore;
+  } catch (error) {
+    console.error('Failed to load more summaries:', error);
+    currentPage.value -= 1; // Revert page increment on error
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Intersection Observer for infinite scroll
+const loadMoreTrigger = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+  if (loadMoreTrigger.value) {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore.value && !isLoading.value) {
+        loadMoreSummaries();
+      }
+    });
+    
+    observer.observe(loadMoreTrigger.value);
+  }
+});
 </script>
 
 <template>
@@ -98,7 +143,7 @@ const getCourseId = (summary: LessonSummary): number | null => {
 
       <!-- Feed Items -->
       <div v-else class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Card v-for="summary in lesson_summaries" :key="summary.id" 
+        <Card v-for="summary in allSummaries" :key="summary.id" 
               class="overflow-hidden hover:shadow-md transition-all duration-200 border-l-4 border-l-primary/20">
           
           <!-- Header -->
@@ -163,6 +208,21 @@ const getCourseId = (summary: LessonSummary): number | null => {
             </div>
           </CardContent>
         </Card>
+        
+        <!-- Infinite scroll trigger and loading indicator -->
+        <div v-if="hasMore" ref="loadMoreTrigger" class="col-span-full flex justify-center py-8">
+          <div v-if="isLoading" class="flex items-center gap-2 text-muted-foreground">
+            <div class="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-sm">Loading more summaries...</span>
+          </div>
+          <div v-else class="text-sm text-muted-foreground">
+            Scroll to load more
+          </div>
+        </div>
+        
+        <div v-else class="col-span-full flex justify-center py-8">
+          <span class="text-sm text-muted-foreground">No more summaries to load</span>
+        </div>
       </div>
     </div>
   </AppLayout>

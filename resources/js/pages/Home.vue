@@ -10,7 +10,7 @@ import LessonCompletionModal from '@/components/LessonCompletionModal.vue';
 import UserInfo from '@/components/UserInfo.vue';
 import { useDateFormatter } from '@/composables/useDateFormatter';
 import { Clock, BookOpen, Medal, TrendingUp, CheckCircle, Circle } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import type { Component } from 'vue';
 
 interface Lesson {
@@ -29,6 +29,7 @@ interface Activity {
   course_name?: string;
   course_is_public?: boolean;
   course_id?: number;
+  lessons_completed?: number;
   points_earned: number;
   created_at: string;
   user: {
@@ -73,10 +74,55 @@ const { formatShortDateTime } = useDateFormatter();
 const isModalOpen = ref(false);
 const selectedLesson = ref<Lesson | null>(null);
 
+// Infinite scroll state
+const allActivities = ref<Activity[]>([]);
+const currentPage = ref(1);
+const isLoading = ref(false);
+const hasMore = ref(true);
+
 const openCompleteModal = (lesson: Lesson) => {
   selectedLesson.value = lesson;
   isModalOpen.value = true;
 };
+
+// Initialize activities with the initial data
+allActivities.value = props.recent_activities || [];
+
+// Load more activities function
+const loadMoreActivities = async () => {
+  if (isLoading.value || !hasMore.value) return;
+  
+  isLoading.value = true;
+  currentPage.value += 1;
+  
+  try {
+    const response = await fetch(`/api/activities/load-more?page=${currentPage.value}`);
+    const data = await response.json();
+    
+    allActivities.value.push(...data.activities);
+    hasMore.value = data.hasMore;
+  } catch (error) {
+    console.error('Failed to load more activities:', error);
+    currentPage.value -= 1; // Revert page increment on error
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Intersection Observer for infinite scroll
+const loadMoreTrigger = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+  if (loadMoreTrigger.value) {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore.value && !isLoading.value) {
+        loadMoreActivities();
+      }
+    });
+    
+    observer.observe(loadMoreTrigger.value);
+  }
+});
 
 const onLessonCompleted = () => {
   // This will be called when the lesson is successfully completed
@@ -92,7 +138,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 // Computed property for better readability
 const hasActiveLessons = computed(() => props.upcoming_lessons.length > 0);
-const hasActivities = computed(() => props.recent_activities.length > 0);
+const hasActivities = computed(() => allActivities.value.length > 0);
 const isEnrolled = computed(() => !!props.user.enrollment_id);
 
 // Map activity types to icons
@@ -232,8 +278,8 @@ const getActivityIcon = (type: string): Component => {
                                 <TrendingUp class="h-12 w-12 mx-auto mb-3 opacity-30" />
                                 <p class="text-sm">No recent activities</p>
                             </div>
-                            <div v-else class="space-y-3">
-                                <div v-for="activity in recent_activities.slice(0, 5)" :key="activity.id" 
+                            <div v-else class="space-y-3 max-h-96 overflow-y-auto">
+                                <div v-for="activity in allActivities" :key="activity.id" 
                                      class="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                                     <component :is="getActivityIcon(activity.type)" class="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
                                     <div class="flex-1 min-w-0">
@@ -267,6 +313,21 @@ const getActivityIcon = (type: string): Component => {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                                
+                                <!-- Infinite scroll trigger and loading indicator -->
+                                <div v-if="hasMore" ref="loadMoreTrigger" class="flex justify-center py-4">
+                                    <div v-if="isLoading" class="flex items-center gap-2 text-muted-foreground">
+                                        <div class="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                        <span class="text-sm">Loading more activities...</span>
+                                    </div>
+                                    <div v-else class="text-sm text-muted-foreground">
+                                        Scroll to load more
+                                    </div>
+                                </div>
+                                
+                                <div v-else class="flex justify-center py-4">
+                                    <span class="text-sm text-muted-foreground">No more activities to load</span>
                                 </div>
                             </div>
                         </CardContent>

@@ -16,6 +16,14 @@ Route::get('leaderboard', [\App\Http\Controllers\LeaderboardController::class, '
     ->middleware(['auth', 'verified'])
     ->name('leaderboard');
 
+Route::get('api/activities/load-more', [\App\Http\Controllers\HomeController::class, 'loadMoreActivities'])
+    ->middleware(['auth', 'verified'])
+    ->name('activities.load-more');
+
+Route::get('api/feeds/load-more', [\App\Http\Controllers\FeedsController::class, 'loadMoreSummaries'])
+    ->middleware(['auth', 'verified'])
+    ->name('feeds.load-more');
+
 Route::get('feeds', [\App\Http\Controllers\FeedsController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('feeds');

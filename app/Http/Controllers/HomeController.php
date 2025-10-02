@@ -151,4 +151,58 @@ class HomeController extends Controller
             'stats' => $stats
         ]);
     }
+
+    /**
+     * Load more activities for infinite scroll
+     */
+    public function loadMoreActivities(Request $request)
+    {
+        $page = $request->get('page', 1);
+        $perPage = 10;
+        $offset = ($page - 1) * $perPage;
+
+        $activities = DailyActivity::with([
+                'user:id,username,full_name,avatar,is_public',
+                'enrollment.course:id,name,is_public'
+            ])
+            ->select('id', 'user_id', 'enrollment_id', 'lessons_completed', 'is_bonus_earned', 'activity_date')
+            ->where('lessons_completed', '>', 0)
+            ->whereHas('user', function ($query) {
+                $query->where('is_public', true);
+            })
+            ->latest('activity_date')
+            ->offset($offset)
+            ->limit($perPage)
+            ->get()
+            ->map(function ($activity) {
+                $course = $activity->enrollment->course;
+                $courseName = $course->name;
+                $isPublicCourse = $course->is_public;
+                
+                return [
+                    'id' => $activity->id,
+                    'type' => 'lessons_completed',
+                    'description' => "Completed {$activity->lessons_completed} lesson(s) in {$courseName}",
+                    'course_name' => $courseName,
+                    'course_is_public' => $isPublicCourse,
+                    'course_id' => $isPublicCourse ? $course->id : null,
+                    'points_earned' => $activity->getPointsEarned(),
+                    'created_at' => $activity->activity_date->toISOString(),
+                    'user' => [
+                        'id' => $activity->user->id,
+                        'full_name' => $activity->user->full_name ?? $activity->user->username,
+                        'username' => $activity->user->username,
+                        'avatar' => $activity->user->avatar,
+                    ],
+                ];
+            });
+
+        $hasMore = $activities->count() === $perPage;
+
+        return response()->json([
+            'activities' => $activities,
+            'hasMore' => $hasMore,
+            'nextPage' => $hasMore ? $page + 1 : null,
+        ]);
+    }
 }
