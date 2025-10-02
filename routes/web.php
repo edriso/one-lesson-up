@@ -28,6 +28,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('classes/{course}/join', [App\Http\Controllers\CourseController::class, 'join'])->name('classes.join');
     Route::post('classes/{course}/leave', [App\Http\Controllers\CourseController::class, 'leave'])->name('classes.leave');
     Route::post('classes/{course}/complete', [App\Http\Controllers\CourseController::class, 'complete'])->name('classes.complete');
+    Route::post('classes/{course}/reflection', [App\Http\Controllers\CourseController::class, 'updateReflection'])->name('classes.reflection.update');
     
     Route::get('lessons/{lesson}/complete', [App\Http\Controllers\LessonController::class, 'showCompleteForm'])->name('lessons.complete');
     Route::post('lessons/{lesson}/complete', [App\Http\Controllers\LessonController::class, 'complete'])->name('lessons.complete.store');
@@ -120,10 +121,8 @@ Route::put('lessons/{lesson}/summary', function ($lessonId, \Illuminate\Http\Req
 Route::get('profile/{username}', function ($username) {
     $user = \App\Models\User::where('username', $username)->firstOrFail();
     
-    // Get completed classes (both completed_at and course_reflection required)
-    $completedClasses = \App\Models\Enrollment::where('user_id', $user->id)
-        ->whereNotNull('completed_at')
-        ->whereNotNull('course_reflection')
+    // Get completed classes (optimized query)
+    $completedClasses = $user->completedEnrollments()
         ->with('course')
         ->get()
         ->map(function ($enrollment) {
@@ -137,32 +136,30 @@ Route::get('profile/{username}', function ($username) {
         })
         ->toArray();
     
-    // Get recent activities
-    $activities = \App\Models\LearningActivity::where('user_id', $user->id)
-        ->with('enrollment.course')
-        ->latest()
+    // Get recent activities from daily activities
+    $activities = \App\Models\DailyActivity::where('user_id', $user->id)
+        ->with(['enrollment.course'])
+        ->where('lessons_completed', '>', 0)
+        ->latest('activity_date')
         ->take(10)
         ->get()
         ->map(function ($activity) {
             return [
                 'id' => $activity->id,
-                'type' => $activity->activity_type,
-                'description' => $activity->description,
-                'points_earned' => $activity->points_earned,
-                'created_at' => $activity->created_at->toISOString(),
+                'type' => 'lessons_completed',
+                'description' => "Completed {$activity->lessons_completed} lesson(s) in {$activity->enrollment->course->name}",
+                'points_earned' => $activity->getPointsEarned(),
+                'created_at' => $activity->activity_date->toISOString(),
             ];
         })
         ->toArray();
     
     // Get calendar data (last 30 days of activities)
-    $calendarData = \App\Models\LearningActivity::where('user_id', $user->id)
-        ->where('created_at', '>=', now()->subDays(30))
+    $calendarData = \App\Models\DailyActivity::where('user_id', $user->id)
+        ->where('activity_date', '>=', now()->subDays(30))
         ->get()
-        ->groupBy(function ($activity) {
-            return $activity->created_at->format('Y-m-d');
-        })
-        ->map(function ($dayActivities) {
-            return $dayActivities->count();
+        ->mapWithKeys(function ($activity) {
+            return [$activity->activity_date->format('Y-m-d') => $activity->lessons_completed];
         })
         ->toArray();
     
@@ -188,6 +185,7 @@ Route::get('profile/{username}', function ($username) {
             'points' => $user->points ?? 0,
             'joined_at' => $user->created_at->toISOString(),
             'is_public' => $user->is_public ?? true,
+            'week_starts_on' => $user->week_starts_on ?? 0,
         ],
         'activities' => $activities,
         'completed_classes' => $completedClasses,

@@ -94,4 +94,12 @@ class Course extends Model
         $lessonCount = $this->lessons_count;
         return (int) ($lessonCount + ($lessonCount / 5 * 2));
     }
+
+    /**
+     * Get the learning deadline date for this course.
+     */
+    public function getSmartDeadlineAttribute(): \Carbon\Carbon
+    {
+        return now()->addDays($this->deadline_days);
+    }
 }

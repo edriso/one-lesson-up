@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { login, register } from '@/routes';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Star, TrendingUp } from 'lucide-vue-next';
+import { BookOpen, Award, TrendingUp, Target, Users } from 'lucide-vue-next';
 
 interface Props {
   stats?: {
@@ -60,22 +60,26 @@ const formatNumber = (num: number): string => {
     </nav>
 
     <!-- Hero Section -->
-    <div class="container mx-auto px-4 py-20">
+    <div class="container mx-auto px-4 py-16">
       <div class="max-w-4xl mx-auto text-center">
-        <h2 class="text-5xl md:text-6xl font-bold text-foreground mb-6">
-          Level Up Your Learning,<br />
-          <span class="text-primary">One Lesson at a Time</span>
+        <h2 class="text-4xl md:text-5xl font-bold text-foreground mb-6">
+          Stop Abandoning Courses.<br />
+          <span class="text-primary">Start Finishing Them.</span>
         </h2>
-        <p class="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Join a community of learners, track your progress, earn points, and compete on the leaderboard. 
-          Transform your learning journey into an engaging adventure.
+        <p class="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+          Gamify your learning with points, deadlines, and community. Complete courses you actually start.
         </p>
         
-        <div class="flex items-center justify-center gap-4">
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link :href="register()">
-            <Button size="lg" class="bg-primary text-primary-foreground hover:bg-primary/90 text-lg px-8 py-6">
-              <BookOpen class="mr-2 h-5 w-5" />
+            <Button size="lg" class="bg-primary text-primary-foreground hover:bg-primary/90 text-lg px-8 py-4">
+              <Target class="mr-2 h-5 w-5" />
               Start Learning Free
+            </Button>
+          </Link>
+          <Link :href="login()">
+            <Button variant="outline" size="lg" class="text-lg px-8 py-4">
+              Sign In
             </Button>
           </Link>
         </div>
@@ -83,84 +87,85 @@ const formatNumber = (num: number): string => {
     </div>
 
     <!-- Features Section -->
-    <div class="container mx-auto px-4 py-16">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+    <div class="container mx-auto px-4 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         <!-- Feature 1 -->
-        <div class="bg-card border border-border rounded-lg p-8 shadow-sm hover:shadow-md transition-shadow">
-          <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-            <BookOpen class="h-6 w-6 text-primary" />
+        <div class="text-center p-6">
+          <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <Target class="h-8 w-8 text-primary" />
           </div>
-          <h3 class="text-xl font-semibold text-foreground mb-2">Interactive Classes</h3>
-          <p class="text-muted-foreground">
-            Join engaging classes, complete lessons, and track your progress with detailed analytics.
+          <h3 class="text-lg font-semibold text-foreground mb-2">One Course at a Time</h3>
+          <p class="text-muted-foreground text-sm">
+            Focus on completing one course before starting another. No more scattered learning.
           </p>
         </div>
 
         <!-- Feature 2 -->
-        <div class="bg-card border border-border rounded-lg p-8 shadow-sm hover:shadow-md transition-shadow">
-          <div class="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center mb-4">
-            <Star class="h-6 w-6 text-secondary-foreground" />
+        <div class="text-center p-6">
+          <div class="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
+            <Award class="h-8 w-8 text-secondary-foreground" />
           </div>
-          <h3 class="text-xl font-semibold text-foreground mb-2">Earn Points & Badges</h3>
-          <p class="text-muted-foreground">
-            Complete lessons to earn points, unlock achievements, and customize your profile.
+          <h3 class="text-lg font-semibold text-foreground mb-2">Earn Points & Bonuses</h3>
+          <p class="text-muted-foreground text-sm">
+            Get points for lessons, time bonuses for morning/evening learning, and course completion bonuses.
           </p>
         </div>
 
         <!-- Feature 3 -->
-        <div class="bg-card border border-border rounded-lg p-8 shadow-sm hover:shadow-md transition-shadow">
-          <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-            <TrendingUp class="h-6 w-6 text-primary" />
+        <div class="text-center p-6">
+          <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <Users class="h-8 w-8 text-primary" />
           </div>
-          <h3 class="text-xl font-semibold text-foreground mb-2">Compete & Grow</h3>
-          <p class="text-muted-foreground">
-            Climb the leaderboard, compete with fellow ninjas, and showcase your learning journey.
+          <h3 class="text-lg font-semibold text-foreground mb-2">Community & Competition</h3>
+          <p class="text-muted-foreground text-sm">
+            See what others are learning, compete on leaderboards, and stay motivated together.
           </p>
         </div>
       </div>
     </div>
 
     <!-- Stats Section -->
-    <div class="container mx-auto px-4 py-16">
-      <div class="max-w-4xl mx-auto bg-gradient-to-l from-primary/20 to-secondary/20 rounded-2xl p-12 text-center">
-        <h3 class="text-3xl font-bold text-foreground mb-8">Join the Learning Revolution</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div class="container mx-auto px-4 py-12">
+      <div class="max-w-3xl mx-auto bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-8 text-center">
+        <h3 class="text-2xl font-bold text-foreground mb-6">Join Active Learners</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <div class="text-4xl font-bold text-primary mb-2">{{ formatNumber(stats.active_learners) }}</div>
-            <div class="text-muted-foreground">Active Learners</div>
+            <div class="text-3xl font-bold text-primary mb-1">{{ formatNumber(stats.active_learners) }}</div>
+            <div class="text-sm text-muted-foreground">Active Learners</div>
           </div>
           <div>
-            <div class="text-4xl font-bold text-primary mb-2">{{ formatNumber(stats.total_classes) }}</div>
-            <div class="text-muted-foreground">Classes</div>
+            <div class="text-3xl font-bold text-primary mb-1">{{ formatNumber(stats.total_classes) }}</div>
+            <div class="text-sm text-muted-foreground">Classes</div>
           </div>
           <div>
-            <div class="text-4xl font-bold text-primary mb-2">{{ formatNumber(stats.lessons_completed) }}</div>
-            <div class="text-muted-foreground">Lessons Completed</div>
+            <div class="text-3xl font-bold text-primary mb-1">{{ formatNumber(stats.lessons_completed) }}</div>
+            <div class="text-sm text-muted-foreground">Lessons Completed</div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- CTA Section -->
-    <div class="container mx-auto px-4 py-16">
+    <div class="container mx-auto px-4 py-12">
       <div class="max-w-2xl mx-auto text-center">
-        <h3 class="text-3xl font-bold text-foreground mb-4">
-          Ready to Start Your Journey?
+        <h3 class="text-2xl font-bold text-foreground mb-4">
+          Ready to Finish What You Start?
         </h3>
-        <p class="text-muted-foreground mb-8">
-          Join thousands of learners already leveling up their skills.
+        <p class="text-muted-foreground mb-6">
+          Join learners who are actually completing their courses.
         </p>
         <Link :href="register()">
-          <Button size="lg" class="bg-primary text-primary-foreground hover:bg-primary/90 text-lg px-8 py-6">
-            Get Started for Free
+          <Button size="lg" class="bg-primary text-primary-foreground hover:bg-primary/90 text-lg px-8 py-4">
+            <Award class="mr-2 h-5 w-5" />
+            Start Learning Free
           </Button>
         </Link>
       </div>
     </div>
 
     <!-- Footer -->
-    <footer class="border-t border-border/40 bg-background/80 backdrop-blur-sm mt-20">
-      <div class="container mx-auto px-4 py-8">
+    <footer class="border-t border-border/40 bg-background/80 backdrop-blur-sm mt-12">
+      <div class="container mx-auto px-4 py-6">
         <div class="text-center text-muted-foreground">
           <p>&copy; 2025 One Lesson Up. All rights reserved.</p>
         </div>

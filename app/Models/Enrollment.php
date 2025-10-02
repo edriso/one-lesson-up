@@ -17,13 +17,14 @@ class Enrollment extends Model
         'course_id',
         'course_reflection',
         'completed_at',
+        'bonus_deadline',
     ];
 
     protected function casts(): array
     {
         return [
             'completed_at' => 'datetime',
-            'deadline_date' => 'datetime',
+            'bonus_deadline' => 'date',
         ];
     }
 
@@ -52,11 +53,20 @@ class Enrollment extends Model
     }
 
     /**
-     * Get all learning activities for this enrollment.
+     * Get all daily activities for this enrollment.
      */
-    public function learningActivities(): HasMany
+    public function dailyActivities(): HasMany
     {
-        return $this->hasMany(LearningActivity::class);
+        return $this->hasMany(DailyActivity::class);
+    }
+
+    /**
+     * Get the number of active days for this enrollment.
+     * This represents "engagement days" - days the user worked on this specific course.
+     */
+    public function getActiveDaysCount(): int
+    {
+        return $this->dailyActivities()->where('lessons_completed', '>', 0)->count();
     }
 
     /**
@@ -156,14 +166,9 @@ class Enrollment extends Model
         if ($courseBonus > 0) {
             $this->user->increment('points', $courseBonus);
             
-            // Log the bonus activity
-            \App\Models\LearningActivity::create([
-                'user_id' => $this->user_id,
-                'enrollment_id' => $this->id,
-                'activity_type' => \App\Enums\ActivityType::COURSE_COMPLETED,
-                'points_earned' => $courseBonus,
-                'description' => "Completed course: {$this->course->name}",
-            ]);
+            // Course completion bonus is already part of user's total points
+            // Daily activity tracking happens automatically via lesson completion
+            // No need to create separate activity for course completion bonus
         }
     }
 }

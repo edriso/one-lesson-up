@@ -22,7 +22,10 @@ import {
   Circle,
   Star,
   Link as LinkIcon,
-  Lock
+  Lock,
+  Clock,
+  Trophy,
+  Edit
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
@@ -60,6 +63,8 @@ interface Props {
   can_join: boolean;
   completed_lessons_count: number;
   completion_date?: string;
+  bonus_deadline?: string;
+  is_bonus_eligible: boolean;
 }
 
 const props = defineProps<Props>();
@@ -83,6 +88,7 @@ const isSaving = ref(false);
 
 // Course reflection modal state
 const isReflectionModalOpen = ref(false);
+const isEditingReflection = ref(false);
 
 const openCompleteModal = (lesson: Lesson) => {
   selectedLesson.value = lesson;
@@ -228,11 +234,18 @@ const joinCourse = () => {
 };
 
 const openReflectionModal = () => {
+  isEditingReflection.value = false;
+  isReflectionModalOpen.value = true;
+};
+
+const openEditReflectionModal = () => {
+  isEditingReflection.value = true;
   isReflectionModalOpen.value = true;
 };
 
 const closeReflectionModal = () => {
   isReflectionModalOpen.value = false;
+  isEditingReflection.value = false;
 };
 
 const onCourseCompleted = () => {
@@ -343,6 +356,12 @@ const progressText = computed(() => {
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Created {{ formatLongDate(course.created_at) }}</span>
             </div>
+            <div v-if="bonus_deadline" class="flex items-center gap-2 text-sm">
+              <Badge :variant="is_bonus_eligible ? 'default' : 'secondary'" class="text-xs">
+                <Clock class="h-3 w-3 mr-1" />
+                {{ is_bonus_eligible ? 'Bonus until' : 'Bonus expired' }} {{ formatLongDate(bonus_deadline) }}
+              </Badge>
+            </div>
           </div>
         </div>
 
@@ -446,10 +465,6 @@ const progressText = computed(() => {
                 </div>
               </div>
               
-              <!-- Course Reflection Display -->
-              <div v-if="course.course_reflection" class="mt-3 p-3 bg-background/50 rounded border">
-                <p class="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{{ course.course_reflection }}</p>
-              </div>
             </div>
           </div>
         </CardContent>
@@ -550,6 +565,42 @@ const progressText = computed(() => {
           </Card>
         </div>
       </div>
+
+      <!-- Course Reflection Section (for completed courses) -->
+      <Card v-if="is_completed && course.course_reflection" class="border-primary/20 bg-primary/5">
+        <CardContent class="p-6">
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                <BookOpen class="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-foreground">Your Course Reflection</h3>
+                <p class="text-sm text-muted-foreground">
+                  Your thoughts and insights about this course
+                </p>
+              </div>
+            </div>
+            
+            <div class="p-4 bg-background/50 rounded-lg border border-border">
+              <div class="flex items-start justify-between gap-3">
+                <p class="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap flex-1">
+                  {{ course.course_reflection }}
+                </p>
+                <Button 
+                  @click="openEditReflectionModal" 
+                  variant="outline" 
+                  size="sm"
+                  class="flex-shrink-0"
+                >
+                  <Edit class="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <!-- Bottom Actions -->
       <Card v-if="!is_completed && (is_enrolled || can_join)" class="border-primary/20">
@@ -710,6 +761,8 @@ const progressText = computed(() => {
     <CourseReflectionModal
       :is-open="isReflectionModalOpen"
       :course="course"
+      :existing-reflection="course.course_reflection"
+      :is-editing="isEditingReflection"
       @close="closeReflectionModal"
       @success="onCourseCompleted"
     />

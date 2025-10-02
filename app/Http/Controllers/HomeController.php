@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Course;
 use App\Models\CompletedLesson;
-use App\Models\LearningActivity;
+use App\Models\DailyActivity;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -57,22 +57,23 @@ class HomeController extends Controller
             }
         }
         
-        // Get recent activities with eager loading (optimized)
-        $recentActivities = LearningActivity::with([
+        // Get recent activities from daily activities (optimized)
+        $recentActivities = DailyActivity::with([
                 'user:id,username,full_name,avatar',
                 'enrollment.course:id,name'
             ])
-            ->select('id', 'user_id', 'enrollment_id', 'lesson_id', 'activity_type', 'points_earned', 'created_at')
-            ->latest()
+            ->select('id', 'user_id', 'enrollment_id', 'lessons_completed', 'is_bonus_earned', 'activity_date')
+            ->where('lessons_completed', '>', 0)
+            ->latest('activity_date')
             ->limit(5)
             ->get()
             ->map(function ($activity) {
                 return [
                     'id' => $activity->id,
-                    'type' => $activity->activity_type->value,
-                    'description' => $activity->activity_type->description(),
-                    'points_earned' => $activity->points_earned ?? 0,
-                    'created_at' => $activity->created_at->toISOString(),
+                    'type' => 'lessons_completed',
+                    'description' => "Completed {$activity->lessons_completed} lesson(s) in {$activity->enrollment->course->name}",
+                    'points_earned' => $activity->getPointsEarned(),
+                    'created_at' => $activity->activity_date->toISOString(),
                     'user' => [
                         'id' => $activity->user->id,
                         'full_name' => $activity->user->full_name ?? $activity->user->username,

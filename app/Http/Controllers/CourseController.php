@@ -20,35 +20,37 @@ class CourseController extends Controller
     {
         $user = auth()->user()->load(['enrollment.course', 'enrollments']);
         
-        // Get user's active enrollments to avoid N+1 queries
-        $userEnrollments = $user->enrollments()
-            ->whereNull('completed_at')
+        // Get user's active enrollments - optimized using enrollment_id
+        $userEnrollments = [];
+        if ($user->enrollment_id) {
+            $userEnrollments = [$user->enrollment->course_id];
+        }
+        
+        // Get user's completed enrollments - optimized query
+        $userCompletedEnrollments = $user->completedEnrollments()
             ->pluck('course_id')
             ->toArray();
         
-        // Get user's completed enrollments
-        $userCompletedEnrollments = $user->enrollments()
-            ->whereNotNull('completed_at')
-            ->whereNotNull('course_reflection')
-            ->pluck('course_id')
-            ->toArray();
+        // For completed courses, they should also be considered "enrolled" (user was enrolled in them)
+        $userAllEnrollments = array_merge($userEnrollments, $userCompletedEnrollments);
         
-        // Get all active courses with counts
+        // Get all active courses with counts - take more to ensure current course is included
         $courses = Course::withCount([
                 'enrollments as students_count', // Total students (active + completed)
                 'enrollments as active_students_count' => function ($query) {
                     $query->whereNull('completed_at');
                 },
                 'enrollments as completed_students_count' => function ($query) {
-                    $query->whereNotNull('completed_at')->whereNotNull('course_reflection');
+$query->whereNotNull('completed_at');
                 }
             ])
             ->withCount('lessons')
             ->with('tags')
             ->where('is_active', true)
             ->orderBy('students_count', 'desc')
+            ->take(50) // Take more courses to ensure current course is included
             ->get()
-            ->map(function ($course) use ($user, $userEnrollments, $userCompletedEnrollments) {
+            ->map(function ($course) use ($user, $userEnrollments, $userCompletedEnrollments, $userAllEnrollments) {
                 return [
                     'id' => $course->id,
                     'title' => $course->name,
@@ -59,9 +61,10 @@ class CourseController extends Controller
                     'lessons_count' => $course->lessons_count,
                     'created_at' => $course->created_at->toISOString(),
                     'can_join' => $user->canCreateCourse(),
-                    'is_enrolled' => in_array($course->id, $userEnrollments),
+                    'is_enrolled' => in_array($course->id, $userAllEnrollments),
                     'is_completed' => in_array($course->id, $userCompletedEnrollments),
                     'is_creator' => $course->creator_id === $user->id,
+                    'is_featured' => $course->is_featured,
                     'tags' => $course->tags->map(function ($tag) {
                         return [
                             'id' => $tag->id,
@@ -71,15 +74,32 @@ class CourseController extends Controller
                 ];
             })
             ->sortBy(function ($course) use ($user) {
-                // Sort order: Current class first, then completed classes, then others
+                // Sort order: Current class → Completed classes → Created classes → Featured classes → Others by popularity
                 $currentCourseId = $user->enrollment ? $user->enrollment->course_id : null;
+                
+                // Priority 0: Current class
                 if ($course['id'] === $currentCourseId) {
-                    return 0; // Current class first
+                    return 0;
                 }
+                
+                // Priority 1: Completed classes
                 if ($course['is_completed']) {
-                    return 1; // Completed classes second
+                    return 1;
                 }
-                return 2; // Other classes last
+                
+                // Priority 2: Created classes
+                if ($course['is_creator']) {
+                    return 2;
+                }
+                
+                // Priority 3: Featured classes (if we had a featured flag)
+                // For now, we'll use is_featured from the course model
+                if (isset($course['is_featured']) && $course['is_featured']) {
+                    return 3;
+                }
+                
+                // Priority 4: Other classes (already sorted by students_count)
+                return 4;
             })
             ->values(); // Reset array keys
         
@@ -210,6 +230,7 @@ class CourseController extends Controller
             $enrollment = Enrollment::create([
                 'user_id' => $user->id,
                 'course_id' => $course->id,
+                'bonus_deadline' => $course->smart_deadline, // Learning deadline based on lesson count
             ]);
             
             // Update user's enrollment_id
@@ -217,7 +238,7 @@ class CourseController extends Controller
             
             DB::commit();
             
-            return redirect()->route('classes')
+            return redirect()->route('classes.show', $course->id)
                 ->with('success', 'Class created successfully! You have been automatically enrolled.');
             
         } catch (\Exception $e) {
@@ -240,11 +261,10 @@ class CourseController extends Controller
             ->whereNull('completed_at')
             ->first();
         
-        // Check if user has completed this course (both completed_at AND course_reflection required)
+        // Check if user has completed this course (completed_at only required)
         $completedEnrollment = $user->enrollments()
             ->where('course_id', $course->id)
             ->whereNotNull('completed_at')
-            ->whereNotNull('course_reflection')
             ->first();
         
         // Get completed lesson IDs and check completion status
@@ -291,6 +311,8 @@ class CourseController extends Controller
             'can_join' => $user->canCreateCourse() && !$completedEnrollment,
             'completed_lessons_count' => count($completedLessonIds),
             'completion_date' => $completedEnrollment ? $completedEnrollment->completed_at->toISOString() : null,
+            'bonus_deadline' => $enrollment ? $enrollment->bonus_deadline->toISOString() : null,
+            'is_bonus_eligible' => $enrollment ? now()->lte($enrollment->bonus_deadline) : false,
         ]);
     }
 
@@ -323,6 +345,7 @@ class CourseController extends Controller
             $enrollment = Enrollment::create([
                 'user_id' => $user->id,
                 'course_id' => $course->id,
+                'bonus_deadline' => $course->smart_deadline, // Learning deadline based on lesson count
             ]);
             
             // Update user's enrollment_id
@@ -456,16 +479,6 @@ class CourseController extends Controller
                 return back()->with('error', 'Failed to complete the course. Please ensure all lessons are completed.');
             }
 
-            // Create learning activity for course completion
-            $courseCompletionPoints = \App\Enums\PointSystemValue::COURSE_COMPLETED->value;
-            \App\Models\LearningActivity::create([
-                'user_id' => $user->id,
-                'enrollment_id' => $enrollment->id,
-                'activity_type' => \App\Enums\ActivityType::COURSE_COMPLETED,
-                'description' => "Completed course: {$course->name}",
-                'points_earned' => $courseCompletionPoints,
-            ]);
-
             DB::commit();
             
             return redirect()->route('classes.show', $course->id)
@@ -474,6 +487,44 @@ class CourseController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Failed to complete the course. Please try again.');
+        }
+    }
+
+    /**
+     * Update course reflection for a completed course.
+     */
+    public function updateReflection(Course $course, Request $request)
+    {
+        $request->validate([
+            'reflection' => 'required|string|min:50|max:2000',
+        ]);
+
+        $user = auth()->user();
+        
+        if (!$user) {
+            return back()->with('error', 'You must be logged in to update your reflection.');
+        }
+        
+        // Find the user's completed enrollment for this course
+        $enrollment = $user->enrollments()
+            ->where('course_id', $course->id)
+            ->whereNotNull('completed_at')
+            ->first();
+        
+        if (!$enrollment) {
+            return back()->with('error', 'You have not completed this course yet.');
+        }
+
+        try {
+            $enrollment->update([
+                'course_reflection' => $request->reflection,
+            ]);
+
+            return redirect()->route('classes.show', $course->id)
+                ->with('success', 'Your course reflection has been updated successfully.');
+                
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to update reflection. Please try again.');
         }
     }
 }

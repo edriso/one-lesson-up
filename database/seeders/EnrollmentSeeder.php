@@ -21,6 +21,13 @@ class EnrollmentSeeder extends Seeder
             $selectedCourses = $courses->random($enrollmentCount);
             
             foreach ($selectedCourses as $course) {
+                // Check if enrollment already exists
+                if (\App\Models\Enrollment::where('user_id', $user->id)
+                    ->where('course_id', $course->id)
+                    ->exists()) {
+                    continue;
+                }
+                
                 $isCompleted = fake()->boolean(20); // 20% chance of completion
                 
                 \App\Models\Enrollment::create([
@@ -28,19 +35,34 @@ class EnrollmentSeeder extends Seeder
                     'course_id' => $course->id,
                     'course_reflection' => $isCompleted ? fake()->paragraph() : null,
                     'completed_at' => $isCompleted ? now() : null,
+                    'bonus_deadline' => $course->smart_deadline, // Learning deadline based on lesson count
                 ]);
             }
         }
 
-        // Create some additional random enrollments
-        \App\Models\Enrollment::factory()
-            ->count(30)
-            ->create()
-            ->each(function ($enrollment) use ($users, $courses) {
-                $enrollment->update([
-                    'user_id' => $users->random()->id,
-                    'course_id' => $courses->random()->id,
+        // Create some additional random enrollments (avoiding duplicates)
+        $existingEnrollments = \App\Models\Enrollment::all()->map(function ($enrollment) {
+            return $enrollment->user_id . '-' . $enrollment->course_id;
+        })->toArray();
+        
+        $attempts = 0;
+        $maxAttempts = 30;
+        
+        while ($attempts < $maxAttempts) {
+            $user = $users->random();
+            $course = $courses->random();
+            $enrollmentKey = $user->id . '-' . $course->id;
+            
+            if (!in_array($enrollmentKey, $existingEnrollments)) {
+                \App\Models\Enrollment::create([
+                    'user_id' => $user->id,
+                    'course_id' => $course->id,
+                    'bonus_deadline' => $course->smart_deadline,
                 ]);
-            });
+                $existingEnrollments[] = $enrollmentKey;
+            }
+            
+            $attempts++;
+        }
     }
 }

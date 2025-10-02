@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LearningActivity;
+use App\Models\DailyActivity;
 use App\Models\User;
 use App\Enums\PointThreshold;
 use Carbon\Carbon;
@@ -38,18 +38,60 @@ class LeaderboardController extends Controller
 
     private function getTodayLeaderboard()
     {
-        return $this->getLeaderboardForPeriod(
-            Carbon::today(),
-            Carbon::today()->endOfDay()
-        );
+        // For today, show users who have daily activities (not points)
+        return DailyActivity::with(['user:id,username,full_name,avatar'])
+            ->where('user_timezone_date', Carbon::today()->format('Y-m-d'))
+            ->where('lessons_completed', '>', 0)
+            ->join('users', 'daily_activities.user_id', '=', 'users.id')
+            ->orderByDesc('lessons_completed')
+            ->orderByDesc('is_bonus_earned')
+            ->limit(50)
+            ->get(['daily_activities.*'])
+            ->map(function ($activity, $index) {
+                return [
+                    'id' => $activity->user_id,
+                    'rank' => $index + 1,
+                    'user' => [
+                        'id' => $activity->user->id,
+                        'full_name' => $activity->user->full_name,
+                        'username' => $activity->user->username,
+                        'avatar' => $activity->user->avatar,
+                    ],
+                    'lessons_completed' => $activity->lessons_completed,
+                    'has_time_bonus' => $activity->is_bonus_earned,
+                    'bonus_type' => $activity->bonus_type,
+                    'activity_date' => $activity->user_timezone_date,
+                ];
+            });
     }
 
     private function getYesterdayLeaderboard()
     {
-        return $this->getLeaderboardForPeriod(
-            Carbon::yesterday(),
-            Carbon::yesterday()->endOfDay()
-        );
+        // For yesterday, show users who had daily activities (not points)
+        return DailyActivity::with(['user:id,username,full_name,avatar'])
+            ->where('user_timezone_date', Carbon::yesterday()->format('Y-m-d'))
+            ->where('lessons_completed', '>', 0)
+            ->join('users', 'daily_activities.user_id', '=', 'users.id')
+            ->orderByDesc('lessons_completed')
+            ->orderByDesc('is_bonus_earned')
+            ->limit(50)
+            ->get(['daily_activities.*'])
+            ->map(function ($activity, $index) {
+                return [
+                    'id' => $activity->user_id,
+                    'rank' => $index + 1,
+                    'user' => [
+                        'id' => $activity->user->id,
+                        'full_name' => $activity->user->full_name,
+                        'username' => $activity->user->username,
+                        'avatar' => $activity->user->avatar,
+                    ],
+                    'lessons_completed' => $activity->lessons_completed,
+                    'has_time_bonus' => $activity->is_bonus_earned,
+                    'bonus_type' => $activity->bonus_type,
+                    'activity_date' => $activity->user_timezone_date,
+                ];
+            });
     }
 
     private function getThisMonthLeaderboard()
@@ -67,40 +109,31 @@ class LeaderboardController extends Controller
 
     private function getLeaderboardForPeriod($startDate = null, $endDate = null)
     {
-        $query = LearningActivity::with(['user:id,username,full_name,avatar'])
-            ->select('user_id')
-            ->selectRaw('SUM(COALESCE(points_earned, 0)) as total_points')
-            ->selectRaw('COUNT(*) as activities_count')
-            ->groupBy('user_id');
+        // For monthly and overall, use actual points from users table
+        $query = User::select('id', 'username', 'full_name', 'avatar', 'points')
+            ->where('points', '>', 0);
 
-        // Add date filters if provided
-        if ($startDate && $endDate) {
-            $query->whereBetween('created_at', [$startDate, $endDate]);
+        // Filter users who meet the leaderboard visibility threshold
+        if (class_exists(\App\Enums\PointThreshold::class)) {
+            $query->where('points', '>=', PointThreshold::LEADERBOARD_VISIBILITY->value);
         }
 
-        $results = $query->orderByDesc('total_points')
+        $results = $query->orderByDesc('points')
             ->limit(50) // Top 50 users
             ->get();
 
-        // Filter users who meet the leaderboard visibility threshold and have points > 0
-        $visibleResults = $results->filter(function ($result) {
-            return $result->total_points > 0 && 
-                   $result->total_points >= PointThreshold::LEADERBOARD_VISIBILITY->value;
-        });
-
         // Add ranking
-        return $visibleResults->values()->map(function ($result, $index) {
+        return $results->map(function ($user, $index) {
             return [
-                'id' => $result->user_id,
+                'id' => $user->id,
                 'rank' => $index + 1,
                 'user' => [
-                    'id' => $result->user->id,
-                    'full_name' => $result->user->full_name,
-                    'username' => $result->user->username,
-                    'avatar' => $result->user->avatar,
+                    'id' => $user->id,
+                    'full_name' => $user->full_name,
+                    'username' => $user->username,
+                    'avatar' => $user->avatar,
                 ],
-                'points' => (int) $result->total_points,
-                'activities_count' => $result->activities_count,
+                'points' => $user->points,
             ];
         })->take(20); // Show top 20
     }
@@ -111,55 +144,38 @@ class LeaderboardController extends Controller
             return 0;
         }
 
-        // Get all users for the period, ranked by points (without visibility filter for ranking calculation)
-        $leaderboard = match ($period) {
-            'today' => $this->getAllUsersForPeriodUnfiltered(Carbon::today(), Carbon::today()->endOfDay()),
-            'yesterday' => $this->getAllUsersForPeriodUnfiltered(Carbon::yesterday(), Carbon::yesterday()->endOfDay()),
-            'this_month' => $this->getAllUsersForPeriodUnfiltered(Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()),
-            'overall' => $this->getAllUsersForPeriodUnfiltered(null, null),
-            default => collect(),
-        };
+        switch ($period) {
+            case 'today':
+                $activities = DailyActivity::where('user_timezone_date', Carbon::today()->format('Y-m-d'))
+                    ->where('lessons_completed', '>', 0)
+                    ->orderByDesc('lessons_completed')
+                    ->orderByDesc('is_bonus_earned')
+                    ->pluck('user_id');
+                
+                $rank = $activities->search($user->id);
+                return $rank !== false ? $rank + 1 : 0;
 
-        // Find the current user's position
-        $userPosition = $leaderboard->search(function ($entry) use ($user) {
-            return $entry['user_id'] === $user->id;
-        });
+            case 'yesterday':
+                $activities = DailyActivity::where('user_timezone_date', Carbon::yesterday()->format('Y-m-d'))
+                    ->where('lessons_completed', '>', 0)
+                    ->orderByDesc('lessons_completed')
+                    ->orderByDesc('is_bonus_earned')
+                    ->pluck('user_id');
+                
+                $rank = $activities->search($user->id);
+                return $rank !== false ? $rank + 1 : 0;
 
-        return $userPosition !== false ? $userPosition + 1 : 0;
-    }
+            case 'this_month':
+            case 'overall':
+                $users = User::where('points', '>', 0)
+                    ->orderByDesc('points')
+                    ->pluck('id');
+                
+                $rank = $users->search($user->id);
+                return $rank !== false ? $rank + 1 : 0;
 
-    private function getAllUsersForPeriod($startDate = null, $endDate = null)
-    {
-        $query = LearningActivity::select('user_id')
-            ->selectRaw('SUM(points_earned) as total_points')
-            ->groupBy('user_id');
-
-        // Add date filters if provided
-        if ($startDate && $endDate) {
-            $query->whereBetween('created_at', [$startDate, $endDate]);
+            default:
+                return 0;
         }
-
-        return $query->orderByDesc('total_points')
-            ->get()
-            ->filter(function ($result) {
-                return $result->total_points >= PointThreshold::LEADERBOARD_VISIBILITY->value;
-            })
-            ->values();
-    }
-
-    private function getAllUsersForPeriodUnfiltered($startDate = null, $endDate = null)
-    {
-        $query = LearningActivity::select('user_id')
-            ->selectRaw('SUM(points_earned) as total_points')
-            ->groupBy('user_id');
-
-        // Add date filters if provided
-        if ($startDate && $endDate) {
-            $query->whereBetween('created_at', [$startDate, $endDate]);
-        }
-
-        return $query->orderByDesc('total_points')
-            ->get()
-            ->values();
     }
 }

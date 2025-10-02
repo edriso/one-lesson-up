@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Briefcase
 } from 'lucide-vue-next';
+import LearningCalendar from '@/components/LearningCalendar.vue';
 
 interface ProfileUser {
   id: number;
@@ -29,6 +30,7 @@ interface ProfileUser {
   points: number;
   joined_at: string;
   is_public: boolean;
+  week_starts_on?: number;
 }
 
 interface Activity {
@@ -106,46 +108,6 @@ const getActivityIcon = (type: string) => {
   }
 };
 
-const getCalendarIntensity = (activitiesCount: number) => {
-  if (activitiesCount === 0) return 'bg-muted/30';
-  if (activitiesCount <= 2) return 'bg-primary/40';
-  if (activitiesCount <= 5) return 'bg-primary/60';
-  return 'bg-primary/80';
-};
-
-// Generate calendar grid (simplified version)
-const generateCalendarGrid = () => {
-  const today = new Date();
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  
-  const days = [];
-  const startDay = startOfMonth.getDay();
-  
-  // Add empty cells for days before the first day of the month
-  for (let i = 0; i < startDay; i++) {
-    days.push(null);
-  }
-  
-  // Add days of the month
-  for (let day = 1; day <= endOfMonth.getDate(); day++) {
-    const date = new Date(today.getFullYear(), today.getMonth(), day);
-    const dateString = date.toISOString().split('T')[0];
-    const dayData = props.calendar_data.find(d => d.date === dateString);
-    
-    days.push({
-      date: dateString,
-      day: day,
-      activities_count: dayData?.activities_count || 0,
-      points_earned: dayData?.points_earned || 0,
-      lessons_completed: dayData?.lessons_completed || 0
-    });
-  }
-  
-  return days;
-};
-
-const calendarGrid = generateCalendarGrid();
 </script>
 
 <template>
@@ -292,51 +254,10 @@ const calendarGrid = generateCalendarGrid();
 
         <!-- Calendar Tab -->
         <TabsContent value="calendar" class="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle class="flex items-center gap-2">
-                <Calendar class="h-5 w-5 text-primary" />
-                Learning Calendar
-              </CardTitle>
-              <CardDescription>
-                Your learning activity over time
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div class="space-y-4">
-                <!-- Calendar Grid -->
-                <div class="grid grid-cols-7 gap-1">
-                  <!-- Day headers -->
-                  <div class="text-center text-sm font-medium text-muted-foreground py-2">Sun</div>
-                  <div class="text-center text-sm font-medium text-muted-foreground py-2">Mon</div>
-                  <div class="text-center text-sm font-medium text-muted-foreground py-2">Tue</div>
-                  <div class="text-center text-sm font-medium text-muted-foreground py-2">Wed</div>
-                  <div class="text-center text-sm font-medium text-muted-foreground py-2">Thu</div>
-                  <div class="text-center text-sm font-medium text-muted-foreground py-2">Fri</div>
-                  <div class="text-center text-sm font-medium text-muted-foreground py-2">Sat</div>
-                  
-                  <!-- Calendar days -->
-                  <div v-for="(day, index) in calendarGrid" :key="index" 
-                       class="aspect-square flex items-center justify-center text-sm rounded"
-                       :class="day ? getCalendarIntensity(day.activities_count) : 'bg-transparent'">
-                    <span v-if="day" class="text-xs font-medium">{{ day.day }}</span>
-                  </div>
-                </div>
-                
-                <!-- Legend -->
-                <div class="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>Less</span>
-                  <div class="flex gap-1">
-                    <div class="w-3 h-3 rounded bg-muted/30"></div>
-                    <div class="w-3 h-3 rounded bg-primary/40"></div>
-                    <div class="w-3 h-3 rounded bg-primary/60"></div>
-                    <div class="w-3 h-3 rounded bg-primary/80"></div>
-                  </div>
-                  <span>More</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <LearningCalendar 
+            :calendar_data="calendar_data" 
+            :week_starts_on="user?.week_starts_on || 0"
+          />
         </TabsContent>
 
         <!-- Classes Tab -->

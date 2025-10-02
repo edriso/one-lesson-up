@@ -34,6 +34,7 @@ interface Course {
   is_enrolled: boolean;
   is_completed: boolean;
   is_creator: boolean;
+  is_featured?: boolean;
   is_public?: boolean;
   tags?: Tag[];
 }

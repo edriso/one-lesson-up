@@ -8,10 +8,10 @@ Transform online learning into an engaging journey with gamification, accountabi
 
 One Lesson Up gamifies online learning with:
 
-- **🎯 Points System** - Earn 1 point per lesson, with smart deadline bonuses
-- **⏱️ Smart Deadlines** - Complete courses on time for 50% bonus points
+- **🎯 Points System** - Earn 1 point per lesson, with learning deadline bonuses
+- **⏱️ Learning Deadlines** - Complete courses on time for bonus points
 - **📝 Learning Summaries** - Reinforce knowledge by writing what you learned
-- **🔥 Activity Calendar** - Visual calendar shows your learning activity and progress
+- **🔥 Activity Calendar** - GitHub-style calendar with week/month/year views and customizable week start
 - **👥 Community Feed** - See what other ninjas are learning
 - **🏆 Leaderboards** - Compete with the community and climb the ranks
 - **🎯 Focus Mode** - One course at a time keeps you focused
@@ -28,18 +28,29 @@ One Lesson Up gamifies online learning with:
 
 ## 📊 Points System
 
-- **Lesson completion**: 1 point
-- **On-time course completion**: 50% bonus points
-- **Late course completion**: 25% bonus points (still rewarding!)
+- **Lesson completion**: 1 point per lesson
+- **Active day bonus**: 1 point for first lesson of the day
+- **Time bonus**: 1 point for morning (6-9 AM) or evening (6-9 PM) learning
+- **Course completion bonus**: Variable based on course size and completion time
+- **Learning deadline**: Calculated based on lesson count for maximum bonus points
 
-**Smart Deadline Formula**: `lesson_count + (lesson_count ÷ 5 × 2)` days
+**Time-Based Bonuses**:
+- **Morning Bonus**: Learn between 6-9 AM for extra points
+- **Evening Bonus**: Learn between 6-9 PM for extra points
+- **One bonus per day**: Maximum 1 time bonus per day across all courses
 
-This simulates a **5-day work week** learning schedule:
-- **5 days per week** of consistent learning
-- **2 days off** for rest and reflection
-- **Realistic pacing** that prevents burnout while maintaining momentum
+**Course Completion Bonuses**:
+- **On-time completion**: Full bonus points (within learning deadline)
+- **Late completion**: Reduced bonus points (after learning deadline)
+- **Learning deadline formula**: `lesson_count + (lesson_count ÷ 5 × 2)` days
+- **Bonus scales with course size**: Larger courses = larger bonuses
 
-**Example**: 30-lesson course = 42-day deadline (6 weeks) → Finish on time = 30 + 15 bonus = 45 points ⚡
+**Learning Deadline Examples**:
+- **10 lessons**: 14 days (10 + 4)
+- **30 lessons**: 42 days (30 + 12) 
+- **50 lessons**: 70 days (50 + 20)
+
+**Example**: 30-lesson course completed on time = 30 lesson points + 30 active day points + time bonuses + course completion bonus = 60+ points ⚡
 
 ## 🛠️ Tech Stack
 
@@ -80,7 +91,7 @@ This simulates a **5-day work week** learning schedule:
 
 4. **Database setup**
    ```bash
-   php artisan migrate
+   php artisan migrate:fresh --seed
    ```
 
 5. **Build assets**

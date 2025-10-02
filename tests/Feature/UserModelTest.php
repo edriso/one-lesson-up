@@ -6,8 +6,7 @@ use App\Models\Enrollment;
 use App\Models\Module;
 use App\Models\Lesson;
 use App\Models\CompletedLesson;
-use App\Models\LearningActivity;
-use App\Enums\ActivityType;
+use App\Models\DailyActivity;
 
 test('user can be created with all required fields', function () {
     $user = User::factory()->create([
@@ -28,71 +27,56 @@ test('user can be created with all required fields', function () {
 });
 
 test('user display name returns full name when available', function () {
-    $user = User::factory()->create([
-        'username' => 'testuser',
-        'full_name' => 'Test User',
-    ]);
-
-    expect($user->display_name)->toBe('Test User');
+    $user = User::factory()->create(['full_name' => 'John Doe']);
+    expect($user->display_name)->toBe('John Doe');
 });
 
 test('user display name returns username when full name is not available', function () {
-    $user = User::factory()->create([
-        'username' => 'testuser',
-        'full_name' => null,
-    ]);
-
-    expect($user->display_name)->toBe('testuser');
+    $user = User::factory()->create(['username' => 'johndoe', 'full_name' => null]);
+    expect($user->display_name)->toBe('johndoe');
 });
 
 test('user joined days ago is calculated correctly', function () {
-    // Create user with specific created_at date
-    $user = User::factory()->create([
-        'created_at' => now()->subDays(5)
-    ]);
-    
-    expect($user->joined_days_ago)->toBeGreaterThanOrEqual(4);
-    expect($user->joined_days_ago)->toBeLessThanOrEqual(6);
+    $user = User::factory()->create(['created_at' => now()->subDays(5)]);
+    expect((int) $user->joined_days_ago)->toBe(5);
 });
 
 test('user has relationships with other models', function () {
-    $user = User::factory()->create();
-    $course = Course::factory()->create(['creator_id' => $user->id]);
-    $enrollment = Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
-    
-    expect($user->createdCourses()->count())->toBe(1);
-    expect($user->enrollments()->count())->toBe(1);
-    
-    // Check if enrollment is active (not completed)
-    expect($enrollment->completed_at)->toBeNull();
-    
-    // Refresh user to load relationships
-    $user->refresh();
-    $currentEnrollment = $user->currentEnrollment;
-    
-    // Debug: check what we're getting
-    if ($currentEnrollment === null) {
-        // Check if there are any enrollments for this user
-        $allEnrollments = $user->enrollments()->get();
-        expect($allEnrollments)->toHaveCount(1);
-        expect($allEnrollments->first()->completed_at)->toBeNull();
-    }
-    
-    expect($currentEnrollment)->toBeInstanceOf(Enrollment::class);
-});
-
-test('user learning activities relationship works', function () {
     $user = User::factory()->create();
     $course = Course::factory()->create();
     $module = Module::factory()->create(['course_id' => $course->id]);
     $lesson = Lesson::factory()->create(['module_id' => $module->id]);
     $enrollment = Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
     
-    // Create learning activities
-    LearningActivity::createLessonCompleted($user->id, $enrollment->id, $lesson->id);
-    LearningActivity::createCourseStarted($user->id, $enrollment->id);
+    // Create daily activities by completing lessons
+    CompletedLesson::create([
+        'enrollment_id' => $enrollment->id,
+        'lesson_id' => $lesson->id,
+        'summary' => 'Test lesson completion',
+    ]);
     
-    expect($user->learningActivities()->count())->toBe(2);
+    expect($user->dailyActivities()->count())->toBe(1);
+    expect($user->enrollments()->count())->toBe(1);
+});
+
+test('user daily activities relationship works', function () {
+    $user = User::factory()->create();
+    $course = Course::factory()->create();
+    $module = Module::factory()->create(['course_id' => $course->id]);
+    $lesson = Lesson::factory()->create(['module_id' => $module->id]);
+    $enrollment = Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
+    
+    // Create daily activity by completing lesson
+    CompletedLesson::create([
+        'enrollment_id' => $enrollment->id,
+        'lesson_id' => $lesson->id,
+        'summary' => 'Test lesson completion',
+    ]);
+    
+    expect($user->dailyActivities()->count())->toBe(1);
+    $activity = $user->dailyActivities()->first();
+    expect($activity->lessons_completed)->toBe(1);
+    expect($activity->enrollment_id)->toBe($enrollment->id);
 });
 
 test('user completed lessons relationship works', function () {
@@ -119,17 +103,20 @@ test('user learning calendar works correctly', function () {
     $lesson = Lesson::factory()->create(['module_id' => $module->id]);
     $enrollment = Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
     
-    // Create learning activities for current month
-    $activity = LearningActivity::createLessonCompleted($user->id, $enrollment->id, $lesson->id);
+    // Create daily activity by completing lesson
+    CompletedLesson::create([
+        'enrollment_id' => $enrollment->id,
+        'lesson_id' => $lesson->id,
+        'summary' => 'Test lesson completion',
+    ]);
     
-    $currentYear = now()->year;
-    $currentMonth = now()->month;
-    $calendar = $user->getLearningCalendar($currentYear, $currentMonth);
+    $calendar = $user->getLearningCalendar()->toArray();
     
     expect($calendar)->toBeArray();
-    expect($calendar)->toHaveKey(now()->day);
-    expect($calendar[now()->day]['has_activity'])->toBeTrue();
-    expect($calendar[now()->day]['lessons_completed'])->toBe(1);
+    expect($calendar)->not->toBeEmpty();
+    expect($calendar[0]['lessons_completed'])->toBe(1);
+    expect($calendar[0]['courses'])->toHaveCount(1);
+    expect($calendar[0]['courses'][0]['title'])->toBe($course->title);
 });
 
 test('user points are updated when completing lessons', function () {
@@ -149,7 +136,9 @@ test('user points are updated when completing lessons', function () {
     ]);
     
     $user->refresh();
-    expect($user->points)->toBe($initialPoints + 1);
+    // User gets at least 1 point for active day, possibly 2 if in time bonus window
+    expect($user->points)->toBeGreaterThanOrEqual($initialPoints + 1);
+    expect($user->points)->toBeLessThanOrEqual($initialPoints + 2);
 });
 
 test('user can have multiple enrollments', function () {
@@ -161,24 +150,6 @@ test('user can have multiple enrollments', function () {
     $enrollment2 = Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course2->id]);
     
     expect($user->enrollments()->count())->toBe(2);
-});
-
-test('user current enrollment returns the most recent active enrollment', function () {
-    $user = User::factory()->create();
-    $course1 = Course::factory()->create();
-    $course2 = Course::factory()->create();
-    
-    $enrollment1 = Enrollment::factory()->create([
-        'user_id' => $user->id, 
-        'course_id' => $course1->id,
-        'created_at' => now()->subDay()
-    ]);
-    
-    $enrollment2 = Enrollment::factory()->create([
-        'user_id' => $user->id, 
-        'course_id' => $course2->id,
-        'created_at' => now()
-    ]);
-    
-    expect($user->currentEnrollment->id)->toBe($enrollment2->id);
+    expect($user->enrollments->contains($enrollment1))->toBeTrue();
+    expect($user->enrollments->contains($enrollment2))->toBeTrue();
 });

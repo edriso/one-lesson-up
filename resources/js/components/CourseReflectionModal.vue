@@ -4,10 +4,13 @@
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <BookOpen class="h-5 w-5 text-primary" />
-          Course Reflection
+          {{ isEditing ? 'Edit Course Reflection' : 'Course Reflection' }}
         </DialogTitle>
         <DialogDescription>
-          Share your thoughts about what you learned in this course. This reflection helps you solidify your learning and marks the course as completed.
+          {{ isEditing 
+            ? 'Update your thoughts about what you learned in this course.' 
+            : 'Share your thoughts about what you learned in this course. This reflection helps you solidify your learning and marks the course as completed.' 
+          }}
         </DialogDescription>
       </DialogHeader>
       
@@ -34,7 +37,7 @@
         </Button>
         <Button @click="submitReflection" :disabled="isSubmitting || !reflection.trim()">
           <Star class="h-4 w-4 mr-2" />
-          {{ isSubmitting ? 'Submitting...' : 'Complete Course' }}
+          {{ isSubmitting ? 'Submitting...' : (isEditing ? 'Update Reflection' : 'Complete Course') }}
         </Button>
       </div>
     </DialogContent>
@@ -42,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -57,6 +60,8 @@ interface Props {
     id: number;
     title: string;
   };
+  existingReflection?: string;
+  isEditing?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -69,6 +74,15 @@ const emit = defineEmits<{
 const reflection = ref('');
 const reflectionError = ref('');
 const isSubmitting = ref(false);
+
+// Initialize reflection when modal opens
+watch(() => props.isOpen, (newValue) => {
+  if (newValue && props.existingReflection) {
+    reflection.value = props.existingReflection;
+  } else if (newValue) {
+    reflection.value = '';
+  }
+});
 
 const closeModal = () => {
   if (isSubmitting.value) return;
@@ -88,7 +102,11 @@ const submitReflection = async () => {
   reflectionError.value = '';
 
   try {
-    await router.post(`/classes/${props.course?.id}/complete`, {
+    const url = props.isEditing 
+      ? `/classes/${props.course?.id}/reflection`
+      : `/classes/${props.course?.id}/complete`;
+      
+    await router.post(url, {
       reflection: reflection.value.trim()
     }, {
       preserveScroll: false,

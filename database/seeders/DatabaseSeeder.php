@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             LessonSeeder::class,        // Create lessons (depends on modules)
             EnrollmentSeeder::class,    // Create enrollments (depends on users and courses)
             CompletedLessonSeeder::class, // Create completed lessons (depends on enrollments and lessons)
-            LearningActivitySeeder::class, // Create learning activities (depends on completed lessons)
+            DailyActivitySeeder::class, // Create daily activities (replaces learning activities)
         ]);
     }
 }

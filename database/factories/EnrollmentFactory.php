@@ -19,6 +19,7 @@ class EnrollmentFactory extends Factory
         return [
             'user_id' => \App\Models\User::factory(),
             'course_id' => \App\Models\Course::factory(),
+            'bonus_deadline' => $this->faker->dateTimeBetween('+1 week', '+1 month'),
             'completed_at' => null, // Active enrollment by default
             'course_reflection' => null,
         ];

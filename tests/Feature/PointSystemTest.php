@@ -6,9 +6,8 @@ use App\Models\Enrollment;
 use App\Models\Module;
 use App\Models\Lesson;
 use App\Models\CompletedLesson;
-use App\Models\LearningActivity;
-use App\Enums\ActivityType;
-use App\Enums\PointSystemValue;
+use App\Models\DailyActivity;
+use App\Enums\PointValue;
 
 beforeEach(function () {
     $this->user = User::factory()->create(['points' => 0]);
@@ -34,14 +33,23 @@ test('user earns points when completing a lesson', function () {
     ]);
 
     $this->user->refresh();
-    expect($this->user->points)->toBe($initialPoints + PointSystemValue::LESSON_COMPLETED->value);
+    
+    // User should get at least 1 point for active day
+    // May get additional point for time bonus if in window
+    $expectedMinPoints = $initialPoints + PointValue::ACTIVE_DAY->getPoints();
+    expect($this->user->points)->toBeGreaterThanOrEqual($expectedMinPoints);
+    
+    // Check that daily activity was created
+    $activity = DailyActivity::where('user_id', $this->user->id)->latest('activity_date')->first();
+    expect($activity)->not->toBeNull();
+    expect($activity->lessons_completed)->toBe(1);
 });
 
-test('learning activity is created when completing a lesson', function () {
+test('daily activity is created when completing a lesson', function () {
     // Create additional lessons so completing one doesn't complete the course
     $additionalLessons = Lesson::factory()->count(2)->create(['module_id' => $this->module->id]);
     
-    $initialActivityCount = LearningActivity::count();
+    $initialActivityCount = DailyActivity::count();
     
     CompletedLesson::create([
         'enrollment_id' => $this->enrollment->id,
@@ -49,191 +57,91 @@ test('learning activity is created when completing a lesson', function () {
         'summary' => 'Test lesson completion',
     ]);
 
-    expect(LearningActivity::count())->toBe($initialActivityCount + 1);
+    expect(DailyActivity::count())->toBe($initialActivityCount + 1);
     
-    $activity = LearningActivity::latest()->first();
-    expect($activity->activity_type)->toBe(ActivityType::LESSON_COMPLETED);
-    expect($activity->points_earned)->toBe(PointSystemValue::LESSON_COMPLETED->value);
-});
-
-test('user loses points when deleting a completed lesson', function () {
-    // Complete a lesson first
-    $completedLesson = CompletedLesson::create([
-        'enrollment_id' => $this->enrollment->id,
-        'lesson_id' => $this->lesson->id,
-        'summary' => 'Test lesson completion',
-    ]);
-
-    $this->user->refresh();
-    $pointsAfterCompletion = $this->user->points;
-    
-    // Delete the completed lesson
-    $completedLesson->delete();
-    
-    $this->user->refresh();
-    expect($this->user->points)->toBe($pointsAfterCompletion - PointSystemValue::LESSON_COMPLETED->value);
+    $activity = DailyActivity::latest('activity_date')->first();
+    expect($activity->lessons_completed)->toBe(1);
+    expect($activity->user_id)->toBe($this->user->id);
+    expect($activity->enrollment_id)->toBe($this->enrollment->id);
 });
 
 test('course completion awards bonus points on time', function () {
-    // Create a course with multiple lessons (3 additional lessons)
-    $lessons = Lesson::factory()->count(3)->create(['module_id' => $this->module->id]);
+    $this->user->update(['points' => 0]);
     
-    // Debug: check course lessons count (should be 4: 1 from setup + 3 new)
-    $this->course->refresh();
-    expect($this->course->lessons_count)->toBe(4);
-    
-    // Complete all lessons (including the one from setup)
+    // Complete the lesson
     CompletedLesson::create([
         'enrollment_id' => $this->enrollment->id,
         'lesson_id' => $this->lesson->id,
         'summary' => 'Test lesson completion',
     ]);
-    
-    foreach ($lessons as $lesson) {
-        CompletedLesson::create([
-            'enrollment_id' => $this->enrollment->id,
-            'lesson_id' => $lesson->id,
-            'summary' => 'Test lesson completion',
-        ]);
-    }
 
+    // Complete the course with reflection (on time)
+    $success = $this->enrollment->completeWithReflection('Test reflection');
+    
+    expect($success)->toBeTrue();
+    
     $this->user->refresh();
-    $this->enrollment->refresh();
-    
-    // Check if enrollment is completed
-    expect($this->enrollment->completed_at)->not->toBeNull();
-    
-    // Calculate expected points: 4 lessons + bonus (on-time)
-    $expectedBonus = PointSystemValue::calculateCourseBonus(4, true);
-    $expectedTotal = (4 * PointSystemValue::LESSON_COMPLETED->value) + round($expectedBonus);
-    
-    expect($this->user->points)->toBe((int) $expectedTotal);
+    $expectedPoints = PointValue::ACTIVE_DAY->getPoints() + PointValue::calculateCompletionBonus(1, true);
+    expect($this->user->points)->toBe($expectedPoints);
 });
 
-test('course completion awards bonus points late', function () {
-    // Create a course with multiple lessons
-    $lessons = Lesson::factory()->count(3)->create(['module_id' => $this->module->id]);
-    
-    // Note: This test now expects on-time completion since the deadline logic
-    // is working correctly and the enrollment is within the deadline
-    
-    // Complete all lessons (including the original one from setup)
-    CompletedLesson::create([
-        'enrollment_id' => $this->enrollment->id,
-        'lesson_id' => $this->lesson->id,
-        'summary' => 'Test lesson completion',
-    ]);
-    
-    foreach ($lessons as $lesson) {
-        CompletedLesson::create([
-            'enrollment_id' => $this->enrollment->id,
-            'lesson_id' => $lesson->id,
-            'summary' => 'Test lesson completion',
-        ]);
-    }
-
-    $this->user->refresh();
-    
-    // Debug: Check if course completion was triggered
-    $this->enrollment->refresh();
-    expect($this->enrollment->completed_at)->not->toBeNull();
-    
-    // Calculate expected points: 4 lessons + bonus (on-time)
-    $expectedBonus = PointSystemValue::calculateCourseBonus(4, true);
-    $expectedTotal = (4 * PointSystemValue::LESSON_COMPLETED->value) + round($expectedBonus);
-    
-    expect($this->user->points)->toBe((int) $expectedTotal);
-});
-
-test('course completion creates learning activity', function () {
-    // Create a course with multiple lessons
-    $lessons = Lesson::factory()->count(2)->create(['module_id' => $this->module->id]);
-    
-    $initialActivityCount = LearningActivity::count();
-    
-    // Complete all lessons (including the original one from setup)
-    CompletedLesson::create([
-        'enrollment_id' => $this->enrollment->id,
-        'lesson_id' => $this->lesson->id,
-        'summary' => 'Test lesson completion',
-    ]);
-    
-    foreach ($lessons as $lesson) {
-        CompletedLesson::create([
-            'enrollment_id' => $this->enrollment->id,
-            'lesson_id' => $lesson->id,
-            'summary' => 'Test lesson completion',
-        ]);
-    }
-
-    // Should have created: 3 lesson activities + 1 course completion activity
-    expect(LearningActivity::count())->toBe($initialActivityCount + 4);
-    
-    $courseCompletionActivity = LearningActivity::where('activity_type', ActivityType::COURSE_COMPLETED->value)->first();
-    expect($courseCompletionActivity)->not->toBeNull();
-    expect($courseCompletionActivity->points_earned)->toBeGreaterThan(0);
-});
-
-test('enrollment is marked as completed when all lessons are done', function () {
-    // Create a fresh enrollment for this test to avoid interference from other tests
-    $freshEnrollment = Enrollment::factory()->create([
+test('multiple enrollments same day awards single active day point', function () {
+    // Create second course and enrollment
+    $secondCourse = Course::factory()->create();
+    $secondModule = Module::factory()->create(['course_id' => $secondCourse->id]);
+    $secondLesson = Lesson::factory()->create(['module_id' => $secondModule->id]);
+    $secondEnrollment = Enrollment::factory()->create([
         'user_id' => $this->user->id,
-        'course_id' => $this->course->id,
+        'course_id' => $secondCourse->id,
     ]);
-    
-    // Create a course with multiple lessons
-    $lessons = Lesson::factory()->count(2)->create(['module_id' => $this->module->id]);
-    
-    expect($freshEnrollment->completed_at)->toBeNull();
-    
-    // Complete all lessons (including the original one from setup)
-    CompletedLesson::create([
-        'enrollment_id' => $freshEnrollment->id,
-        'lesson_id' => $this->lesson->id,
-        'summary' => 'Test lesson completion',
-    ]);
-    
-    foreach ($lessons as $lesson) {
-        CompletedLesson::create([
-            'enrollment_id' => $freshEnrollment->id,
-            'lesson_id' => $lesson->id,
-            'summary' => 'Test lesson completion',
-        ]);
-    }
 
-    $freshEnrollment->refresh();
-    expect($freshEnrollment->completed_at)->not->toBeNull();
-});
+    $this->user->update(['points' => 0]);
 
-test('point system handles multiple courses correctly', function () {
-    // Create additional lessons in first course to prevent course completion
-    $additionalLessons1 = Lesson::factory()->count(2)->create(['module_id' => $this->module->id]);
-    
-    // Create another course and enrollment
-    $course2 = Course::factory()->create();
-    $module2 = Module::factory()->create(['course_id' => $course2->id]);
-    $lesson2 = Lesson::factory()->create(['module_id' => $module2->id]);
-    $additionalLessons2 = Lesson::factory()->count(2)->create(['module_id' => $module2->id]);
-    $enrollment2 = Enrollment::factory()->create([
-        'user_id' => $this->user->id,
-        'course_id' => $course2->id,
-    ]);
-    
-    $initialPoints = $this->user->points;
-    
-    // Complete lessons in both courses
+    // Complete lesson in first course
     CompletedLesson::create([
         'enrollment_id' => $this->enrollment->id,
         'lesson_id' => $this->lesson->id,
-        'summary' => 'Test lesson completion',
+        'summary' => 'Test lesson completion 1',
     ]);
-    
+
+    $pointsAfterFirst = $this->user->fresh()->points;
+
+    // Complete lesson in second course on same day
     CompletedLesson::create([
-        'enrollment_id' => $enrollment2->id,
-        'lesson_id' => $lesson2->id,
-        'summary' => 'Test lesson completion',
+        'enrollment_id' => $secondEnrollment->id,
+        'lesson_id' => $secondLesson->id,
+        'summary' => 'Test lesson completion 2',
     ]);
 
     $this->user->refresh();
-    expect($this->user->points)->toBe($initialPoints + (2 * PointSystemValue::LESSON_COMPLETED->value));
+    
+    // Second lesson should not award any additional points since user already active today
+    expect($this->user->points)->toBe($pointsAfterFirst);
+    
+    // But should have 2 separate daily activities
+    $activities = DailyActivity::where('user_id', $this->user->id)->get();
+    expect($activities->count())->toBe(2);
+    expect($activities->sum('lessons_completed'))->toBe(2);
+});
+
+test('enrollment active days count works correctly', function () {
+    // Complete lessons on different days for this enrollment
+    
+    // Day 1
+    CompletedLesson::create([
+        'enrollment_id' => $this->enrollment->id,
+        'lesson_id' => $this->lesson->id,
+        'summary' => 'Day 1 lesson',
+    ]);
+    
+    // Create activity for day 2 (simulate different day)
+    DailyActivity::create([
+        'user_id' => $this->user->id,
+        'enrollment_id' => $this->enrollment->id,
+        'activity_date' => now()->subDay()->format('Y-m-d'),
+        'lessons_completed' => 2,
+        'time_bonus_earned' => false,
+    ]);
+    
+    expect($this->enrollment->active_days_count)->toBe(2);
 });

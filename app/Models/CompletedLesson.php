@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\PointValue;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Enums\PointSystemValue;
 
 class CompletedLesson extends Model
 {
@@ -23,29 +23,33 @@ class CompletedLesson extends Model
      */
     protected static function booted()
     {
-        // Award 1 point when a lesson is completed
+        // Record daily activity and award points when a lesson is completed
         static::created(function ($completedLesson) {
-            $pointsEarned = PointSystemValue::LESSON_COMPLETED->value;
-            $completedLesson->enrollment->user->increment('points', $pointsEarned);
-
-            // Create learning activity for tracking
-            \App\Models\LearningActivity::create([
-                'user_id' => $completedLesson->enrollment->user_id,
-                'enrollment_id' => $completedLesson->enrollment_id,
-                'lesson_id' => $completedLesson->lesson_id,
-                'activity_type' => \App\Enums\ActivityType::LESSON_COMPLETED,
-                'points_earned' => $pointsEarned, // Track points for leaderboard
-            ]);
+            // Skip during seeding to avoid unique constraint violations
+            if (app()->runningInConsole() && app()->environment('local')) {
+                return;
+            }
+            
+            $user = $completedLesson->enrollment->user;
+            
+            // Record daily activity and get points awarded
+            [$dailyActivity, $pointsAwarded] = DailyActivity::recordActivity(
+                $user->id,
+                $completedLesson->enrollment_id,
+                $user->timezone ?? 'UTC'
+            );
+            
+            // Award points to user
+            if ($pointsAwarded > 0) {
+                $user->increment('points', $pointsAwarded);
+            }
             
             // Check if this was the last lesson of the course
             $completedLesson->checkCourseCompletion();
         });
 
-        // Remove points when a lesson completion is deleted
-        static::deleted(function ($completedLesson) {
-            $pointsToRemove = PointSystemValue::LESSON_COMPLETED->value;
-            $completedLesson->enrollment->user->decrement('points', $pointsToRemove);
-        });
+        // Note: We don't handle deletion point removal here anymore
+        // since daily activities track the overall daily progress
     }
 
     /**

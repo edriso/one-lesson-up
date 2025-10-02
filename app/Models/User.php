@@ -30,6 +30,8 @@ class User extends Authenticatable
         'website_url',
         'is_public',
         'enrollment_id',
+        'timezone',
+        'timezone_updated_at',
     ];
 
     /**
@@ -54,6 +56,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_public' => 'boolean',
             'points' => 'integer',
+            'timezone_updated_at' => 'datetime',
         ];
     }
 
@@ -93,11 +96,31 @@ class User extends Authenticatable
     }
 
     /**
-     * Get user's latest completed enrollment (requires both completed_at and reflection).
+     * Get user's latest completed enrollment (requires completed_at only).
      */
     public function latestCompletedEnrollment()
     {
-        return $this->hasOne(Enrollment::class, 'user_id')->whereNotNull('completed_at')->whereNotNull('course_reflection')->latest();
+        return $this->hasOne(Enrollment::class, 'user_id')->whereNotNull('completed_at')->latest();
+    }
+
+    /**
+     * Get user's completed enrollments (optimized query).
+     */
+    public function completedEnrollments()
+    {
+        return $this->hasMany(Enrollment::class)->whereNotNull('completed_at');
+    }
+
+    /**
+     * Get user's active enrollments (optimized using enrollment_id).
+     */
+    public function getActiveEnrollments()
+    {
+        if (!$this->enrollment_id) {
+            return collect();
+        }
+        
+        return collect([$this->enrollment]);
     }
 
     /**
@@ -114,11 +137,6 @@ class User extends Authenticatable
     public function completedLessons()
     {
         return $this->hasManyThrough(CompletedLesson::class, Enrollment::class);
-    }
-
-    public function learningActivities()
-    {
-        return $this->hasMany(LearningActivity::class);
     }
 
     /**
@@ -143,33 +161,123 @@ class User extends Authenticatable
     }
 
     /**
-     * Get user's learning calendar data for a specific month.
+     * Get the calendar of user's learning activities with points and time bonus information.
+     * Groups activities by date since there can be multiple enrollments per day.
      */
-    public function getLearningCalendar(int $year, int $month): array
+    public function getLearningCalendar()
     {
-        $startDate = now()->setYear($year)->setMonth($month)->startOfMonth();
-        $endDate = $startDate->copy()->endOfMonth();
-
-        $activities = $this->learningActivities()
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->where('activity_type', \App\Enums\ActivityType::LESSON_COMPLETED->value)
+        $activities = $this->dailyActivities()
+            ->with(['enrollment.course'])
+            ->latest('activity_date')
             ->get()
             ->groupBy(function ($activity) {
-                return $activity->created_at->format('Y-m-d');
-            });
+                return $activity->activity_date->format('Y-m-d');
+            })
+            ->map(function ($dayActivities, $date) {
+                $totalLessons = $dayActivities->sum('lessons_completed');
+                $hasTimeBonus = $dayActivities->where('time_bonus_earned', true)->isNotEmpty();
+                $timeBonusType = $dayActivities->where('time_bonus_earned', true)->first()?->time_bonus_type;
+                
+                // Calculate points: 1 for active day + 1 for time bonus if earned
+                $pointsEarned = ($totalLessons > 0 ? 1 : 0) + ($hasTimeBonus ? 1 : 0);
+                
+                return [
+                    'date' => \Carbon\Carbon::parse($date),
+                    'iso_date' => \Carbon\Carbon::parse($date)->toISOString(),
+                    'lessons_completed' => $totalLessons,
+                    'points_earned' => $pointsEarned,
+                    'time_bonus_earned' => $hasTimeBonus,
+                    'time_bonus_type' => $timeBonusType,
+                    'courses' => $dayActivities->map(function ($activity) {
+                        return [
+                            'id' => $activity->enrollment->course->id,
+                            'title' => $activity->enrollment->course->title,
+                            'lessons_completed' => $activity->lessons_completed,
+                        ];
+                    })->values(),
+                ];
+            })
+            ->values();
 
-        $calendar = [];
-        for ($day = 1; $day <= $endDate->day; $day++) {
-            $date = $startDate->copy()->setDay($day);
-            $dateKey = $date->format('Y-m-d');
-            
-            $calendar[$day] = [
-                'date' => $date,
-                'has_activity' => $activities->has($dateKey),
-                'lessons_completed' => $activities->get($dateKey, collect())->count(),
-            ];
+        return $activities;
+    }
+
+    /**
+     * Check if user can update timezone (must wait 30 days)
+     */
+    public function canUpdateTimezone(): bool
+    {
+        if (!$this->timezone_updated_at) {
+            return true; // First time setting timezone
         }
 
-        return $calendar;
+        return $this->timezone_updated_at->diffInDays(now()) >= 30;
+    }
+
+    /**
+     * Update user timezone with timestamp
+     */
+    public function updateTimezone(string $timezone): bool
+    {
+        if (!$this->canUpdateTimezone()) {
+            return false;
+        }
+
+        return $this->update([
+            'timezone' => $timezone,
+            'timezone_updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Get current date in user's timezone
+     */
+    public function getCurrentDateInTimezone(): \Carbon\Carbon
+    {
+        return now()->setTimezone($this->timezone ?? 'UTC');
+    }
+
+    /**
+     * Get daily activities relationship
+     */
+    public function dailyActivities()
+    {
+        return $this->hasMany(DailyActivity::class);
+    }
+
+    /**
+     * Get today's daily activities (in user's timezone) - can be multiple enrollments
+     */
+    public function getTodayActivities()
+    {
+        $todayInUserTz = $this->getCurrentDateInTimezone()->format('Y-m-d');
+        
+        return $this->dailyActivities()
+            ->where('activity_date', $todayInUserTz)
+            ->get();
+    }
+
+    /**
+     * Check if user has any activity today
+     */
+    public function hasActivityToday(): bool
+    {
+        return $this->getTodayActivities()->isNotEmpty();
+    }
+
+    /**
+     * Get total lessons completed today across all enrollments
+     */
+    public function getTodayLessonsCount(): int
+    {
+        return $this->getTodayActivities()->sum('lessons_completed');
+    }
+
+    /**
+     * Check if user earned time bonus today
+     */
+    public function hasTimeBonusToday(): bool
+    {
+        return $this->getTodayActivities()->where('time_bonus_earned', true)->isNotEmpty();
     }
 }

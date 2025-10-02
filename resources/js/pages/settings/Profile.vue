@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Star, Info } from 'lucide-vue-next';
+import { Award, Info } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Props {
@@ -38,7 +38,7 @@ const user = page.props.auth.user;
 
 // Point thresholds
 const PROFILE_PICTURE_POINTS = 5;
-const canUploadAvatar = computed(() => user.points >= PROFILE_PICTURE_POINTS);
+const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POINTS);
 </script>
 
 <template>
@@ -59,7 +59,7 @@ const canUploadAvatar = computed(() => user.points >= PROFILE_PICTURE_POINTS);
                 >
                     <!-- Points Display -->
                     <Alert>
-                        <Star class="h-4 w-4 text-primary" />
+                        <Award class="h-4 w-4 text-primary" />
                         <AlertDescription>
                             You have <strong>{{ user.points }} points</strong>. Complete lessons to earn more!
                         </AlertDescription>
@@ -124,7 +124,7 @@ const canUploadAvatar = computed(() => user.points >= PROFILE_PICTURE_POINTS);
                             id="title"
                             class="mt-1 block w-full"
                             name="title"
-                            :default-value="user.title"
+                            :default-value="user.title || ''"
                             placeholder="e.g., Software Engineer, Student"
                         />
                         <InputError class="mt-2" :message="errors.title" />
@@ -137,7 +137,7 @@ const canUploadAvatar = computed(() => user.points >= PROFILE_PICTURE_POINTS);
                             id="bio"
                             class="mt-1 block w-full"
                             name="bio"
-                            :default-value="user.bio"
+                            :default-value="user.bio || ''"
                             placeholder="Tell us about yourself..."
                             :rows="4"
                         />
@@ -177,7 +177,7 @@ const canUploadAvatar = computed(() => user.points >= PROFILE_PICTURE_POINTS);
                             type="url"
                             class="mt-1 block w-full"
                             name="linkedin_url"
-                            :default-value="user.linkedin_url"
+                            :default-value="user.linkedin_url || ''"
                             placeholder="https://linkedin.com/in/yourprofile"
                         />
                         <InputError class="mt-2" :message="errors.linkedin_url" />

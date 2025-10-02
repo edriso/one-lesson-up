@@ -17,6 +17,10 @@ return new class extends Migration
             $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
             $table->text('course_reflection')->nullable();
             $table->timestamp('completed_at')->nullable();
+            $table->unsignedSmallInteger('active_days_count')->default(0);
+            $table->unsignedSmallInteger('time_bonuses_earned')->default(0);
+            $table->unsignedSmallInteger('points_earned')->default(0);
+            $table->date('bonus_deadline');
             $table->timestamps();
 
             // Unique constraint to prevent duplicate enrollments
