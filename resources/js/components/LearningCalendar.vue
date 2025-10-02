@@ -41,22 +41,22 @@ const updateWeekStart = (value: number) => {
 };
 
 // Generate calendar data for different views
-const generateCalendarData = () => {
-  const data: { [key: string]: CalendarDay } = {};
-  
-  props.calendar_data.forEach(day => {
-    data[day.date] = day;
-  });
-  
-  return data;
-};
+// const generateCalendarData = () => { // Unused function
+//   const data: { [key: string]: CalendarDay } = {};
+//   
+//   props.calendar_data.forEach(day => {
+//     data[day.date] = day;
+//   });
+//   
+//   return data;
+// };
 
-const calendarData = computed(() => generateCalendarData());
+// const calendarData = computed(() => generateCalendarData()); // Unused variable
 
 // Generate calendar grid based on current view
 const calendarGrid = computed(() => {
   const today = new Date();
-  const data = calendarData.value;
+  // const data = calendarData.value; // Unused variable
   
   if (currentView.value === 'week') {
     return generateWeekGrid(today);
@@ -107,7 +107,7 @@ const generateMonthGrid = (date: Date) => {
   const year = date.getFullYear();
   const month = date.getMonth();
   const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
+  // const lastDay = new Date(year, month + 1, 0); // Unused variable
   const startDay = weekStart.value;
   
   const days = [];

@@ -23,6 +23,7 @@ class CourseFactory extends Factory
             'creator_id' => \App\Models\User::factory(),
             'is_active' => fake()->boolean(90), // 90% chance of being active
             'is_featured' => fake()->boolean(20), // 20% chance of being featured
+            'is_public' => fake()->boolean(80), // 80% chance of being public
         ];
     }
 
@@ -45,6 +46,16 @@ class CourseFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'is_active' => false,
             'is_featured' => false,
+        ]);
+    }
+
+    /**
+     * Create a private course.
+     */
+    public function private(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_public' => false,
         ]);
     }
 }

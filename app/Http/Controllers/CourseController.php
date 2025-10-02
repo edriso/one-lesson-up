@@ -35,6 +35,7 @@ class CourseController extends Controller
         $userAllEnrollments = array_merge($userEnrollments, $userCompletedEnrollments);
         
         // Get all active courses with counts - take more to ensure current course is included
+        // Show public courses OR courses created by the user
         $courses = Course::withCount([
                 'enrollments as students_count', // Total students (active + completed)
                 'enrollments as active_students_count' => function ($query) {
@@ -47,6 +48,10 @@ $query->whereNotNull('completed_at');
             ->withCount('lessons')
             ->with('tags')
             ->where('is_active', true)
+            ->where(function ($query) use ($user) {
+                $query->where('is_public', true)
+                      ->orWhere('creator_id', $user->id);
+            })
             ->orderBy('students_count', 'desc')
             ->take(50) // Take more courses to ensure current course is included
             ->get()
@@ -65,6 +70,7 @@ $query->whereNotNull('completed_at');
                     'is_completed' => in_array($course->id, $userCompletedEnrollments),
                     'is_creator' => $course->creator_id === $user->id,
                     'is_featured' => $course->is_featured,
+                    'is_public' => $course->is_public,
                     'tags' => $course->tags->map(function ($tag) {
                         return [
                             'id' => $tag->id,
@@ -156,6 +162,7 @@ $query->whereNotNull('completed_at');
             'name' => 'required|string|max:255',
             'description' => 'required|string|max:1000',
             'link' => 'nullable|url|max:500',
+            'is_public' => 'boolean',
             'tags' => 'nullable|array|max:3',
             'tags.*' => 'required|string|max:50',
             'modules' => 'required|array|min:1',
@@ -177,6 +184,7 @@ $query->whereNotNull('completed_at');
                 'creator_id' => $user->id,
                 'is_active' => true,
                 'is_featured' => false,
+                'is_public' => $validated['is_public'] ?? true, // Default to true if not provided
             ]);
             
             // Handle tags

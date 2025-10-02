@@ -20,6 +20,7 @@ class Course extends Model
         'creator_id',
         'is_active',
         'is_featured',
+        'is_public',
     ];
 
     protected function casts(): array
@@ -27,6 +28,7 @@ class Course extends Model
         return [
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
+            'is_public' => 'boolean',
         ];
     }
 

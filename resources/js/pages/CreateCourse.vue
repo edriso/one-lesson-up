@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { 
   BookOpen, 
@@ -51,6 +52,7 @@ const form = useForm({
   name: '',
   description: '',
   link: '',
+  is_public: true, // Default to public
   tags: [] as string[],
   modules: [
     {
@@ -286,6 +288,22 @@ const getTotalLessons = () => {
               />
               <p class="text-sm text-muted-foreground">Add a link to course materials, syllabus, or resources</p>
               <p v-if="form.errors.link" class="text-sm text-destructive">{{ form.errors.link }}</p>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="space-y-0.5">
+                  <Label for="is_public">Make Class Public</Label>
+                  <p class="text-sm text-muted-foreground">
+                    Allow other users to discover and join this class
+                  </p>
+                </div>
+                <Switch 
+                  id="is_public"
+                  v-model:checked="form.is_public"
+                />
+              </div>
+              <p v-if="form.errors.is_public" class="text-sm text-destructive">{{ form.errors.is_public }}</p>
             </div>
           </CardContent>
         </Card>

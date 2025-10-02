@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Star, 
-  Calendar, 
   BookOpen, 
   TrendingUp, 
   Clock, 
@@ -68,7 +67,7 @@ interface Props {
   };
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   user: undefined,
   activities: () => [],
   completed_classes: () => [],

@@ -17,8 +17,9 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('link');
             $table->foreignId('creator_id')->constrained('users')->onDelete('cascade');
-            $table->boolean('is_active')->default(true);
+            $table->boolean('is_public')->default(true);
             $table->boolean('is_featured')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

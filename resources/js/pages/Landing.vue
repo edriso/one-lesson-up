@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { login, register } from '@/routes';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Award, TrendingUp, Target, Users } from 'lucide-vue-next';
+import { BookOpen, Award, Target, Users } from 'lucide-vue-next';
 
 interface Props {
   stats?: {
