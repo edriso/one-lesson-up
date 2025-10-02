@@ -35,16 +35,16 @@ const props = withDefaults(defineProps<Props>(), {
       <Card>
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
-            <Shield v-if="!twoFactorEnabled" class="h-5 w-5 text-muted-foreground" />
+            <Shield v-if="!props.twoFactorEnabled" class="h-5 w-5 text-muted-foreground" />
             <ShieldCheck v-else class="h-5 w-5 text-green-500" />
             Two-Factor Authentication
           </CardTitle>
           <CardDescription>
-            {{ twoFactorEnabled ? 'Your account is protected with two-factor authentication' : 'Secure your account with two-factor authentication' }}
+            {{ props.twoFactorEnabled ? 'Your account is protected with two-factor authentication' : 'Secure your account with two-factor authentication' }}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div v-if="!twoFactorEnabled" class="space-y-4">
+          <div v-if="!props.twoFactorEnabled" class="space-y-4">
             <p class="text-sm text-muted-foreground">
               Two-factor authentication adds an additional layer of security to your account by requiring a second form of verification.
             </p>
