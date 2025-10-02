@@ -32,8 +32,8 @@ enum TimeBonusType: string
     public function getDescription(): string
     {
         return match($this) {
-            self::MORNING => 'Early morning learning bonus (6 AM - 9 AM)',
-            self::EVENING => 'Evening learning bonus (6 PM - 9 PM)',
+            self::MORNING => 'Early morning learning bonus (5 AM - 8 AM)',
+            self::EVENING => 'Evening learning bonus (8 PM - 11 PM)',
         };
     }
 
@@ -47,8 +47,8 @@ enum TimeBonusType: string
         $hour = (int) $userTime->format('H');
 
         return match($this) {
-            self::MORNING => $hour >= 6 && $hour < 9,
-            self::EVENING => $hour >= 18 && $hour < 21,
+            self::MORNING => $hour >= 5 && $hour < 8,
+            self::EVENING => $hour >= 20 && $hour < 23,
         };
     }
 
@@ -61,11 +61,11 @@ enum TimeBonusType: string
         $userTime->setTimezone(new \DateTimeZone($timezone));
         $hour = (int) $userTime->format('H');
 
-        if ($hour >= 6 && $hour < 9) {
+        if ($hour >= 5 && $hour < 8) {
             return self::MORNING;
         }
 
-        if ($hour >= 18 && $hour < 21) {
+        if ($hour >= 20 && $hour < 23) {
             return self::EVENING;
         }
 

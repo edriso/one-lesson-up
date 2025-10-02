@@ -11,8 +11,12 @@ interface LeaderboardEntry {
     username: string;
     avatar?: string;
   };
-  points: number;
-  activities_count: number;
+  points?: number;
+  activities_count?: number;
+  lessons_completed?: number;
+  has_time_bonus?: boolean;
+  bonus_type?: string;
+  activity_date?: string;
 }
 
 interface Props {

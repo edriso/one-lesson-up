@@ -38,13 +38,13 @@ class LeaderboardController extends Controller
 
     private function getTodayLeaderboard()
     {
-        // For today, show users who have daily activities (not points)
+        // For today, show users who completed lessons (without points)
         return DailyActivity::with(['user:id,username,full_name,avatar'])
-            ->where('user_timezone_date', Carbon::today()->format('Y-m-d'))
+            ->whereDate('activity_date', Carbon::today())
             ->where('lessons_completed', '>', 0)
             ->join('users', 'daily_activities.user_id', '=', 'users.id')
             ->orderByDesc('lessons_completed')
-            ->orderByDesc('is_bonus_earned')
+            ->orderByDesc('time_bonus_earned')
             ->limit(50)
             ->get(['daily_activities.*'])
             ->map(function ($activity, $index) {
@@ -58,22 +58,22 @@ class LeaderboardController extends Controller
                         'avatar' => $activity->user->avatar,
                     ],
                     'lessons_completed' => $activity->lessons_completed,
-                    'has_time_bonus' => $activity->is_bonus_earned,
-                    'bonus_type' => $activity->bonus_type,
-                    'activity_date' => $activity->user_timezone_date,
+                    'has_time_bonus' => $activity->time_bonus_earned,
+                    'bonus_type' => $activity->time_bonus_type,
+                    'activity_date' => $activity->activity_date,
                 ];
             });
     }
 
     private function getYesterdayLeaderboard()
     {
-        // For yesterday, show users who had daily activities (not points)
+        // For yesterday, show users who completed lessons (without points)
         return DailyActivity::with(['user:id,username,full_name,avatar'])
-            ->where('user_timezone_date', Carbon::yesterday()->format('Y-m-d'))
+            ->whereDate('activity_date', Carbon::yesterday())
             ->where('lessons_completed', '>', 0)
             ->join('users', 'daily_activities.user_id', '=', 'users.id')
             ->orderByDesc('lessons_completed')
-            ->orderByDesc('is_bonus_earned')
+            ->orderByDesc('time_bonus_earned')
             ->limit(50)
             ->get(['daily_activities.*'])
             ->map(function ($activity, $index) {
@@ -87,9 +87,9 @@ class LeaderboardController extends Controller
                         'avatar' => $activity->user->avatar,
                     ],
                     'lessons_completed' => $activity->lessons_completed,
-                    'has_time_bonus' => $activity->is_bonus_earned,
-                    'bonus_type' => $activity->bonus_type,
-                    'activity_date' => $activity->user_timezone_date,
+                    'has_time_bonus' => $activity->time_bonus_earned,
+                    'bonus_type' => $activity->time_bonus_type,
+                    'activity_date' => $activity->activity_date,
                 ];
             });
     }
@@ -113,10 +113,10 @@ class LeaderboardController extends Controller
         $query = User::select('id', 'username', 'full_name', 'avatar', 'points')
             ->where('points', '>', 0);
 
-        // Filter users who meet the leaderboard visibility threshold
-        if (class_exists(\App\Enums\PointThreshold::class)) {
-            $query->where('points', '>=', PointThreshold::LEADERBOARD_VISIBILITY->value);
-        }
+        // For now, show all users with points (threshold can be added later)
+        // if (class_exists(\App\Enums\PointThreshold::class)) {
+        //     $query->where('points', '>=', PointThreshold::LEADERBOARD_VISIBILITY->value);
+        // }
 
         $results = $query->orderByDesc('points')
             ->limit(50) // Top 50 users
@@ -146,20 +146,20 @@ class LeaderboardController extends Controller
 
         switch ($period) {
             case 'today':
-                $activities = DailyActivity::where('user_timezone_date', Carbon::today()->format('Y-m-d'))
+                $activities = DailyActivity::whereDate('activity_date', Carbon::today())
                     ->where('lessons_completed', '>', 0)
                     ->orderByDesc('lessons_completed')
-                    ->orderByDesc('is_bonus_earned')
+                    ->orderByDesc('time_bonus_earned')
                     ->pluck('user_id');
                 
                 $rank = $activities->search($user->id);
                 return $rank !== false ? $rank + 1 : 0;
 
             case 'yesterday':
-                $activities = DailyActivity::where('user_timezone_date', Carbon::yesterday()->format('Y-m-d'))
+                $activities = DailyActivity::whereDate('activity_date', Carbon::yesterday())
                     ->where('lessons_completed', '>', 0)
                     ->orderByDesc('lessons_completed')
-                    ->orderByDesc('is_bonus_earned')
+                    ->orderByDesc('time_bonus_earned')
                     ->pluck('user_id');
                 
                 $rank = $activities->search($user->id);

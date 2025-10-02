@@ -11,8 +11,12 @@ interface LeaderboardEntry {
     username: string;
     avatar?: string;
   };
-  points: number;
-  activities_count: number;
+  points?: number;
+  activities_count?: number;
+  lessons_completed?: number;
+  has_time_bonus?: boolean;
+  bonus_type?: string;
+  activity_date?: string;
 }
 
 interface Props {
@@ -91,8 +95,15 @@ const getUserInitials = (fullName: string) => {
     </div>
     <div class="flex items-center gap-4">
       <div class="text-right">
-        <p class="font-bold text-foreground">{{ entry.points }} pts</p>
-        <p class="text-sm text-muted-foreground">{{ entry.activities_count }} activities</p>
+        <!-- Show points for monthly/overall leaderboards -->
+        <p v-if="entry.points !== undefined" class="font-bold text-foreground">{{ entry.points }} pts</p>
+        <!-- Show lessons completed for daily leaderboards -->
+        <p v-else-if="entry.lessons_completed !== undefined" class="font-bold text-foreground">{{ entry.lessons_completed }} lessons</p>
+        
+        <!-- Show activities count or time bonus info -->
+        <p v-if="entry.activities_count !== undefined" class="text-sm text-muted-foreground">{{ entry.activities_count }} activities</p>
+        <p v-else-if="entry.has_time_bonus" class="text-sm text-muted-foreground">⭐ Time bonus</p>
+        <p v-else class="text-sm text-muted-foreground">Daily activity</p>
       </div>
       <Badge v-if="entry.rank <= 3" variant="secondary" class="text-secondary-foreground">
         #{{ entry.rank }}

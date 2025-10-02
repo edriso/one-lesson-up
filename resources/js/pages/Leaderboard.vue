@@ -15,8 +15,12 @@ interface LeaderboardEntry {
     username: string;
     avatar?: string;
   };
-  points: number;
-  activities_count: number;
+  points?: number;
+  activities_count?: number;
+  lessons_completed?: number;
+  has_time_bonus?: boolean;
+  bonus_type?: string;
+  activity_date?: string;
 }
 
 interface Props {
@@ -57,7 +61,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) => {
   const rank = props.current_user_rank?.[period];
-  if (!rank || rank === 0) return 'Unranked';
+  if (!rank || rank === 0) return '-';
   return `#${rank}`;
 };
 </script>
@@ -130,7 +134,7 @@ const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) =>
                 Today's Top Performers
               </CardTitle>
               <CardDescription>
-                Points earned today
+                Lessons completed today
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -152,7 +156,7 @@ const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) =>
                 Yesterday's Top Performers
               </CardTitle>
               <CardDescription>
-                Points earned yesterday
+                Lessons completed yesterday
               </CardDescription>
             </CardHeader>
             <CardContent>
