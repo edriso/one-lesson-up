@@ -32,6 +32,7 @@ interface Course {
   created_at: string;
   can_join: boolean;
   is_enrolled: boolean;
+  is_completed: boolean;
   is_creator: boolean;
   is_public?: boolean;
   tags?: Tag[];
@@ -120,8 +121,11 @@ const getCourseStatus = (course: Course) => {
   if (course.id === currentClassId.value) {
     return { label: 'Current', variant: 'secondary' as const };
   }
-  if (course.is_enrolled) {
+  if (course.is_completed) {
     return { label: 'Completed', variant: 'default' as const };
+  }
+  if (course.is_enrolled) {
+    return { label: 'In Progress', variant: 'outline' as const };
   }
   return null;
 };
@@ -131,6 +135,9 @@ const getButtonText = (course: Course): string => {
   if (!course.is_enrolled) {
     return course.can_join ? 'Join Class' : 'Cannot Join';
   }
+  if (course.is_completed) {
+    return 'View Completed';
+  }
   return course.id === currentClassId.value ? 'Continue Learning' : 'View Class';
 };
 
@@ -138,6 +145,9 @@ const getButtonText = (course: Course): string => {
 const getButtonVariant = (course: Course) => {
   if (!course.is_enrolled) {
     return course.can_join ? 'default' : 'outline';
+  }
+  if (course.is_completed) {
+    return 'secondary';
   }
   return course.id === currentClassId.value ? 'default' : 'outline';
 };

@@ -26,7 +26,7 @@ class EnrollmentSeeder extends Seeder
                 \App\Models\Enrollment::create([
                     'user_id' => $user->id,
                     'course_id' => $course->id,
-                    'reflection' => $isCompleted ? fake()->paragraph() : null,
+                    'course_reflection' => $isCompleted ? fake()->paragraph() : null,
                     'completed_at' => $isCompleted ? now() : null,
                 ]);
             }

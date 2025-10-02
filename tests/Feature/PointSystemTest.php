@@ -205,7 +205,6 @@ test('enrollment is marked as completed when all lessons are done', function () 
     expect($freshEnrollment->completed_at)->not->toBeNull();
 });
 
-
 test('point system handles multiple courses correctly', function () {
     // Create additional lessons in first course to prevent course completion
     $additionalLessons1 = Lesson::factory()->count(2)->create(['module_id' => $this->module->id]);

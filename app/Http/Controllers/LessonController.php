@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\CompletedLesson;
 use App\Models\Lesson;
+use App\Models\Enrollment;
+use App\Events\AllLessonsCompleted;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -53,9 +55,25 @@ class LessonController extends Controller
                 'link' => $validated['link'] ?? null,
             ]);
             
+            // Check if all lessons are now completed
+            $enrollment = $user->enrollment;
+            $completedLessonsCount = $enrollment->completedLessons()->count();
+            $totalLessonsCount = $lesson->module->course->lessons_count;
+            
+            // If all lessons are completed, dispatch event but don't auto-complete course
+            if ($completedLessonsCount >= $totalLessonsCount) {
+                // Dispatch event for all lessons completed
+                event(new AllLessonsCompleted($enrollment));
+            }
+            
             DB::commit();
             
-            return back()->with('success', 'Lesson completed! Points awarded.');
+            $message = 'Lesson completed! Points awarded.';
+            if ($completedLessonsCount >= $totalLessonsCount) {
+                $message .= ' All lessons completed! You can now submit your course reflection.';
+            }
+            
+            return back()->with('success', $message);
             
         } catch (\Exception $e) {
             DB::rollBack();

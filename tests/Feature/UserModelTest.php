@@ -132,7 +132,6 @@ test('user learning calendar works correctly', function () {
     expect($calendar[now()->day]['lessons_completed'])->toBe(1);
 });
 
-
 test('user points are updated when completing lessons', function () {
     $user = User::factory()->create(['points' => 0]);
     $course = Course::factory()->create();

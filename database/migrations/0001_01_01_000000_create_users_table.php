@@ -25,6 +25,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->unsignedBigInteger('enrollment_id')->nullable();
             $table->string('email')->unique();
+            $table->string('timezone')->default('UTC');
+            $table->timestamp('timezone_updated_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

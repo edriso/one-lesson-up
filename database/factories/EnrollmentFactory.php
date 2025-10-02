@@ -20,7 +20,7 @@ class EnrollmentFactory extends Factory
             'user_id' => \App\Models\User::factory(),
             'course_id' => \App\Models\Course::factory(),
             'completed_at' => null, // Active enrollment by default
-            'reflection' => null,
+            'course_reflection' => null,
         ];
     }
 
@@ -31,7 +31,7 @@ class EnrollmentFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'completed_at' => now(),
-            'reflection' => fake()->paragraph(),
+            'course_reflection' => fake()->paragraph(),
         ]);
     }
 
@@ -42,7 +42,7 @@ class EnrollmentFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'completed_at' => null,
-            'reflection' => null,
+            'course_reflection' => null,
         ]);
     }
 }

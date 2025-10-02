@@ -20,8 +20,16 @@ class CourseController extends Controller
     {
         $user = auth()->user()->load(['enrollment.course', 'enrollments']);
         
-        // Get user's enrollments (both active and completed) to avoid N+1 queries
+        // Get user's active enrollments to avoid N+1 queries
         $userEnrollments = $user->enrollments()
+            ->whereNull('completed_at')
+            ->pluck('course_id')
+            ->toArray();
+        
+        // Get user's completed enrollments
+        $userCompletedEnrollments = $user->enrollments()
+            ->whereNotNull('completed_at')
+            ->whereNotNull('course_reflection')
             ->pluck('course_id')
             ->toArray();
         
@@ -40,7 +48,7 @@ class CourseController extends Controller
             ->where('is_active', true)
             ->orderBy('students_count', 'desc')
             ->get()
-            ->map(function ($course) use ($user, $userEnrollments) {
+            ->map(function ($course) use ($user, $userEnrollments, $userCompletedEnrollments) {
                 return [
                     'id' => $course->id,
                     'title' => $course->name,
@@ -52,6 +60,7 @@ class CourseController extends Controller
                     'created_at' => $course->created_at->toISOString(),
                     'can_join' => $user->canCreateCourse(),
                     'is_enrolled' => in_array($course->id, $userEnrollments),
+                    'is_completed' => in_array($course->id, $userCompletedEnrollments),
                     'is_creator' => $course->creator_id === $user->id,
                     'tags' => $course->tags->map(function ($tag) {
                         return [
@@ -60,7 +69,19 @@ class CourseController extends Controller
                         ];
                     }),
                 ];
-            });
+            })
+            ->sortBy(function ($course) use ($user) {
+                // Sort order: Current class first, then completed classes, then others
+                $currentCourseId = $user->enrollment ? $user->enrollment->course_id : null;
+                if ($course['id'] === $currentCourseId) {
+                    return 0; // Current class first
+                }
+                if ($course['is_completed']) {
+                    return 1; // Completed classes second
+                }
+                return 2; // Other classes last
+            })
+            ->values(); // Reset array keys
         
         return Inertia::render('Courses', [
             'courses' => $courses,
@@ -213,23 +234,27 @@ class CourseController extends Controller
         $user = auth()->user()->load('enrollment');
         $course->load(['modules.lessons']);
         
-        // Get all user enrollments for this course in one query
-        $userEnrollments = $user->enrollments()
+        // Get user's enrollment for this course with optimized queries
+        $enrollment = $user->enrollments()
             ->where('course_id', $course->id)
-            ->get();
-        
-        // Check if user is enrolled in this course (active = completed_at is NULL)
-        $enrollment = $userEnrollments->whereNull('completed_at')->first();
+            ->whereNull('completed_at')
+            ->first();
         
         // Check if user has completed this course (both completed_at AND course_reflection required)
-        $completedEnrollment = $userEnrollments->whereNotNull('completed_at')->whereNotNull('course_reflection')->first();
+        $completedEnrollment = $user->enrollments()
+            ->where('course_id', $course->id)
+            ->whereNotNull('completed_at')
+            ->whereNotNull('course_reflection')
+            ->first();
         
-        // Get completed lesson IDs if enrolled
+        // Get completed lesson IDs and check completion status
         $completedLessonIds = [];
+        $allLessonsCompleted = false;
         if ($enrollment) {
             $completedLessonIds = CompletedLesson::where('enrollment_id', $enrollment->id)
                 ->pluck('lesson_id')
                 ->toArray();
+            $allLessonsCompleted = count($completedLessonIds) >= $course->lessons_count;
         }
         
         return Inertia::render('ViewCourse', [
@@ -238,7 +263,6 @@ class CourseController extends Controller
                 'title' => $course->name,
                 'description' => $course->description,
                 'link' => $course->link,
-                'course_reflection' => $completedEnrollment ? $completedEnrollment->course_reflection : null,
                 'modules' => $course->modules->map(function ($module) use ($completedLessonIds) {
                     return [
                         'id' => $module->id,
@@ -256,12 +280,14 @@ class CourseController extends Controller
                         }),
                     ];
                 }),
+                'course_reflection' => $completedEnrollment ? $completedEnrollment->course_reflection : null,
                 'total_lessons' => $course->lessons_count,
                 'total_modules' => $course->modules_count,
                 'created_at' => $course->created_at->toISOString(),
             ],
             'is_enrolled' => (bool) $enrollment,
             'is_completed' => (bool) $completedEnrollment,
+            'all_lessons_completed' => $allLessonsCompleted,
             'can_join' => $user->canCreateCourse() && !$completedEnrollment,
             'completed_lessons_count' => count($completedLessonIds),
             'completion_date' => $completedEnrollment ? $completedEnrollment->completed_at->toISOString() : null,
@@ -422,21 +448,16 @@ class CourseController extends Controller
         try {
             DB::beginTransaction();
             
-            // Update enrollment with reflection and completion
-            $enrollment->update([
-                'course_reflection' => $request->reflection,
-                'completed_at' => now(),
-                'reflection_completed_at' => now(),
-            ]);
-
-            // Clear user's enrollment_id so they can join new classes
-            $user->update(['enrollment_id' => null]);
-
-            // Award course completion points
-            $courseCompletionPoints = \App\Enums\PointSystemValue::COURSE_COMPLETED->value;
-            $user->increment('points', $courseCompletionPoints);
+            // Use the enrollment's completeWithReflection method
+            $success = $enrollment->completeWithReflection($request->reflection);
+            
+            if (!$success) {
+                DB::rollBack();
+                return back()->with('error', 'Failed to complete the course. Please ensure all lessons are completed.');
+            }
 
             // Create learning activity for course completion
+            $courseCompletionPoints = \App\Enums\PointSystemValue::COURSE_COMPLETED->value;
             \App\Models\LearningActivity::create([
                 'user_id' => $user->id,
                 'enrollment_id' => $enrollment->id,

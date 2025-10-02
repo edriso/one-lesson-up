@@ -57,7 +57,6 @@ class User extends Authenticatable
         ];
     }
 
-
     /**
      * Get all enrollments for the user.
      */

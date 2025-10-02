@@ -15,9 +15,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
-            $table->text('reflection')->nullable();
+            $table->text('course_reflection')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
+
+            // Unique constraint to prevent duplicate enrollments
+            $table->unique(['user_id', 'course_id']);
         });
     }
 

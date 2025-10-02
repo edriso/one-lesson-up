@@ -15,10 +15,8 @@ class Enrollment extends Model
     protected $fillable = [
         'user_id',
         'course_id',
-        'reflection',
         'course_reflection',
         'completed_at',
-        'reflection_completed_at',
     ];
 
     protected function casts(): array
@@ -89,7 +87,7 @@ class Enrollment extends Model
      */
     public function isCompletedOnTime(): bool
     {
-        return $this->updated_at->lte($this->deadline_date) && $this->is_completed;
+        return $this->updated_at->lte($this->deadline_date) && $this->completed_at !== null;
     }
 
     /**
@@ -101,7 +99,7 @@ class Enrollment extends Model
     }
 
     /**
-     * Check if all lessons are completed (eligible for reflection submission).
+     * Check if all lessons are completed.
      */
     public function areAllLessonsCompleted(): bool
     {
@@ -115,7 +113,7 @@ class Enrollment extends Model
     {
         return $this->areAllLessonsCompleted() && 
                $this->completed_at !== null && 
-               $this->reflection !== null;
+               $this->course_reflection !== null;
     }
 
     /**
@@ -127,13 +125,13 @@ class Enrollment extends Model
             return false; // Cannot complete without all lessons done
         }
 
-        if ($this->completed_at !== null) {
-            return false; // Already completed
+        if ($this->completed_at !== null && $this->course_reflection !== null) {
+            return false; // Already completed with reflection
         }
 
         $this->update([
             'completed_at' => now(),
-            'reflection' => $reflection,
+            'course_reflection' => $reflection,
         ]);
 
         // Award course completion bonus

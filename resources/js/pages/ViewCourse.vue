@@ -20,7 +20,7 @@ import {
   LogOut,
   CheckCircle,
   Circle,
-  Trophy,
+  Star,
   Link as LinkIcon,
   Lock
 } from 'lucide-vue-next';
@@ -56,6 +56,7 @@ interface Props {
   };
   is_enrolled: boolean;
   is_completed: boolean;
+  all_lessons_completed: boolean;
   can_join: boolean;
   completed_lessons_count: number;
   completion_date?: string;
@@ -393,16 +394,6 @@ const progressText = computed(() => {
               </Badge>
             </div>
             
-            <!-- Course Reflection Display -->
-            <div v-if="course.course_reflection" class="mt-4 p-4 bg-background/50 rounded-lg border border-primary/20">
-              <div class="flex items-start gap-3">
-                <BookOpen class="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div class="flex-1">
-                  <h4 class="font-medium text-foreground mb-2">Your Course Reflection</h4>
-                  <p class="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{{ course.course_reflection }}</p>
-                </div>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -428,23 +419,36 @@ const progressText = computed(() => {
             <Progress :model-value="completionPercentage" class="h-2" />
             
             <!-- Reflection Prompt when all lessons completed but course not finished -->
-            <div v-if="completionPercentage === 100 && !is_completed" class="mt-4 p-4 bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-lg">
-              <div class="flex items-start gap-3">
-                <div class="flex-shrink-0">
-                  <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                    <BookOpen class="h-5 w-5 text-primary" />
-                  </div>
-                </div>
+            <div v-if="all_lessons_completed && !is_completed" class="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <div class="flex items-center gap-3">
+                <Star class="h-5 w-5 text-primary" />
                 <div class="flex-1">
-                  <h3 class="font-semibold text-foreground mb-1">Almost There! 🎯</h3>
-                  <p class="text-sm text-muted-foreground mb-3">
-                    You've completed all lessons! The final step is to write a reflection about what you learned in this course to mark it as completed.
+                  <p class="text-sm text-muted-foreground mb-2">
+                    All lessons completed! Write a quick reflection to finish the course.
                   </p>
-                  <Button @click="openReflectionModal" class="bg-primary hover:bg-primary/90">
-                    <BookOpen class="h-4 w-4 mr-2" />
-                    Write Course Reflection
+                  <Button @click="openReflectionModal" size="sm" class="bg-primary hover:bg-primary/90">
+                    <Star class="h-4 w-4 mr-2" />
+                    Complete Course
                   </Button>
                 </div>
+              </div>
+            </div>
+            
+            <!-- Course Completed Status -->
+            <div v-if="is_completed" class="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div class="flex items-center gap-3">
+                <CheckCircle class="h-5 w-5 text-green-600 dark:text-green-400" />
+                <div class="flex-1">
+                  <h3 class="font-semibold text-green-900 dark:text-green-100">Course Completed! 🎉</h3>
+                  <p v-if="completion_date" class="text-xs text-green-600 dark:text-green-400">
+                    Completed on {{ formatLongDate(completion_date) }}
+                  </p>
+                </div>
+              </div>
+              
+              <!-- Course Reflection Display -->
+              <div v-if="course.course_reflection" class="mt-3 p-3 bg-background/50 rounded border">
+                <p class="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{{ course.course_reflection }}</p>
               </div>
             </div>
           </div>

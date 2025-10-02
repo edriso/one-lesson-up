@@ -64,8 +64,6 @@ class CompletedLesson extends Model
         return $this->belongsTo(Lesson::class);
     }
 
-
-
     /**
      * Check if the lesson is the last lesson of the course.
      */
@@ -90,8 +88,8 @@ class CompletedLesson extends Model
         // Check if all lessons are completed and enrollment not yet marked as complete
         if ($completedLessons === $totalLessons && !$enrollment->completed_at) {
             // Note: We don't auto-complete the enrollment here anymore
-            // Completion now requires both all lessons completed AND a reflection
-            // The completion will be triggered when reflection is provided via UI
+            // Completion now requires manual action via UI
+            // The completion will be triggered when user clicks "Complete Course"
         }
     }
 }

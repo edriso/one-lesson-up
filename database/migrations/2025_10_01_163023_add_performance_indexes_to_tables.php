@@ -17,6 +17,8 @@ return new class extends Migration
             $table->index(['user_id', 'course_id']); // For checking existing enrollments
             $table->index('completed_at'); // For filtering active vs completed
             $table->index(['course_id', 'completed_at']); // For course stats queries
+            $table->index('course_reflection'); // For filtering completed courses with reflection
+            $table->index(['completed_at', 'course_reflection']); // For completed course queries
         });
 
         // Completed lessons table indexes

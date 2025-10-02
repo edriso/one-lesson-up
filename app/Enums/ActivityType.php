@@ -5,6 +5,7 @@ namespace App\Enums;
 enum ActivityType: string
 {
     case LESSON_COMPLETED = 'lesson_completed';
+    case LESSONS_COMPLETED = 'lessons_completed';
     case COURSE_STARTED = 'course_started';
     case COURSE_COMPLETED = 'course_completed';
 
@@ -31,6 +32,7 @@ enum ActivityType: string
     {
         return match($this) {
             self::LESSON_COMPLETED => 'Completed a lesson',
+            self::LESSONS_COMPLETED => 'Completed all lessons',
             self::COURSE_STARTED => 'Started a new course',
             self::COURSE_COMPLETED => 'Completed a course',
         };
