@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Trophy } from 'lucide-vue-next';
+import { Star } from 'lucide-vue-next';
 import LeaderboardEntry from './LeaderboardEntry.vue';
 
 interface LeaderboardEntry {
@@ -30,7 +30,7 @@ const { entries, currentUserId, emptyMessage } = props;
 
 <template>
   <div v-if="entries.length === 0" class="text-center py-8 text-muted-foreground">
-    <Trophy class="h-12 w-12 mx-auto mb-4 opacity-50" />
+    <Star class="h-12 w-12 mx-auto mb-4 opacity-50" />
     <p>{{ emptyMessage }}</p>
   </div>
   <div v-else class="space-y-3">

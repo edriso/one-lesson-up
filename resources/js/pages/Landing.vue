@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { login, register } from '@/routes';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Trophy, TrendingUp } from 'lucide-vue-next';
+import { BookOpen, Star, TrendingUp } from 'lucide-vue-next';
 
 interface Props {
   stats?: {
@@ -99,7 +99,7 @@ const formatNumber = (num: number): string => {
         <!-- Feature 2 -->
         <div class="bg-card border border-border rounded-lg p-8 shadow-sm hover:shadow-md transition-shadow">
           <div class="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center mb-4">
-            <Trophy class="h-6 w-6 text-secondary-foreground" />
+            <Star class="h-6 w-6 text-secondary-foreground" />
           </div>
           <h3 class="text-xl font-semibold text-foreground mb-2">Earn Points & Badges</h3>
           <p class="text-muted-foreground">

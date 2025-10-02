@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Trophy, 
+  Star, 
   Calendar, 
   BookOpen, 
   TrendingUp, 
@@ -98,7 +98,7 @@ const getActivityIcon = (type: string) => {
     case 'lesson_completed':
       return BookOpen;
     case 'course_completed':
-      return Trophy;
+      return Star;
     case 'course_started':
       return Target;
     default:
@@ -234,7 +234,7 @@ const calendarGrid = generateCalendarGrid();
               <Card>
                 <CardHeader>
                   <CardTitle class="flex items-center gap-2">
-                    <Trophy class="h-5 w-5 text-primary" />
+                    <Star class="h-5 w-5 text-primary" />
                     Learning Stats
                   </CardTitle>
                 </CardHeader>

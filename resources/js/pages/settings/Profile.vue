@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Trophy, Info } from 'lucide-vue-next';
+import { Star, Info } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Props {
@@ -59,7 +59,7 @@ const canUploadAvatar = computed(() => user.points >= PROFILE_PICTURE_POINTS);
                 >
                     <!-- Points Display -->
                     <Alert>
-                        <Trophy class="h-4 w-4 text-primary" />
+                        <Star class="h-4 w-4 text-primary" />
                         <AlertDescription>
                             You have <strong>{{ user.points }} points</strong>. Complete lessons to earn more!
                         </AlertDescription>

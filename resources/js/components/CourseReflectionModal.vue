@@ -14,7 +14,7 @@
       <div class="space-y-4">
         <div class="bg-muted/30 p-4 rounded-lg">
           <div class="flex items-center gap-2 mb-2">
-            <Trophy class="h-4 w-4 text-primary" />
+            <Star class="h-4 w-4 text-primary" />
             <span class="font-medium text-sm">Course: {{ course?.title || 'Unknown Course' }}</span>
           </div>
           <p class="text-sm text-muted-foreground">
@@ -69,7 +69,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import InputError from '@/components/InputError.vue';
-import { BookOpen, Trophy, CheckCircle, AlertCircle } from 'lucide-vue-next';
+import { BookOpen, Star, CheckCircle, AlertCircle } from 'lucide-vue-next';
 
 interface Course {
   id: number;

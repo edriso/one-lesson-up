@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, TrendingUp, Calendar, Crown } from 'lucide-vue-next';
+import { Star, TrendingUp, Calendar, Crown } from 'lucide-vue-next';
 import LeaderboardList from '@/components/LeaderboardList.vue';
 
 interface LeaderboardEntry {
@@ -82,7 +82,7 @@ const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) =>
         <Card>
           <CardHeader>
             <CardTitle class="flex items-center gap-2">
-              <Trophy class="h-5 w-5 text-primary" />
+              <Star class="h-5 w-5 text-primary" />
               Your Current Rankings
             </CardTitle>
             <CardDescription>
