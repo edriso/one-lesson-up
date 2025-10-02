@@ -24,6 +24,10 @@ Route::get('api/feeds/load-more', [\App\Http\Controllers\FeedsController::class,
     ->middleware(['auth', 'verified'])
     ->name('feeds.load-more');
 
+Route::get('api/courses/load-more', [\App\Http\Controllers\CourseController::class, 'loadMoreCourses'])
+    ->middleware(['auth', 'verified'])
+    ->name('courses.load-more');
+
 Route::get('feeds', [\App\Http\Controllers\FeedsController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('feeds');

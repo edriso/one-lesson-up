@@ -158,7 +158,7 @@ class Enrollment extends Model
      */
     private function awardCourseCompletionBonus(): void
     {
-        $courseBonus = \App\Enums\PointSystemValue::calculateCourseBonus(
+        $courseBonus = \App\Enums\PointValue::calculateCompletionBonus(
             $this->course->lessons_count, 
             $this->isCompletedOnTime()
         );

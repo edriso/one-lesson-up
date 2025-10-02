@@ -14,7 +14,7 @@ import {
   X,
   Lock
 } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 interface Tag {
   id: number;
@@ -61,12 +61,21 @@ const props = withDefaults(defineProps<Props>(), {
 // Search functionality
 const searchQuery = ref('');
 
+// Infinite scroll state
+const allCourses = ref<Course[]>([]);
+const currentPage = ref(1);
+const isLoading = ref(false);
+const hasMore = ref(true);
+
+// Initialize courses with the initial data
+allCourses.value = props.courses || [];
+
 // Memoized current class ID
 const currentClassId = computed(() => props.user?.current_class?.id);
 
 // Optimized filtering and sorting
 const filteredCourses = computed(() => {
-  let courses = props.courses;
+  let courses = allCourses.value;
   
   // Apply search filter
   if (searchQuery.value) {
@@ -170,6 +179,42 @@ const handleCourseAction = (course: Course) => {
     joinCourse(course.id);
   }
 };
+
+// Load more courses function
+const loadMoreCourses = async () => {
+  if (isLoading.value || !hasMore.value) return;
+  
+  isLoading.value = true;
+  currentPage.value += 1;
+  
+  try {
+    const response = await fetch(`/api/courses/load-more?page=${currentPage.value}`);
+    const data = await response.json();
+    
+    allCourses.value.push(...data.courses);
+    hasMore.value = data.hasMore;
+  } catch (error) {
+    console.error('Failed to load more courses:', error);
+    currentPage.value -= 1; // Revert page increment on error
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Intersection Observer for infinite scroll
+const loadMoreTrigger = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+  if (loadMoreTrigger.value) {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore.value && !isLoading.value) {
+        loadMoreCourses();
+      }
+    });
+    
+    observer.observe(loadMoreTrigger.value);
+  }
+});
 </script>
 
 <template>
@@ -344,6 +389,21 @@ const handleCourseAction = (course: Course) => {
             </div>
           </div>
         </Card>
+        
+        <!-- Infinite scroll trigger and loading indicator -->
+        <div v-if="hasMore" ref="loadMoreTrigger" class="col-span-full flex justify-center py-8">
+          <div v-if="isLoading" class="flex items-center gap-2 text-muted-foreground">
+            <div class="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-sm">Loading more classes...</span>
+          </div>
+          <div v-else class="text-sm text-muted-foreground">
+            Scroll to load more
+          </div>
+        </div>
+        
+        <div v-else class="col-span-full flex justify-center py-8">
+          <span class="text-sm text-muted-foreground">No more classes</span>
+        </div>
       </div>
 
       <!-- Current Enrollment Info -->

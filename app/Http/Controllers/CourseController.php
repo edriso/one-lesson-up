@@ -535,4 +535,112 @@ $query->whereNotNull('completed_at');
             return back()->with('error', 'Failed to update reflection. Please try again.');
         }
     }
+
+    /**
+     * Load more courses for infinite scroll
+     */
+    public function loadMoreCourses(Request $request)
+    {
+        $user = auth()->user()->load(['enrollment.course', 'enrollments']);
+        $page = $request->get('page', 1);
+        $perPage = 12;
+        $offset = ($page - 1) * $perPage;
+        
+        // Get user's active enrollments - optimized using enrollment_id
+        $userEnrollments = [];
+        if ($user->enrollment_id) {
+            $userEnrollments = [$user->enrollment->course_id];
+        }
+        
+        // Get user's completed enrollments - optimized query
+        $userCompletedEnrollments = $user->completedEnrollments()
+            ->pluck('course_id')
+            ->toArray();
+        
+        // For completed courses, they should also be considered "enrolled" (user was enrolled in them)
+        $userAllEnrollments = array_merge($userEnrollments, $userCompletedEnrollments);
+        
+        // Get courses with pagination
+        $courses = Course::withCount([
+                'enrollments as students_count', // Total students (active + completed)
+                'enrollments as active_students_count' => function ($query) {
+                    $query->whereNull('completed_at');
+                },
+                'enrollments as completed_students_count' => function ($query) {
+                    $query->whereNotNull('completed_at');
+                }
+            ])
+            ->withCount('lessons')
+            ->with('tags')
+            ->where('is_active', true)
+            ->where(function ($query) use ($user) {
+                $query->where('is_public', true)
+                      ->orWhere('creator_id', $user->id);
+            })
+            ->orderBy('students_count', 'desc')
+            ->offset($offset)
+            ->limit($perPage)
+            ->get()
+            ->map(function ($course) use ($user, $userEnrollments, $userCompletedEnrollments, $userAllEnrollments) {
+                return [
+                    'id' => $course->id,
+                    'title' => $course->name,
+                    'description' => $course->description,
+                    'students_count' => $course->students_count,
+                    'active_students_count' => $course->active_students_count,
+                    'completed_students_count' => $course->completed_students_count,
+                    'lessons_count' => $course->lessons_count,
+                    'created_at' => $course->created_at->toISOString(),
+                    'can_join' => $user->canCreateCourse(),
+                    'is_enrolled' => in_array($course->id, $userAllEnrollments),
+                    'is_completed' => in_array($course->id, $userCompletedEnrollments),
+                    'is_creator' => $course->creator_id === $user->id,
+                    'is_featured' => $course->is_featured,
+                    'is_public' => $course->is_public,
+                    'tags' => $course->tags->map(function ($tag) {
+                        return [
+                            'id' => $tag->id,
+                            'name' => $tag->name,
+                        ];
+                    }),
+                ];
+            })
+            ->sortBy(function ($course) use ($user) {
+                // Sort order: Current class → Completed classes → Created classes → Featured classes → Others by popularity
+                $currentCourseId = $user->enrollment ? $user->enrollment->course_id : null;
+                
+                // Priority 0: Current class
+                if ($course['id'] === $currentCourseId) {
+                    return 0;
+                }
+                
+                // Priority 1: Completed classes
+                if ($course['is_completed']) {
+                    return 1;
+                }
+                
+                // Priority 2: Created classes
+                if ($course['is_creator']) {
+                    return 2;
+                }
+                
+                // Priority 3: Featured classes (if we had a featured flag)
+                // For now, we'll use is_featured from the course model
+                if (isset($course['is_featured']) && $course['is_featured']) {
+                    return 3;
+                }
+                
+                // Priority 4: Other classes (already sorted by students_count)
+                return 4;
+            })
+            ->values(); // Reset array keys
+
+        $hasMore = $courses->count() === $perPage;
+
+        return response()->json([
+            'courses' => $courses,
+            'hasMore' => $hasMore,
+            'nextPage' => $hasMore ? $page + 1 : null,
+        ]);
+    }
 }
