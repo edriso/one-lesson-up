@@ -197,20 +197,26 @@ const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POI
                         <InputError class="mt-2" :message="errors.website_url" />
                     </div>
 
-                    <!-- Public Profile Toggle -->
-                    <div class="flex items-center justify-between rounded-lg border p-4">
-                        <div class="space-y-0.5">
-                            <Label for="is_public" class="text-base">Public Profile</Label>
-                            <p class="text-sm text-muted-foreground">
-                                Make your profile visible to other users
-                            </p>
+                    <!-- Privacy Settings -->
+                    <div class="grid gap-2">
+                        <Label for="is_public">Profile Visibility</Label>
+                        <div class="flex items-center space-x-2">
+                            <Switch
+                                id="is_public"
+                                name="is_public"
+                                :default-checked="user.is_public"
+                            />
+                            <Label for="is_public" class="text-sm">
+                                Make my profile public
+                            </Label>
                         </div>
-                        <Switch
-                            id="is_public"
-                            name="is_public"
-                            :default-checked="user.is_public"
-                        />
+                        <p class="text-xs text-muted-foreground">
+                            When enabled, your profile and activities will be visible to other users. 
+                            When disabled, your profile will show as private to other users.
+                        </p>
+                        <InputError class="mt-2" :message="errors.is_public" />
                     </div>
+
 
                     <div class="flex items-center gap-4">
                         <Button

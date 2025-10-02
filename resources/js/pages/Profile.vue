@@ -118,6 +118,23 @@ const getActivityIcon = (type: string) => {
     </div>
     
     <div v-else class="space-y-6">
+      <!-- Private Profile Message -->
+      <Card v-if="!user.is_public" class="mb-8 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+        <CardContent class="p-6">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+              <span class="text-orange-600 dark:text-orange-400 text-lg">🔒</span>
+            </div>
+            <div>
+              <h3 class="font-semibold text-orange-800 dark:text-orange-200">This account is private</h3>
+              <p class="text-sm text-orange-700 dark:text-orange-300">
+                This user has chosen to keep their profile private. Their activities and progress are not visible to other users.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <!-- Profile Header -->
       <Card class="mb-8 border-primary/20">
         <CardContent class="p-8">
@@ -178,8 +195,8 @@ const getActivityIcon = (type: string) => {
         </CardContent>
       </Card>
 
-      <!-- Tabs -->
-      <Tabs default-value="overview" class="w-full">
+      <!-- Tabs (only show for public profiles) -->
+      <Tabs v-if="user.is_public" default-value="overview" class="w-full">
         <TabsList class="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>

@@ -59,19 +59,29 @@ class HomeController extends Controller
         
         // Get recent activities from daily activities (optimized)
         $recentActivities = DailyActivity::with([
-                'user:id,username,full_name,avatar',
-                'enrollment.course:id,name'
+                'user:id,username,full_name,avatar,is_public',
+                'enrollment.course:id,name,is_public'
             ])
             ->select('id', 'user_id', 'enrollment_id', 'lessons_completed', 'is_bonus_earned', 'activity_date')
             ->where('lessons_completed', '>', 0)
+            ->whereHas('user', function ($query) {
+                $query->where('is_public', true);
+            })
             ->latest('activity_date')
             ->limit(5)
             ->get()
             ->map(function ($activity) {
+                $course = $activity->enrollment->course;
+                $courseName = $course->name;
+                $isPublicCourse = $course->is_public;
+                
                 return [
                     'id' => $activity->id,
                     'type' => 'lessons_completed',
-                    'description' => "Completed {$activity->lessons_completed} lesson(s) in {$activity->enrollment->course->name}",
+                    'description' => "Completed {$activity->lessons_completed} lesson(s) in {$courseName}",
+                    'course_name' => $courseName,
+                    'course_is_public' => $isPublicCourse,
+                    'course_id' => $isPublicCourse ? $course->id : null,
                     'points_earned' => $activity->getPointsEarned(),
                     'created_at' => $activity->activity_date->toISOString(),
                     'user' => [

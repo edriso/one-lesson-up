@@ -26,6 +26,9 @@ interface Activity {
   id: number;
   type: string;
   description: string;
+  course_name?: string;
+  course_is_public?: boolean;
+  course_id?: number;
   points_earned: number;
   created_at: string;
   user: {
@@ -234,7 +237,18 @@ const getActivityIcon = (type: string): Component => {
                                      class="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                                     <component :is="getActivityIcon(activity.type)" class="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-foreground">{{ activity.description }}</p>
+                                        <p class="text-sm font-medium text-foreground">
+                                            <span v-if="activity.type === 'lessons_completed'">
+                                                Completed {{ activity.lessons_completed || 1 }} lesson(s) in 
+                                                <Link v-if="activity.course_is_public && activity.course_id" 
+                                                      :href="`/classes/${activity.course_id}`" 
+                                                      class="text-primary hover:underline">
+                                                    {{ activity.course_name }}
+                                                </Link>
+                                                <span v-else class="text-foreground">{{ activity.course_name }}</span>
+                                            </span>
+                                            <span v-else>{{ activity.description }}</span>
+                                        </p>
                                         <div class="flex items-center justify-between mt-2">
                                             <div class="flex items-center gap-2">
                                                 <Link :href="`/profile/${activity.user.username}`" class="flex items-center gap-2 hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors">
