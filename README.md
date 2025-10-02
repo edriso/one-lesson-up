@@ -28,6 +28,8 @@ One Lesson Up gamifies online learning with:
 - **🏆 Leaderboards** - Compete with the community and climb the ranks
 - **🎯 Focus Mode** - One course at a time keeps you focused
 - **🏷️ Smart Tag System** - Categorize classes with tags, autocomplete from existing tags, or create new ones
+- **📱 Infinite Scroll** - Seamless browsing with infinite scroll on feeds, classes, and activities
+- **🔒 User Privacy** - Control profile visibility and activity sharing with privacy settings
 
 ## 🎮 How It Works
 
