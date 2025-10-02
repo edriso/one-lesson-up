@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Award, Info } from 'lucide-vue-next';
+import { Medal, Info } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Props {
@@ -59,7 +59,7 @@ const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POI
                 >
                     <!-- Points Display -->
                     <Alert>
-                        <Award class="h-4 w-4 text-primary" />
+                        <Medal class="h-4 w-4 text-primary" />
                         <AlertDescription>
                             You have <strong>{{ user.points }} points</strong>. Complete lessons to earn more!
                         </AlertDescription>
@@ -152,7 +152,7 @@ const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POI
                             type="url"
                             class="mt-1 block w-full"
                             name="avatar"
-                            :default-value="user.avatar"
+                            :default-value="user.avatar || ''"
                             :disabled="!canUploadAvatar"
                             placeholder="https://example.com/your-photo.jpg"
                         />
@@ -191,7 +191,7 @@ const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POI
                             type="url"
                             class="mt-1 block w-full"
                             name="website_url"
-                            :default-value="user.website_url"
+                            :default-value="user.website_url || ''"
                             placeholder="https://yourwebsite.com"
                         />
                         <InputError class="mt-2" :message="errors.website_url" />

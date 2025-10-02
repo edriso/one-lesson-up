@@ -43,13 +43,13 @@ One Lesson Up gamifies online learning with:
 
 - **Lesson completion**: 1 point per lesson
 - **Active day bonus**: 1 point for first lesson of the day
-- **Time bonus**: 1 point for morning (6-9 AM) or evening (6-9 PM) learning
+- **Time bonus**: 1 point for morning (5-8 AM) or evening (8-11 PM) learning
 - **Course completion bonus**: Variable based on course size and completion time
 - **Learning deadline**: Calculated based on lesson count for maximum bonus points
 
 **Time-Based Bonuses**:
-- **Morning Bonus**: Learn between 6-9 AM for extra points
-- **Evening Bonus**: Learn between 6-9 PM for extra points
+- **Morning Bonus**: Learn between 5-8 AM for extra points
+- **Evening Bonus**: Learn between 8-11 PM for extra points
 - **One bonus per day**: Maximum 1 time bonus per day across all courses
 
 **Course Completion Bonuses**:

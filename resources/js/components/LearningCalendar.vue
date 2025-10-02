@@ -41,33 +41,33 @@ const updateWeekStart = (value: number) => {
 };
 
 // Generate calendar data for different views
-// const generateCalendarData = () => { // Unused function
-//   const data: { [key: string]: CalendarDay } = {};
-//   
-//   props.calendar_data.forEach(day => {
-//     data[day.date] = day;
-//   });
-//   
-//   return data;
-// };
+const generateCalendarData = () => {
+  const data: { [key: string]: CalendarDay } = {};
+  
+  props.calendar_data.forEach(day => {
+    data[day.date] = day;
+  });
+  
+  return data;
+};
 
-// const calendarData = computed(() => generateCalendarData()); // Unused variable
+const calendarData = computed(() => generateCalendarData());
 
 // Generate calendar grid based on current view
 const calendarGrid = computed(() => {
   const today = new Date();
-  // const data = calendarData.value; // Unused variable
+  const data = calendarData.value;
   
   if (currentView.value === 'week') {
-    return generateWeekGrid(today);
+    return generateWeekGrid(today, data, today);
   } else if (currentView.value === 'month') {
-    return generateMonthGrid(currentDate.value);
+    return generateMonthGrid(currentDate.value, data, today);
   } else {
-    return generateYearGrid(currentDate.value);
+    return generateYearGrid(currentDate.value, data, today);
   }
 });
 
-const generateWeekGrid = (date: Date) => {
+const generateWeekGrid = (date: Date, data: { [key: string]: CalendarDay }, today: Date) => {
   const startOfWeek = new Date(date);
   const dayOfWeek = startOfWeek.getDay();
   const startDay = weekStart.value;
@@ -103,7 +103,7 @@ const generateWeekGrid = (date: Date) => {
   return { days, headers: dayHeaders };
 };
 
-const generateMonthGrid = (date: Date) => {
+const generateMonthGrid = (date: Date, data: { [key: string]: CalendarDay }, today: Date) => {
   const year = date.getFullYear();
   const month = date.getMonth();
   const firstDay = new Date(year, month, 1);
@@ -134,7 +134,7 @@ const generateMonthGrid = (date: Date) => {
       month: currentDay.getMonth(),
       year: currentDay.getFullYear(),
       isCurrentMonth: currentDay.getMonth() === month,
-      isToday: currentDay.toDateString() === new Date().toDateString(),
+      isToday: currentDay.toDateString() === today.toDateString(),
       activities_count: dayData?.activities_count || 0,
       points_earned: dayData?.points_earned || 0,
       lessons_completed: dayData?.lessons_completed || 0
@@ -144,13 +144,13 @@ const generateMonthGrid = (date: Date) => {
   return { days, headers: dayHeaders };
 };
 
-const generateYearGrid = (date: Date) => {
+const generateYearGrid = (date: Date, data: { [key: string]: CalendarDay }, today: Date) => {
   const year = date.getFullYear();
   const months = [];
   
   for (let month = 0; month < 12; month++) {
     const monthDate = new Date(year, month, 1);
-    const monthGrid = generateMonthGrid(monthDate);
+    const monthGrid = generateMonthGrid(monthDate, data, today);
     months.push({
       month: month,
       monthName: monthDate.toLocaleDateString('en-US', { month: 'long' }),
@@ -259,11 +259,11 @@ const formatDateRange = () => {
         <div v-if="currentView === 'week'" class="space-y-2">
           <!-- Week view -->
           <div class="grid grid-cols-7 gap-1">
-            <div v-for="header in calendarGrid.headers" :key="header" 
+            <div v-for="header in (calendarGrid as any).headers" :key="header" 
                  class="text-center text-sm font-medium text-muted-foreground py-2">
               {{ header }}
             </div>
-            <div v-for="day in calendarGrid.days" :key="day.date"
+            <div v-for="day in (calendarGrid as any).days" :key="day.date"
                  class="aspect-square flex items-center justify-center text-sm rounded border"
                  :class="[
                    getActivityIntensity(day.activities_count),
@@ -278,11 +278,11 @@ const formatDateRange = () => {
         <div v-else-if="currentView === 'month'" class="space-y-2">
           <!-- Month view -->
           <div class="grid grid-cols-7 gap-1">
-            <div v-for="header in calendarGrid.headers" :key="header" 
+            <div v-for="header in (calendarGrid as any).headers" :key="header" 
                  class="text-center text-sm font-medium text-muted-foreground py-2">
               {{ header }}
             </div>
-            <div v-for="day in calendarGrid.days" :key="day.date"
+            <div v-for="day in (calendarGrid as any).days" :key="day.date"
                  class="aspect-square flex items-center justify-center text-sm rounded border"
                  :class="[
                    getActivityIntensity(day.activities_count),
@@ -298,7 +298,7 @@ const formatDateRange = () => {
         <div v-else class="space-y-4">
           <!-- Year view -->
           <div class="grid grid-cols-3 gap-4">
-            <div v-for="month in calendarGrid.months" :key="month.month" class="space-y-2">
+            <div v-for="month in (calendarGrid as any).months" :key="month.month" class="space-y-2">
               <h4 class="text-sm font-medium text-center">{{ month.monthName }}</h4>
               <div class="grid grid-cols-7 gap-1">
                 <div v-for="header in ['S', 'M', 'T', 'W', 'T', 'F', 'S']" :key="header" 

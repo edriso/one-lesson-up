@@ -104,10 +104,14 @@ class DailyActivity extends Model
             $timeBonusType = TimeBonusType::fromTime($currentTime, $timezone);
             
             if (!$hasTimeBonusToday && $timeBonusType) {
-                $activity->update([
-                    'time_bonus_earned' => true,
-                    'time_bonus_type' => $timeBonusType,
-                ]);
+                // Update ALL activities for this user today to mark time bonus earned
+                self::where('user_id', $userId)
+                    ->whereDate('activity_date', $activityDate)
+                    ->update([
+                        'time_bonus_earned' => true,
+                        'time_bonus_type' => $timeBonusType,
+                    ]);
+                
                 $pointsAwarded += PointValue::TIME_BONUS->getPoints();
             }
 

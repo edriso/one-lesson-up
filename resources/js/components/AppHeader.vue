@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Home, Award, Rss } from 'lucide-vue-next';
+import { BookOpen, Home, Sparkle, Rss, Medal } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const page = usePage();
@@ -37,7 +37,7 @@ const navLinks = [
     {
         name: 'Leaderboard',
         href: '/leaderboard',
-        icon: Award,
+        icon: Sparkle,
     },
 ];
 
@@ -83,7 +83,7 @@ const isActive = (href: string) => {
             <div v-if="user" class="flex items-center gap-2">
                 <!-- Points Badge -->
                 <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/20 border border-secondary/30">
-                    <Award class="h-4 w-4 text-secondary-foreground" />
+                    <Medal class="h-4 w-4 text-secondary-foreground" />
                     <span class="text-sm font-semibold text-secondary-foreground">{{ user.points || 0 }}</span>
                 </div>
 

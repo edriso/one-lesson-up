@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import LessonCompletionModal from '@/components/LessonCompletionModal.vue';
 import UserInfo from '@/components/UserInfo.vue';
 import { useDateFormatter } from '@/composables/useDateFormatter';
-import { Clock, BookOpen, Award, TrendingUp, CheckCircle, Circle } from 'lucide-vue-next';
+import { Clock, BookOpen, Medal, TrendingUp, CheckCircle, Circle } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import type { Component } from 'vue';
 
@@ -95,7 +95,7 @@ const isEnrolled = computed(() => !!props.user.enrollment_id);
 // Map activity types to icons
 const activityIconMap: Record<string, Component> = {
   lesson_completed: CheckCircle,
-  course_completed: Award,
+  course_completed: Medal,
   course_started: BookOpen,
 };
 
@@ -116,7 +116,7 @@ const getActivityIcon = (type: string): Component => {
                 </h1>
                 <div class="flex items-center gap-4 text-muted-foreground">
                     <div class="flex items-center gap-2">
-                        <Award class="h-5 w-5 text-secondary" />
+                        <Medal class="h-5 w-5 text-secondary" />
                         <span class="font-semibold">{{ user.points }} points</span>
                     </div>
                     <div class="h-4 w-px bg-border"></div>

@@ -143,5 +143,5 @@ test('enrollment active days count works correctly', function () {
         'time_bonus_earned' => false,
     ]);
     
-    expect($this->enrollment->active_days_count)->toBe(2);
+    expect($this->enrollment->getActiveDaysCount())->toBe(2);
 });

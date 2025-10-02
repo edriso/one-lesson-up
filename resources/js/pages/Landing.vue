@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { login, register } from '@/routes';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Award, Target, Users } from 'lucide-vue-next';
+import { BookOpen, Medal, Target, Users } from 'lucide-vue-next';
 
 interface Props {
   stats?: {
@@ -103,7 +103,7 @@ const formatNumber = (num: number): string => {
         <!-- Feature 2 -->
         <div class="text-center p-6">
           <div class="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
-            <Award class="h-8 w-8 text-secondary-foreground" />
+            <Medal class="h-8 w-8 text-secondary-foreground" />
           </div>
           <h3 class="text-lg font-semibold text-foreground mb-2">Earn Points & Bonuses</h3>
           <p class="text-muted-foreground text-sm">
@@ -156,7 +156,7 @@ const formatNumber = (num: number): string => {
         </p>
         <Link :href="register()">
           <Button size="lg" class="bg-primary text-primary-foreground hover:bg-primary/90 text-lg px-8 py-4">
-            <Award class="mr-2 h-5 w-5" />
+            <Medal class="mr-2 h-5 w-5" />
             Start Learning Free
           </Button>
         </Link>
