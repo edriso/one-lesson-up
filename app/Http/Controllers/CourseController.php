@@ -291,6 +291,7 @@ $query->whereNotNull('completed_at');
                 'title' => $course->name,
                 'description' => $course->description,
                 'link' => $course->link,
+                'is_public' => $course->is_public,
                 'modules' => $course->modules->map(function ($module) use ($completedLessonIds) {
                     return [
                         'id' => $module->id,
@@ -321,6 +322,7 @@ $query->whereNotNull('completed_at');
             'completion_date' => $completedEnrollment ? $completedEnrollment->completed_at->toISOString() : null,
             'bonus_deadline' => $enrollment ? $enrollment->bonus_deadline->toISOString() : null,
             'is_bonus_eligible' => $enrollment ? now()->lte($enrollment->bonus_deadline) : false,
+            'is_course_creator' => $course->user_id === $user->id,
         ]);
     }
 

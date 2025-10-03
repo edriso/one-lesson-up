@@ -12,7 +12,8 @@ import {
   Trophy, 
   Search,
   X,
-  Lock
+  Lock,
+  Globe
 } from 'lucide-vue-next';
 import { ref, computed, onMounted } from 'vue';
 
@@ -371,6 +372,11 @@ onMounted(() => {
               <div class="flex items-center gap-1">
                 <Users class="h-4 w-4" />
                 <span>{{ getStudentCountText(course) }}</span>
+              </div>
+              <div v-if="course.is_creator" class="flex items-center gap-1">
+                <Globe v-if="course.is_public" class="h-4 w-4" />
+                <Lock v-else class="h-4 w-4" />
+                <span>{{ course.is_public ? 'Public' : 'Private' }}</span>
               </div>
             </div>
           </CardHeader>

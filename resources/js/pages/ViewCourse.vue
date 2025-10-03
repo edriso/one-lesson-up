@@ -23,6 +23,7 @@ import {
   Star,
   Link as LinkIcon,
   Lock,
+  Globe,
   Clock,
   Trophy,
   Edit
@@ -56,6 +57,7 @@ interface Props {
     total_lessons: number;
     total_modules: number;
     created_at: string;
+    is_public: boolean;
   };
   is_enrolled: boolean;
   is_completed: boolean;
@@ -65,6 +67,7 @@ interface Props {
   completion_date?: string;
   bonus_deadline?: string;
   is_bonus_eligible: boolean;
+  is_course_creator: boolean;
 }
 
 const props = defineProps<Props>();
@@ -355,6 +358,11 @@ const progressText = computed(() => {
             </div>
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Created {{ formatLongDate(course.created_at) }}</span>
+            </div>
+            <div v-if="is_course_creator" class="flex items-center gap-2 text-sm text-muted-foreground">
+              <Globe v-if="course.is_public" class="h-4 w-4" />
+              <Lock v-else class="h-4 w-4" />
+              <span>{{ course.is_public ? 'Public' : 'Private' }}</span>
             </div>
             <div v-if="bonus_deadline" class="flex items-center gap-2 text-sm">
               <Badge :variant="is_bonus_eligible ? 'default' : 'secondary'" class="text-xs">
