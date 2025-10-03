@@ -34,6 +34,7 @@ class EnrollmentSeeder extends Seeder
                     'user_id' => $user->id,
                     'course_id' => $course->id,
                     'course_reflection' => $isCompleted ? fake()->paragraph() : null,
+                    'course_reflection_link' => $isCompleted ? fake()->optional(0.3)->url() : null,
                     'completed_at' => $isCompleted ? now() : null,
                     'bonus_deadline' => $course->smart_deadline, // Learning deadline based on lesson count
                 ]);

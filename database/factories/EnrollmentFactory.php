@@ -22,6 +22,7 @@ class EnrollmentFactory extends Factory
             'bonus_deadline' => $this->faker->dateTimeBetween('+1 week', '+1 month'),
             'completed_at' => null, // Active enrollment by default
             'course_reflection' => null,
+            'course_reflection_link' => null,
         ];
     }
 
@@ -33,6 +34,7 @@ class EnrollmentFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'completed_at' => now(),
             'course_reflection' => fake()->paragraph(),
+            'course_reflection_link' => fake()->optional(0.3)->url(),
         ]);
     }
 
@@ -44,6 +46,7 @@ class EnrollmentFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'completed_at' => null,
             'course_reflection' => null,
+            'course_reflection_link' => null,
         ]);
     }
 }

@@ -228,11 +228,11 @@ const getTotalLessons = () => {
               <ul class="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                 <li>Classes cannot be edited or deleted after creation</li>
                 <li>Leaving a class later will deduct all points earned from that class</li>
-                <li>You will be automatically enrolled in your class</li>
                 <li>You can only be enrolled in one class at a time</li>
                 <li><strong>Learning deadline:</strong> Complete your class within the calculated deadline to earn bonus points (maintain at least 5 lessons per week pace)</li>
                 <li>This simulates a 5-day work week learning schedule with 2 rest days</li>
                 <li>After the deadline, you can still complete the class but won't receive bonus points</li>
+                <li>You will be automatically enrolled in your class</li>
               </ul>
             </div>
           </div>

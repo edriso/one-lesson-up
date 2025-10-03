@@ -71,7 +71,10 @@ $query->whereNotNull('completed_at');
                     'is_creator' => $course->creator_id === $user->id,
                     'is_featured' => $course->is_featured,
                     'is_public' => $course->is_public,
-                    'tags' => $course->tags->map(function ($tag) {
+                    'tags' => $course->tags->filter(function ($tag) use ($course, $user) {
+                        // Show all tags for course creator, only public tags for others
+                        return $course->creator_id === $user->id || $tag->is_public;
+                    })->map(function ($tag) {
                         return [
                             'id' => $tag->id,
                             'name' => $tag->name,
@@ -310,6 +313,7 @@ $query->whereNotNull('completed_at');
                     ];
                 }),
                 'course_reflection' => $completedEnrollment ? $completedEnrollment->course_reflection : null,
+                'course_reflection_link' => $completedEnrollment ? $completedEnrollment->course_reflection_link : null,
                 'total_lessons' => $course->lessons_count,
                 'total_modules' => $course->modules_count,
                 'created_at' => $course->created_at->toISOString(),
@@ -456,6 +460,7 @@ $query->whereNotNull('completed_at');
     {
         $request->validate([
             'reflection' => 'required|string|min:50|max:2000',
+            'reflection_link' => 'nullable|string|max:255',
         ]);
 
         $user = auth()->user();
@@ -482,7 +487,7 @@ $query->whereNotNull('completed_at');
             DB::beginTransaction();
             
             // Use the enrollment's completeWithReflection method
-            $success = $enrollment->completeWithReflection($request->reflection);
+            $success = $enrollment->completeWithReflection($request->reflection, $request->reflection_link);
             
             if (!$success) {
                 DB::rollBack();
@@ -507,6 +512,7 @@ $query->whereNotNull('completed_at');
     {
         $request->validate([
             'reflection' => 'required|string|min:50|max:2000',
+            'reflection_link' => 'nullable|string|max:255',
         ]);
 
         $user = auth()->user();
@@ -528,6 +534,7 @@ $query->whereNotNull('completed_at');
         try {
             $enrollment->update([
                 'course_reflection' => $request->reflection,
+                'course_reflection_link' => $request->reflection_link,
             ]);
 
             return redirect()->route('classes.show', $course->id)
@@ -599,7 +606,10 @@ $query->whereNotNull('completed_at');
                     'is_creator' => $course->creator_id === $user->id,
                     'is_featured' => $course->is_featured,
                     'is_public' => $course->is_public,
-                    'tags' => $course->tags->map(function ($tag) {
+                    'tags' => $course->tags->filter(function ($tag) use ($course, $user) {
+                        // Show all tags for course creator, only public tags for others
+                        return $course->creator_id === $user->id || $tag->is_public;
+                    })->map(function ($tag) {
                         return [
                             'id' => $tag->id,
                             'name' => $tag->name,

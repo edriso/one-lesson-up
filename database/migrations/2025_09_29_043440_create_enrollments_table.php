@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
             $table->text('course_reflection')->nullable();
+            $table->string('course_reflection_link')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->unsignedSmallInteger('active_days_count')->default(0);
             $table->unsignedSmallInteger('time_bonuses_earned')->default(0);

@@ -68,7 +68,7 @@ class FeedsController extends Controller
                 'user:id,username,full_name',
                 'course:id,name,link'
             ])
-            ->select('id', 'user_id', 'course_id', 'course_reflection', 'completed_at')
+            ->select('id', 'user_id', 'course_id', 'course_reflection', 'course_reflection_link', 'completed_at')
             ->whereNotNull('course_reflection')
             ->whereNotNull('completed_at')
             ->where('course_reflection', '!=', '')
@@ -86,7 +86,7 @@ class FeedsController extends Controller
                     'id' => $enrollment->id,
                     'type' => 'course',
                     'summary' => $enrollment->course_reflection,
-                    'link' => null,
+                    'link' => $enrollment->course_reflection_link,
                     'created_at' => $enrollment->completed_at->toISOString(),
                     'user' => [
                         'id' => $user?->id,
@@ -177,7 +177,7 @@ class FeedsController extends Controller
                 'user:id,username,full_name',
                 'course:id,name,link'
             ])
-            ->select('id', 'user_id', 'course_id', 'course_reflection', 'completed_at')
+            ->select('id', 'user_id', 'course_id', 'course_reflection', 'course_reflection_link', 'completed_at')
             ->whereNotNull('course_reflection')
             ->whereNotNull('completed_at')
             ->where('course_reflection', '!=', '')
@@ -196,7 +196,7 @@ class FeedsController extends Controller
                     'id' => $enrollment->id,
                     'type' => 'course',
                     'summary' => $enrollment->course_reflection,
-                    'link' => null,
+                    'link' => $enrollment->course_reflection_link,
                     'created_at' => $enrollment->completed_at->toISOString(),
                     'user' => [
                         'id' => $user?->id,

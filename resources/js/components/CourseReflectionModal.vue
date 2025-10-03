@@ -29,6 +29,19 @@
           </p>
           <InputError v-if="reflectionError" :message="reflectionError" />
         </div>
+        
+        <div class="space-y-2">
+          <Label for="reflection_link">Link to your work (optional)</Label>
+          <Input
+            id="reflection_link"
+            v-model="reflectionLink"
+            type="url"
+            placeholder="https://example.com/your-work"
+          />
+          <p class="text-xs text-muted-foreground">
+            Share a link to your project, portfolio, or related work
+          </p>
+        </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-4">
@@ -49,6 +62,7 @@ import { ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import InputError from '@/components/InputError.vue';
@@ -61,6 +75,7 @@ interface Props {
     title: string;
   };
   existingReflection?: string;
+  existingReflectionLink?: string;
   isEditing?: boolean;
 }
 
@@ -72,6 +87,7 @@ const emit = defineEmits<{
 }>();
 
 const reflection = ref('');
+const reflectionLink = ref('');
 const reflectionError = ref('');
 const isSubmitting = ref(false);
 
@@ -82,12 +98,19 @@ watch(() => props.isOpen, (newValue) => {
   } else if (newValue) {
     reflection.value = '';
   }
+  
+  if (newValue && props.existingReflectionLink) {
+    reflectionLink.value = props.existingReflectionLink;
+  } else if (newValue) {
+    reflectionLink.value = '';
+  }
 });
 
 const closeModal = () => {
   if (isSubmitting.value) return;
   
   reflection.value = '';
+  reflectionLink.value = '';
   reflectionError.value = '';
   emit('close');
 };
@@ -107,11 +130,13 @@ const submitReflection = async () => {
       : `/classes/${props.course?.id}/complete`;
       
     await router.post(url, {
-      reflection: reflection.value.trim()
+      reflection: reflection.value.trim(),
+      reflection_link: reflectionLink.value.trim() || null
     }, {
       preserveScroll: false,
       onSuccess: () => {
         reflection.value = '';
+        reflectionLink.value = '';
         reflectionError.value = '';
         emit('success');
         emit('close');

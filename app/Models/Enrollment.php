@@ -16,6 +16,7 @@ class Enrollment extends Model
         'user_id',
         'course_id',
         'course_reflection',
+        'course_reflection_link',
         'completed_at',
         'bonus_deadline',
     ];
@@ -129,7 +130,7 @@ class Enrollment extends Model
     /**
      * Complete the enrollment with reflection.
      */
-    public function completeWithReflection(string $reflection): bool
+    public function completeWithReflection(string $reflection, ?string $reflectionLink = null): bool
     {
         if (!$this->areAllLessonsCompleted()) {
             return false; // Cannot complete without all lessons done
@@ -142,6 +143,7 @@ class Enrollment extends Model
         $this->update([
             'completed_at' => now(),
             'course_reflection' => $reflection,
+            'course_reflection_link' => $reflectionLink,
         ]);
 
         // Award course completion bonus

@@ -53,6 +53,7 @@ interface Props {
     description: string;
     link?: string;
     course_reflection?: string;
+    course_reflection_link?: string;
     modules: Module[];
     total_lessons: number;
     total_modules: number;
@@ -347,7 +348,7 @@ const progressText = computed(() => {
             {{ course.description }}
           </p>
           
-          <div class="flex items-center gap-4 mt-4">
+          <div class="flex flex-wrap items-center gap-4 mt-4">
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
               <BookOpen class="h-4 w-4" />
               <span>{{ course.total_modules }} modules</span>
@@ -592,9 +593,25 @@ const progressText = computed(() => {
             
             <div class="p-4 bg-background/50 rounded-lg border border-border">
               <div class="flex items-start justify-between gap-3">
-                <p class="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap flex-1">
-                  {{ course.course_reflection }}
-                </p>
+                <div class="flex-1">
+                  <p class="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {{ course.course_reflection }}
+                  </p>
+                  
+                  <!-- Course Reflection Link -->
+                  <div v-if="course.course_reflection_link" class="mt-3">
+                    <a 
+                      :href="course.course_reflection_link" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <LinkIcon class="h-4 w-4" />
+                      View your work
+                      <ExternalLink class="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
                 <Button 
                   @click="openEditReflectionModal" 
                   variant="outline" 
@@ -770,6 +787,7 @@ const progressText = computed(() => {
       :is-open="isReflectionModalOpen"
       :course="course"
       :existing-reflection="course.course_reflection"
+      :existing-reflection-link="course.course_reflection_link"
       :is-editing="isEditingReflection"
       @close="closeReflectionModal"
       @success="onCourseCompleted"
