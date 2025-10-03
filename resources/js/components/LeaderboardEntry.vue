@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Star, Crown, Trophy, Award } from 'lucide-vue-next';
+import { Link } from '@inertiajs/vue3';
 
 interface LeaderboardEntry {
   id: number;
@@ -78,7 +79,10 @@ const getUserInitials = (fullName: string) => {
       <div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20">
         <component :is="getRankIcon(entry.rank)" class="h-4 w-4" :class="getRankColor(entry.rank)" />
       </div>
-      <div class="flex items-center gap-3">
+      <Link 
+        :href="`/profile/${entry.user?.username || 'unknown'}`"
+        class="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+      >
         <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
           <span class="text-sm font-semibold text-primary-foreground">
             {{ getUserInitials(entry.user?.full_name || '') }}
@@ -91,7 +95,7 @@ const getUserInitials = (fullName: string) => {
           </h4>
           <p class="text-sm text-muted-foreground">@{{ entry.user?.username || 'unknown' }}</p>
         </div>
-      </div>
+      </Link>
     </div>
     <div class="flex items-center gap-4">
       <div class="text-right">
