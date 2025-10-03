@@ -185,6 +185,19 @@ const needsCourseReflection = computed(() => {
   return isEnrolled.value && isCourseComplete.value;
 });
 
+// Get the current module (first incomplete module, or last module if all complete)
+const currentModule = computed(() => {
+  if (!props.user.current_class?.modules) return null;
+  
+  const modules = props.user.current_class.modules;
+  
+  // Find the first module that's not 100% complete
+  const incompleteModule = modules.find(module => module.completion_percentage < 100);
+  
+  // If all modules are complete, show the last module
+  return incompleteModule || modules[modules.length - 1] || null;
+});
+
 // Map activity types to icons
 const activityIconMap: Record<string, Component> = {
   lesson_completed: CheckCircle,
@@ -239,17 +252,17 @@ const getActivityIcon = (type: string): Component => {
                             </CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div v-for="module in user.current_class?.modules" :key="module.id" class="space-y-3">
+                            <div v-if="currentModule" class="space-y-3">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-2">
                                         <BookOpen class="h-4 w-4 text-primary" />
-                                        <h3 class="font-semibold text-foreground">{{ module.title }}</h3>
+                                        <h3 class="font-semibold text-foreground">{{ currentModule.title }}</h3>
                                     </div>
                                     <Badge variant="secondary" class="text-secondary-foreground bg-secondary">
-                                        {{ module.completion_percentage }}% Complete
+                                        {{ currentModule.completion_percentage }}% Complete
                                     </Badge>
                                 </div>
-                                <Progress :model-value="module.completion_percentage" class="h-2" />
+                                <Progress :model-value="currentModule.completion_percentage" class="h-2" />
                             </div>
                             
                             <!-- Course Reflection Prompt when all modules are 100% complete -->
