@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Home, Crown, Rss, Medal, GraduationCap } from 'lucide-vue-next';
+import { Home, Crown, Newspaper, Medal, GraduationCap } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const page = usePage();
@@ -32,7 +32,7 @@ const navLinks = [
     {
         name: 'Feeds',
         href: '/feeds',
-        icon: Rss,
+        icon: Newspaper,
     },
     {
         name: 'Leaderboard',
