@@ -14,9 +14,9 @@ class FeedsController extends Controller
      */
     public function index(Request $request)
     {
-        // Get lesson summaries from public courses only
+        // Get lesson summaries from public courses and public users only
         $lessonSummaries = CompletedLesson::with([
-                'enrollment.user:id,username,full_name',
+                'enrollment.user:id,username,full_name,is_public',
                 'lesson:id,name,module_id',
                 'lesson.module:id,name,course_id',
                 'lesson.module.course:id,name,link'
@@ -25,6 +25,9 @@ class FeedsController extends Controller
             ->whereNotNull('summary')
             ->where('summary', '!=', '')
             ->whereHas('lesson.module.course', function ($query) {
+                $query->where('is_public', true);
+            })
+            ->whereHas('enrollment.user', function ($query) {
                 $query->where('is_public', true);
             })
             ->latest()
@@ -63,9 +66,9 @@ class FeedsController extends Controller
                 ];
             });
 
-        // Get course reflections for public courses only
+        // Get course reflections for public courses and public users only
         $courseReflections = Enrollment::with([
-                'user:id,username,full_name',
+                'user:id,username,full_name,is_public',
                 'course:id,name,link'
             ])
             ->select('id', 'user_id', 'course_id', 'course_reflection', 'course_reflection_link', 'completed_at')
@@ -73,6 +76,9 @@ class FeedsController extends Controller
             ->whereNotNull('completed_at')
             ->where('course_reflection', '!=', '')
             ->whereHas('course', function ($query) {
+                $query->where('is_public', true);
+            })
+            ->whereHas('user', function ($query) {
                 $query->where('is_public', true);
             })
             ->latest('completed_at')
@@ -122,9 +128,9 @@ class FeedsController extends Controller
         $perPage = 10;
         $offset = ($page - 1) * $perPage;
 
-        // Get lesson summaries from public courses only
+        // Get lesson summaries from public courses and public users only
         $lessonSummaries = CompletedLesson::with([
-                'enrollment.user:id,username,full_name',
+                'enrollment.user:id,username,full_name,is_public',
                 'lesson:id,name,module_id',
                 'lesson.module:id,name,course_id',
                 'lesson.module.course:id,name,link'
@@ -133,6 +139,9 @@ class FeedsController extends Controller
             ->whereNotNull('summary')
             ->where('summary', '!=', '')
             ->whereHas('lesson.module.course', function ($query) {
+                $query->where('is_public', true);
+            })
+            ->whereHas('enrollment.user', function ($query) {
                 $query->where('is_public', true);
             })
             ->latest()
@@ -172,9 +181,9 @@ class FeedsController extends Controller
                 ];
             });
 
-        // Get course reflections for public courses only
+        // Get course reflections for public courses and public users only
         $courseReflections = Enrollment::with([
-                'user:id,username,full_name',
+                'user:id,username,full_name,is_public',
                 'course:id,name,link'
             ])
             ->select('id', 'user_id', 'course_id', 'course_reflection', 'course_reflection_link', 'completed_at')
@@ -182,6 +191,9 @@ class FeedsController extends Controller
             ->whereNotNull('completed_at')
             ->where('course_reflection', '!=', '')
             ->whereHas('course', function ($query) {
+                $query->where('is_public', true);
+            })
+            ->whereHas('user', function ($query) {
                 $query->where('is_public', true);
             })
             ->latest('completed_at')
