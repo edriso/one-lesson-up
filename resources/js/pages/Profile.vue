@@ -6,14 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Star, 
-  BookOpen, 
   TrendingUp, 
   Clock, 
   Target,
-  Github,
   ExternalLink,
-  Briefcase
+  Briefcase,
+  GraduationCap,
+  BadgeCheck,
+  Linkedin,
 } from 'lucide-vue-next';
 import LearningCalendar from '@/components/LearningCalendar.vue';
 
@@ -97,9 +97,9 @@ const formatShortDate = (dateString: string) => {
 const getActivityIcon = (type: string) => {
   switch (type) {
     case 'lesson_completed':
-      return BookOpen;
+      return GraduationCap;
     case 'course_completed':
-      return Star;
+      return BadgeCheck;
     case 'course_started':
       return Target;
     default:
@@ -178,7 +178,7 @@ const getActivityIcon = (type: string) => {
               <div class="flex flex-wrap gap-4 mt-4">
                 <Button v-if="user.linkedin_url" variant="outline" size="sm" as-child>
                   <a :href="user.linkedin_url" target="_blank" class="flex items-center gap-2">
-                    <Github class="h-4 w-4" />
+                    <Linkedin class="h-4 w-4" />
                     LinkedIn
                     <ExternalLink class="h-3 w-3" />
                   </a>
@@ -212,7 +212,6 @@ const getActivityIcon = (type: string) => {
               <Card>
                 <CardHeader>
                   <CardTitle class="flex items-center gap-2">
-                    <Star class="h-5 w-5 text-primary" />
                     Learning Stats
                   </CardTitle>
                 </CardHeader>
@@ -281,7 +280,7 @@ const getActivityIcon = (type: string) => {
           <Card>
             <CardHeader>
               <CardTitle class="flex items-center gap-2">
-                <BookOpen class="h-5 w-5 text-primary" />
+                <GraduationCap class="h-5 w-5 text-primary" />
                 Completed Classes
               </CardTitle>
               <CardDescription>
@@ -290,7 +289,7 @@ const getActivityIcon = (type: string) => {
             </CardHeader>
             <CardContent>
               <div v-if="completed_classes.length === 0" class="text-center py-8 text-muted-foreground">
-                <BookOpen class="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <GraduationCap class="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No completed classes yet</p>
                 <p class="text-sm">Start learning to see your progress here!</p>
               </div>
@@ -299,7 +298,7 @@ const getActivityIcon = (type: string) => {
                      class="flex items-center justify-between p-4 rounded-lg border bg-background">
                   <div class="flex items-center gap-4">
                     <div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
-                      <BookOpen class="h-6 w-6 text-primary" />
+                      <GraduationCap class="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <h4 class="font-semibold text-foreground">{{ classItem.title }}</h4>

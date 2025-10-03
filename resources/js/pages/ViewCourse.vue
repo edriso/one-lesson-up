@@ -14,19 +14,21 @@ import LessonCompletionModal from '@/components/LessonCompletionModal.vue';
 import CourseReflectionModal from '@/components/CourseReflectionModal.vue';
 import { useDateFormatter } from '@/composables/useDateFormatter';
 import { 
-  BookOpen, 
   ArrowLeft, 
   ExternalLink,
   LogOut,
   CheckCircle,
-  Circle,
-  Star,
+  BadgeCheck,
   Link as LinkIcon,
   Lock,
   Globe,
   Clock,
   Trophy,
-  Edit
+  Edit,
+  Notebook,
+  NotebookPen,
+  BookOpen,
+  GraduationCap
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
@@ -343,7 +345,8 @@ const progressText = computed(() => {
             </Button>
           </div>
           
-          <h1 class="text-4xl font-bold text-foreground mb-2">
+          <h1 class="text-4xl font-bold text-foreground mb-2 flex items-center gap-3">
+            <GraduationCap class="h-8 w-8 text-primary" />
             {{ course.title }}
           </h1>
           
@@ -357,7 +360,7 @@ const progressText = computed(() => {
               <span>{{ course.total_modules }} modules</span>
             </div>
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
-              <Trophy class="h-4 w-4" />
+              <Notebook class="h-4 w-4" />
               <span>{{ course.total_lessons }} lessons</span>
             </div>
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
@@ -474,7 +477,7 @@ const progressText = computed(() => {
                     All lessons completed! Write a quick reflection to finish the class.
                   </p>
                   <Button @click="openReflectionModal" size="sm" class="bg-primary hover:bg-primary/90">
-                    <Star class="h-4 w-4 mr-2" />
+                    <BadgeCheck class="h-4 w-4" />
                     Complete Class
                   </Button>
                 </div>
@@ -512,6 +515,7 @@ const progressText = computed(() => {
               <div class="flex items-start justify-between gap-4">
                 <div class="flex-1">
                   <div class="flex items-center gap-2 mb-2">
+                    <BookOpen class="h-4 w-4 text-primary" />
                     <Badge variant="secondary" class="text-secondary-foreground">
                       Module {{ moduleIndex + 1 }}
                     </Badge>
@@ -546,9 +550,9 @@ const progressText = computed(() => {
                   ]"
                 >
                   <component 
-                    :is="lesson.is_completed ? CheckCircle : Circle" 
+                    :is="lesson.is_completed ? CheckCircle : (is_enrolled && canCompleteLesson(lesson) ? NotebookPen : Notebook)" 
                     class="h-5 w-5 mt-0.5 flex-shrink-0"
-                    :class="lesson.is_completed ? 'text-primary' : 'text-muted-foreground'"
+                    :class="lesson.is_completed ? 'text-primary' : (is_enrolled && canCompleteLesson(lesson) ? 'text-secondary' : 'text-muted-foreground')"
                   />
                   <div class="flex-1">
                     <div class="flex items-center gap-2">
@@ -600,7 +604,7 @@ const progressText = computed(() => {
           <div class="space-y-4">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                <BookOpen class="h-5 w-5 text-primary" />
+                <Notebook class="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h3 class="text-lg font-semibold text-foreground">Your Class Reflection</h3>

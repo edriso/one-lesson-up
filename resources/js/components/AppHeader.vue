@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Home, Crown, Rss, Medal } from 'lucide-vue-next';
+import { Home, Crown, Rss, Medal, GraduationCap } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const page = usePage();
@@ -27,7 +27,7 @@ const navLinks = [
     {
         name: 'Classes',
         href: '/classes',
-        icon: BookOpen,
+        icon: GraduationCap,
     },
     {
         name: 'Feeds',

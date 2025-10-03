@@ -19,7 +19,7 @@ Most online learners abandon courses within the first few lessons. One Lesson Up
 One Lesson Up gamifies online learning with:
 
 - **🎯 Points System** - Earn 1 point per lesson, with learning deadline bonuses
-- **⏱️ Learning Deadlines** - Complete courses on time for bonus points
+- **⏱️ Learning Deadlines** - Complete classes on time for bonus points
 - **📝 Learning Summaries** - Reinforce knowledge by writing what you learned
 - **📖 Course Reflections** - Write and edit reflections when completing courses
 - **🔒 Privacy Controls** - Create public or private classes

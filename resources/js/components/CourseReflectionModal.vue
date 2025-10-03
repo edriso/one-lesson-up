@@ -3,7 +3,7 @@
     <DialogContent class="sm:max-w-[600px]">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
-          <BookOpen class="h-5 w-5 text-primary" />
+          <GraduationCap class="h-5 w-5 text-primary" />
           {{ isEditing ? 'Edit Course Reflection' : 'Course Reflection' }}
         </DialogTitle>
         <DialogDescription>
@@ -49,8 +49,8 @@
           Cancel
         </Button>
         <Button @click="submitReflection" :disabled="isSubmitting || !reflection.trim()">
-          <Star class="h-4 w-4 mr-2" />
-          {{ isSubmitting ? 'Submitting...' : (isEditing ? 'Update Reflection' : 'Complete Course') }}
+          <BadgeCheck class="h-4 w-4" />
+          {{ isSubmitting ? 'Submitting...' : (isEditing ? 'Update Reflection' : 'Complete Class') }}
         </Button>
       </div>
     </DialogContent>
@@ -66,7 +66,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import InputError from '@/components/InputError.vue';
-import { BookOpen, Star } from 'lucide-vue-next';
+import { BadgeCheck, GraduationCap } from 'lucide-vue-next';
 
 interface Props {
   isOpen: boolean;

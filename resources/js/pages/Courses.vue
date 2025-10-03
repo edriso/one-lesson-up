@@ -6,14 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
-  BookOpen, 
   Plus, 
   Users, 
   Trophy, 
   Search,
   X,
   Lock,
-  Globe
+  Globe,
+  GraduationCap
 } from 'lucide-vue-next';
 import { ref, computed, onMounted } from 'vue';
 
@@ -204,7 +204,7 @@ const loadMoreCourses = async () => {
     
     // Deduplicate courses by ID to prevent duplicates
     const existingIds = new Set(allCourses.value.map(course => course.id));
-    const newCourses = data.courses.filter(course => !existingIds.has(course.id));
+    const newCourses = data.courses.filter((course: Course) => !existingIds.has(course.id));
     allCourses.value.push(...newCourses);
     hasMore.value = data.hasMore;
   } catch (error) {
@@ -315,7 +315,7 @@ onMounted(() => {
 
       <!-- Classes Grid -->
       <div v-if="filteredCourses.length === 0" class="text-center py-12">
-        <BookOpen class="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+        <GraduationCap class="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
         <h3 class="text-lg font-semibold text-foreground mb-2">
           {{ searchQuery ? 'No Matching Classes' : 'No Classes Found' }}
         </h3>
@@ -379,7 +379,7 @@ onMounted(() => {
             <!-- Class Stats -->
             <div class="flex flex-col gap-4 text-sm text-muted-foreground mt-4">
               <div class="flex items-center gap-1">
-                <BookOpen class="h-4 w-4" />
+                <GraduationCap class="h-4 w-4" />
                 <span>{{ course.lessons_count }} lessons</span>
               </div>
               <div class="flex items-center gap-1">

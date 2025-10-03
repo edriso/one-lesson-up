@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { login, register } from '@/routes';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Medal, Target, Users } from 'lucide-vue-next';
+import { Medal, Target, Users, GraduationCap } from 'lucide-vue-next';
 
 interface Props {
   stats?: {
@@ -41,7 +41,7 @@ const formatNumber = (num: number): string => {
       <div class="container mx-auto px-4 py-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <BookOpen class="h-8 w-8 text-primary" />
+            <GraduationCap class="h-8 w-8 text-primary" />
             <h1 class="text-2xl font-bold text-foreground">One Lesson Up</h1>
           </div>
           
@@ -67,7 +67,7 @@ const formatNumber = (num: number): string => {
           <span class="text-primary">Start Finishing Them.</span>
         </h2>
         <p class="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Gamify your learning with points, deadlines, and community. Complete courses you actually start.
+          Gamify your learning with points, deadlines, and community. Complete classes you actually start.
         </p>
         
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">

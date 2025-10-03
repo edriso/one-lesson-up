@@ -9,6 +9,7 @@ use App\Models\Module;
 use App\Models\CompletedLesson;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class CourseController extends Controller
@@ -326,7 +327,7 @@ $query->whereNotNull('completed_at');
             'completion_date' => $completedEnrollment ? $completedEnrollment->completed_at->toISOString() : null,
             'bonus_deadline' => $enrollment ? $enrollment->bonus_deadline->toISOString() : null,
             'is_bonus_eligible' => $enrollment ? now()->lte($enrollment->bonus_deadline) : false,
-            'is_course_creator' => $course->user_id === $user->id,
+            'is_course_creator' => $course->creator_id === $user->id,
             'enrollment_start_date' => $completedEnrollment ? $completedEnrollment->created_at->toISOString() : null,
             'was_completed_on_time' => $completedEnrollment ? $completedEnrollment->isCompletedOnTime() : null,
             'points_earned' => $completedEnrollment ? $this->calculatePointsEarned($completedEnrollment) : null,
@@ -441,7 +442,7 @@ $query->whereNotNull('completed_at');
                 \App\Models\Enrollment::where('course_id', $courseId)->delete();
                 
                 // Delete course tags
-                \DB::table('course_tags')->where('course_id', $courseId)->delete();
+                DB::table('course_tags')->where('course_id', $courseId)->delete();
                 
                 // Delete lessons
                 \App\Models\Lesson::whereHas('module', function($query) use ($courseId) {
@@ -459,7 +460,7 @@ $query->whereNotNull('completed_at');
                 }
                 
                 // Clear any caches that might contain this course
-                \Cache::flush();
+                Cache::flush();
                 
                 // Verify the course was actually deleted
                 $courseExists = Course::find($courseId);
@@ -503,7 +504,7 @@ $query->whereNotNull('completed_at');
             })->delete();
             
             \App\Models\Enrollment::where('course_id', $course->id)->delete();
-            \DB::table('course_tags')->where('course_id', $course->id)->delete();
+            DB::table('course_tags')->where('course_id', $course->id)->delete();
             
             \App\Models\Lesson::whereHas('module', function($query) use ($course) {
                 $query->where('course_id', $course->id);

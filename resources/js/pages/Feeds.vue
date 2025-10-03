@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useDateFormatter } from '@/composables/useDateFormatter';
 import { 
-  BookOpen, 
   ExternalLink, 
   GraduationCap,
+  Notebook,
 } from 'lucide-vue-next';
 import { computed, ref, onMounted } from 'vue';
 
@@ -164,7 +164,7 @@ onMounted(() => {
               <!-- Course Info -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
-                  <BookOpen class="h-5 w-5 text-primary flex-shrink-0" />
+                  <Notebook class="h-5 w-5 text-primary flex-shrink-0" />
                   <Link 
                     v-if="getCourseId(feed)"
                     :href="`/classes/${getCourseId(feed)}`"

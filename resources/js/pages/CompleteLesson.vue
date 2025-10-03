@@ -7,11 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  BookOpen, 
   ArrowLeft, 
   CheckCircle,
   Link as LinkIcon,
-  FileText
+  FileText,
+  Notebook,
 } from 'lucide-vue-next';
 
 interface Props {
@@ -61,7 +61,7 @@ const submit = () => {
       <!-- Breadcrumb Info -->
       <div class="space-y-1">
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <BookOpen class="h-4 w-4" />
+          <Notebook class="h-4 w-4" />
           <span>{{ lesson.course.name }}</span>
           <span>›</span>
           <span>{{ lesson.module.name }}</span>
@@ -118,7 +118,7 @@ const submit = () => {
                 placeholder="Example: I learned about React hooks, specifically useState and useEffect. The key takeaway is understanding component lifecycle and state management patterns..."
                 :rows="6"
                 required
-                :class="{ 'border-destructive': form.errors.summary }"
+                :class="form.errors.summary ? 'border-destructive' : ''"
               />
               <p v-if="form.errors.summary" class="text-sm text-destructive">
                 {{ form.errors.summary }}

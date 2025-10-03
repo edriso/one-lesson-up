@@ -9,8 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BookOpen, 
+import {  
   Plus, 
   Trash2, 
   GripVertical,
@@ -244,7 +243,6 @@ const getTotalLessons = () => {
         <Card>
           <CardHeader>
             <CardTitle class="flex items-center gap-2">
-              <BookOpen class="h-5 w-5" />
               Class Information
             </CardTitle>
             <CardDescription>

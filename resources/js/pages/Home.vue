@@ -10,7 +10,7 @@ import LessonCompletionModal from '@/components/LessonCompletionModal.vue';
 import CourseReflectionModal from '@/components/CourseReflectionModal.vue';
 import UserInfo from '@/components/UserInfo.vue';
 import { useDateFormatter } from '@/composables/useDateFormatter';
-import { Clock, BookOpen, Medal, TrendingUp, CheckCircle, Circle, Star, Trophy } from 'lucide-vue-next';
+import { Clock, Medal, TrendingUp, CheckCircle, BadgeCheck, NotebookPen, BookOpen, GraduationCap } from 'lucide-vue-next';
 import { ref, computed, onMounted } from 'vue';
 import type { Component } from 'vue';
 
@@ -189,7 +189,7 @@ const needsCourseReflection = computed(() => {
 const activityIconMap: Record<string, Component> = {
   lesson_completed: CheckCircle,
   course_completed: Medal,
-  course_started: BookOpen,
+  course_started: GraduationCap,
 };
 
 const getActivityIcon = (type: string): Component => {
@@ -225,7 +225,7 @@ const getActivityIcon = (type: string): Component => {
                     <Card v-if="user.enrollment_id && user.current_class" class="border-primary/20 shadow-sm hover:shadow-md transition-shadow">
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
-                                <BookOpen class="h-5 w-5 text-primary" />
+                                <GraduationCap class="h-5 w-5 text-primary" />
                                 Current Class: 
                                 <span 
                                     class="text-primary hover:text-primary/80 cursor-pointer underline"
@@ -241,17 +241,15 @@ const getActivityIcon = (type: string): Component => {
                         <CardContent class="space-y-6">
                             <div v-for="module in user.current_class?.modules" :key="module.id" class="space-y-3">
                                 <div class="flex items-center justify-between">
-                                    <h3 class="font-semibold text-foreground">{{ module.title }}</h3>
+                                    <div class="flex items-center gap-2">
+                                        <BookOpen class="h-4 w-4 text-primary" />
+                                        <h3 class="font-semibold text-foreground">{{ module.title }}</h3>
+                                    </div>
                                     <Badge variant="secondary" class="text-secondary-foreground bg-secondary">
                                         {{ module.completion_percentage }}% Complete
                                     </Badge>
                                 </div>
-                                <div class="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
-                                    <div 
-                                        class="h-full w-full flex-1 bg-primary transition-all"
-                                        :style="{ transform: `translateX(-${100 - module.completion_percentage}%)` }"
-                                    />
-                                </div>
+                                <Progress :model-value="module.completion_percentage" class="h-2" />
                             </div>
                             
                             <!-- Course Reflection Prompt when all modules are 100% complete -->
@@ -262,7 +260,7 @@ const getActivityIcon = (type: string): Component => {
                                             All lessons completed! Write a quick reflection to finish the class.
                                         </p>
                                         <Button @click="openReflectionModal" size="sm" class="bg-primary hover:bg-primary/90">
-                                            <Star class="h-4 w-4 mr-2" />
+                                            <BadgeCheck class="h-4 w-4" />
                                             Complete Class
                                         </Button>
                                     </div>
@@ -284,7 +282,7 @@ const getActivityIcon = (type: string): Component => {
                         </CardHeader>
                         <CardContent>
                             <div v-if="!hasActiveLessons" class="text-center py-12 text-muted-foreground">
-                                <BookOpen class="h-16 w-16 mx-auto mb-4 opacity-30" />
+                                <GraduationCap class="h-16 w-16 mx-auto mb-4 opacity-30" />
                                 <p class="text-lg font-medium">No upcoming lessons</p>
                                 <p class="text-sm mt-1">Join a class to start learning!</p>
                             </div>
@@ -298,7 +296,7 @@ const getActivityIcon = (type: string): Component => {
                                     <div class="flex items-center gap-3">
                                         <div class="flex-shrink-0">
                                             <CheckCircle v-if="lesson.completed" class="h-5 w-5 text-green-500" />
-                                            <Circle v-else class="h-5 w-5 text-muted-foreground" />
+                                            <NotebookPen v-else class="h-5 w-5 text-muted-foreground" />
                                         </div>
                                         <div>
                                             <h4 class="font-medium" :class="lesson.completed ? 'line-through text-muted-foreground' : 'text-foreground'">
@@ -334,7 +332,7 @@ const getActivityIcon = (type: string): Component => {
                     <Card v-if="hasLastCompletedLesson" class="shadow-sm">
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
-                                <BookOpen class="h-5 w-5 text-primary" />
+                                <Notebook class="h-5 w-5 text-primary" />
                                 What I Learned Last Lesson
                             </CardTitle>
                         </CardHeader>
@@ -360,7 +358,7 @@ const getActivityIcon = (type: string): Component => {
                                                 rel="noopener noreferrer"
                                                 class="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
                                             >
-                                                <BookOpen class="h-4 w-4" />
+                                                <Notebook class="h-4 w-4" />
                                                 View your work
                                             </a>
                                         </div>

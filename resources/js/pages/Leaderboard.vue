@@ -187,7 +187,6 @@ onUnmounted(() => {
         <Card>
           <CardHeader>
             <CardTitle class="flex items-center gap-2">
-              <Star class="h-5 w-5 text-primary" />
               Your Current Rankings
             </CardTitle>
             <CardDescription>

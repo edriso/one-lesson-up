@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
-import { Star, Crown, Trophy, Award } from 'lucide-vue-next';
+import { BadgeCheck, Crown, Trophy, Award } from 'lucide-vue-next';
 import { Link } from '@inertiajs/vue3';
 
 interface LeaderboardEntry {
@@ -36,7 +36,7 @@ const getRankIcon = (rank: number) => {
     case 3:
       return Award;
     default:
-      return Star;
+      return BadgeCheck;
   }
 };
 
