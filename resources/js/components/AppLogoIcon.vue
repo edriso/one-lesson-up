@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue';
-import { ArrowUp } from 'lucide-vue-next';
+import { ArrowBigUp } from 'lucide-vue-next';
 
 defineOptions({
     inheritAttrs: false,
@@ -14,5 +14,5 @@ defineProps<Props>();
 </script>
 
 <template>
-    <ArrowUp :class="className" v-bind="$attrs" />
+    <ArrowBigUp :class="className" v-bind="$attrs" />
 </template>

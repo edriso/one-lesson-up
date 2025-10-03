@@ -16,8 +16,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Medal, Info } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { Info } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
 
 interface Props {
     mustVerifyEmail: boolean;
@@ -36,9 +36,14 @@ const breadcrumbItems: BreadcrumbItem[] = [
 const page = usePage();
 const user = page.props.auth.user;
 
+// Bio character counter
+const bioText = ref(user.bio || '');
+const bioCharCount = ref(bioText.value.length);
+
 // Point thresholds
 const PROFILE_PICTURE_POINTS = 5;
 const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POINTS);
+
 </script>
 
 <template>
@@ -57,13 +62,6 @@ const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POI
                     class="space-y-6"
                     v-slot="{ errors, processing, recentlySuccessful }"
                 >
-                    <!-- Points Display -->
-                    <Alert>
-                        <Medal class="h-4 w-4 text-primary" />
-                        <AlertDescription>
-                            You have <strong>{{ user.points }} points</strong>. Complete lessons to earn more!
-                        </AlertDescription>
-                    </Alert>
 
                     <!-- Full Name -->
                     <div class="grid gap-2">
@@ -137,10 +135,15 @@ const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POI
                             id="bio"
                             class="mt-1 block w-full"
                             name="bio"
-                            :default-value="user.bio || ''"
+                            v-model="bioText"
+                            @input="bioCharCount = bioText.length"
                             placeholder="Tell us about yourself..."
                             :rows="4"
+                            maxlength="255"
                         />
+                        <p class="text-xs text-muted-foreground" :class="{ 'text-red-500': bioCharCount > 255 }">
+                            {{ bioCharCount }}/255 characters
+                        </p>
                         <InputError class="mt-2" :message="errors.bio" />
                     </div>
 
