@@ -202,6 +202,7 @@ Route::get('profile/{username}', function ($username) {
             'is_public' => $user->is_public ?? true,
             'week_starts_on' => $user->week_starts_on ?? 0,
         ],
+        'is_own_profile' => auth()->id() === $user->id,
         'activities' => $activities,
         'completed_classes' => $completedClasses,
         'calendar_data' => $calendarArray,

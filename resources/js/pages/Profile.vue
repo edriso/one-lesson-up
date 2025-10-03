@@ -13,6 +13,7 @@ import {
   Briefcase,
   GraduationCap,
   BadgeCheck,
+  Lock,
 } from 'lucide-vue-next';
 import LearningCalendar from '@/components/LearningCalendar.vue';
 
@@ -63,6 +64,7 @@ interface Props {
     total_lessons_completed: number;
     total_classes_completed: number;
   };
+  is_own_profile?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
@@ -75,6 +77,7 @@ withDefaults(defineProps<Props>(), {
     total_lessons_completed: 0,
     total_classes_completed: 0,
   }),
+  is_own_profile: false,
 });
 
 const formatDate = (dateString: string) => {
@@ -117,15 +120,15 @@ const getActivityIcon = (type: string) => {
     
     <div v-else class="space-y-6">
       <!-- Private Profile Message -->
-      <Card v-if="!user.is_public" class="mb-8 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+      <Card v-if="!user.is_public && !is_own_profile" class="mb-8 border-muted bg-muted/50">
         <CardContent class="p-6">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
-              <span class="text-orange-600 dark:text-orange-400 text-lg">🔒</span>
+            <div class="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+              <Lock class="h-4 w-4 text-muted-foreground" />
             </div>
             <div>
-              <h3 class="font-semibold text-orange-800 dark:text-orange-200">This account is private</h3>
-              <p class="text-sm text-orange-700 dark:text-orange-300">
+              <h3 class="font-semibold text-foreground">This account is private</h3>
+              <p class="text-sm text-muted-foreground">
                 This user has chosen to keep their profile private. Their activities and progress are not visible to other users.
               </p>
             </div>
@@ -134,7 +137,7 @@ const getActivityIcon = (type: string) => {
       </Card>
 
       <!-- Profile Header -->
-      <Card class="mb-8 border-primary/20">
+      <Card v-else class="mb-8 border-primary/20">
         <CardContent class="p-8">
           <div class="flex flex-col md:flex-row gap-6">
             <!-- Profile Picture -->
@@ -187,7 +190,7 @@ const getActivityIcon = (type: string) => {
       </Card>
 
       <!-- Tabs (only show for public profiles) -->
-      <Tabs v-if="user.is_public" default-value="overview" class="w-full">
+      <Tabs v-if="user.is_public || is_own_profile" default-value="overview" class="w-full">
         <TabsList class="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
