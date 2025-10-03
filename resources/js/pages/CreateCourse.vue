@@ -401,7 +401,7 @@ const getTotalLessons = () => {
             <div>
               <h2 class="text-2xl font-bold text-foreground">Modules & Lessons</h2>
               <p class="text-sm text-muted-foreground">
-                {{ form.modules.length }} module(s), {{ getTotalLessons() }} lesson(s) total
+                {{ form.modules.length }} {{ form.modules.length === 1 ? 'module' : 'modules' }}, {{ getTotalLessons() }} {{ getTotalLessons() === 1 ? 'lesson' : 'lessons' }} total
               </p>
             </div>
             <Button type="button" @click="addModule" variant="outline">
@@ -427,7 +427,7 @@ const getTotalLessons = () => {
                           Module {{ moduleIndex + 1 }}
                         </Badge>
                         <span class="text-sm text-muted-foreground">
-                          {{ module.lessons.length }} lesson(s)
+                          {{ module.lessons.length }} {{ module.lessons.length === 1 ? 'lesson' : 'lessons' }}
                         </span>
                       </div>
 

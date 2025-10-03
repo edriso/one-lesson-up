@@ -303,7 +303,7 @@ const getActivityIcon = (type: string) => {
                     <div>
                       <h4 class="font-semibold text-foreground">{{ classItem.title }}</h4>
                       <p class="text-sm text-muted-foreground">
-                        Completed {{ formatDate(classItem.completed_at) }} • {{ classItem.lessons_count }} lessons
+                        Completed {{ formatDate(classItem.completed_at) }} • {{ classItem.lessons_count }} {{ classItem.lessons_count === 1 ? 'lesson' : 'lessons' }}
                       </p>
                     </div>
                   </div>

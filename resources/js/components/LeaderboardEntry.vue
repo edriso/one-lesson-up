@@ -102,7 +102,7 @@ const getUserInitials = (fullName: string) => {
         <!-- Show points for monthly/overall leaderboards -->
         <p v-if="entry.points !== undefined" class="font-bold text-foreground">{{ entry.points }} pts</p>
         <!-- Show lessons completed for daily leaderboards -->
-        <p v-else-if="entry.lessons_completed !== undefined" class="font-bold text-foreground">{{ entry.lessons_completed }} lessons</p>
+        <p v-else-if="entry.lessons_completed !== undefined" class="font-bold text-foreground">{{ entry.lessons_completed }} {{ entry.lessons_completed === 1 ? 'lesson' : 'lessons' }}</p>
         
         <!-- Show activities count or time bonus info -->
         <p v-if="entry.activities_count !== undefined" class="text-sm text-muted-foreground">{{ entry.activities_count }} activities</p>

@@ -380,7 +380,7 @@ onMounted(() => {
             <div class="flex flex-col gap-4 text-sm text-muted-foreground mt-4">
               <div class="flex items-center gap-1">
                 <GraduationCap class="h-4 w-4" />
-                <span>{{ course.lessons_count }} lessons</span>
+                <span>{{ course.lessons_count }} {{ course.lessons_count === 1 ? 'lesson' : 'lessons' }}</span>
               </div>
               <div class="flex items-center gap-1">
                 <Users class="h-4 w-4" />

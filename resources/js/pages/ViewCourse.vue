@@ -20,10 +20,11 @@ import {
   CheckCircle,
   BadgeCheck,
   Link as LinkIcon,
+  CalendarCheck,
   Lock,
   Globe,
   Clock,
-  Trophy,
+  PartyPopper,
   Edit,
   Notebook,
   NotebookPen,
@@ -355,24 +356,17 @@ const progressText = computed(() => {
           </p>
           
           <div class="flex flex-wrap items-center gap-4 mt-4">
+            <div v-if="enrollment_start_date" class="flex items-center gap-2 text-sm text-muted-foreground">
+              <CalendarCheck class="h-4 w-4" />
+              <span>Started {{ formatLongDate(enrollment_start_date) }}</span>
+            </div>
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
               <BookOpen class="h-4 w-4" />
-              <span>{{ course.total_modules }} modules</span>
+              <span>{{ course.total_modules }} {{ course.total_modules === 1 ? 'module' : 'modules' }}</span>
             </div>
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
               <Notebook class="h-4 w-4" />
-              <span>{{ course.total_lessons }} lessons</span>
-            </div>
-            <div class="flex items-center gap-2 text-sm text-muted-foreground">
-              <span v-if="enrollment_start_date && formatLongDate(course.created_at) === formatLongDate(enrollment_start_date)">
-                Created & Started {{ formatLongDate(course.created_at) }}
-              </span>
-              <span v-else>
-                Created {{ formatLongDate(course.created_at) }}
-              </span>
-            </div>
-            <div v-if="enrollment_start_date && formatLongDate(course.created_at) !== formatLongDate(enrollment_start_date)" class="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Started {{ formatLongDate(enrollment_start_date) }}</span>
+              <span>{{ course.total_lessons }} {{ course.total_lessons === 1 ? 'lesson' : 'lessons' }}</span>
             </div>
             <div v-if="is_course_creator" class="flex items-center gap-2 text-sm text-muted-foreground">
               <Globe v-if="course.is_public" class="h-4 w-4" />
@@ -421,11 +415,11 @@ const progressText = computed(() => {
               <div class="flex items-center gap-3">
                 <div class="flex-shrink-0">
                   <div class="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                    <Trophy class="h-6 w-6 text-primary" />
+                    <PartyPopper class="h-6 w-6 text-primary" />
                   </div>
                 </div>
                 <div class="flex-1">
-                  <h3 class="text-lg font-semibold text-foreground">Congratulations! 🎉</h3>
+                  <h3 class="text-lg font-semibold text-foreground">Congratulations!</h3>
                   <p class="text-sm text-muted-foreground">
                     You completed this class on {{ formatLongDate(completion_date!) }}. 
                   </p>
@@ -444,6 +438,9 @@ const progressText = computed(() => {
                   </div>
                 </div>
               </div>
+              <Badge variant="secondary" class="text-md">
+                Completed
+              </Badge>
             </div>            
           </div>
         </CardContent>
@@ -520,7 +517,7 @@ const progressText = computed(() => {
                       Module {{ moduleIndex + 1 }}
                     </Badge>
                     <span class="text-sm text-muted-foreground">
-                      {{ module.lessons.length }} lessons
+                      {{ module.lessons.length }} {{ module.lessons.length === 1 ? 'lesson' : 'lessons' }}
                     </span>
                   </div>
                   <CardTitle class="text-xl">{{ module.name }}</CardTitle>
