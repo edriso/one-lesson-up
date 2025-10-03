@@ -16,6 +16,10 @@ Route::get('leaderboard', [\App\Http\Controllers\LeaderboardController::class, '
     ->middleware(['auth', 'verified'])
     ->name('leaderboard');
 
+Route::get('api/leaderboard/load-more', [\App\Http\Controllers\LeaderboardController::class, 'loadMore'])
+    ->middleware(['auth', 'verified'])
+    ->name('leaderboard.load-more');
+
 Route::get('api/activities/load-more', [\App\Http\Controllers\HomeController::class, 'loadMoreActivities'])
     ->middleware(['auth', 'verified'])
     ->name('activities.load-more');

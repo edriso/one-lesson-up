@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Star, TrendingUp, Calendar, Crown } from 'lucide-vue-next';
 import LeaderboardList from '@/components/LeaderboardList.vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 interface LeaderboardEntry {
   id: number;
@@ -64,6 +65,106 @@ const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) =>
   if (!rank || rank === 0) return '-';
   return `#${rank}`;
 };
+
+// Infinite scroll state
+const allLeaderboards = ref<{
+  today: LeaderboardEntry[];
+  yesterday: LeaderboardEntry[];
+  this_month: LeaderboardEntry[];
+  overall: LeaderboardEntry[];
+}>({
+  today: props.leaderboards?.today || [],
+  yesterday: props.leaderboards?.yesterday || [],
+  this_month: props.leaderboards?.this_month || [],
+  overall: props.leaderboards?.overall || [],
+});
+
+const currentPage = ref<{
+  today: number;
+  yesterday: number;
+  this_month: number;
+  overall: number;
+}>({
+  today: 1,
+  yesterday: 1,
+  this_month: 1,
+  overall: 1,
+});
+
+const isLoading = ref<{
+  today: boolean;
+  yesterday: boolean;
+  this_month: boolean;
+  overall: boolean;
+}>({
+  today: false,
+  yesterday: false,
+  this_month: false,
+  overall: false,
+});
+
+const hasMore = ref<{
+  today: boolean;
+  yesterday: boolean;
+  this_month: boolean;
+  overall: boolean;
+}>({
+  today: true,
+  yesterday: true,
+  this_month: true,
+  overall: true,
+});
+
+const activeTab = ref('today');
+
+const loadMoreEntries = async (period: keyof typeof allLeaderboards.value) => {
+  if (isLoading.value[period] || !hasMore.value[period]) return;
+
+  isLoading.value[period] = true;
+  currentPage.value[period]++;
+
+  try {
+    const response = await fetch(`/api/leaderboard/load-more?period=${period}&page=${currentPage.value[period]}`);
+    const data = await response.json();
+
+    allLeaderboards.value[period].push(...data.leaderboard);
+    hasMore.value[period] = data.has_more;
+  } catch (error) {
+    console.error('Failed to load more entries:', error);
+  } finally {
+    isLoading.value[period] = false;
+  }
+};
+
+const setupIntersectionObserver = () => {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        loadMoreEntries(activeTab.value as keyof typeof allLeaderboards.value);
+      }
+    });
+  });
+
+  // Observe all load-more-trigger elements
+  const loadMoreTriggers = document.querySelectorAll('#load-more-trigger');
+  loadMoreTriggers.forEach(trigger => {
+    observer.observe(trigger);
+  });
+
+  return observer;
+};
+
+let observer: IntersectionObserver | null = null;
+
+onMounted(() => {
+  observer = setupIntersectionObserver();
+});
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect();
+  }
+});
 </script>
 
 <template>
@@ -117,7 +218,7 @@ const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) =>
       </div>
 
       <!-- Time Period Tabs -->
-      <Tabs default-value="today" class="w-full">
+      <Tabs v-model="activeTab" default-value="today" class="w-full">
         <TabsList class="grid w-full grid-cols-4">
           <TabsTrigger value="today">Today</TabsTrigger>
           <TabsTrigger value="yesterday">Yesterday</TabsTrigger>
@@ -139,10 +240,13 @@ const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) =>
             </CardHeader>
             <CardContent>
               <LeaderboardList 
-                :entries="leaderboards.today"
+                :entries="allLeaderboards.today"
                 :current-user-id="user?.id"
                 empty-message="No activities today"
               />
+              <div v-if="hasMore.today" id="load-more-trigger" class="h-10 flex items-center justify-center">
+                <div v-if="isLoading.today" class="text-sm text-muted-foreground">Loading more...</div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -161,10 +265,13 @@ const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) =>
             </CardHeader>
             <CardContent>
               <LeaderboardList 
-                :entries="leaderboards.yesterday"
+                :entries="allLeaderboards.yesterday"
                 :current-user-id="user?.id"
                 empty-message="No activities yesterday"
               />
+              <div v-if="hasMore.yesterday" id="load-more-trigger" class="h-10 flex items-center justify-center">
+                <div v-if="isLoading.yesterday" class="text-sm text-muted-foreground">Loading more...</div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -183,10 +290,13 @@ const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) =>
             </CardHeader>
             <CardContent>
               <LeaderboardList 
-                :entries="leaderboards.this_month"
+                :entries="allLeaderboards.this_month"
                 :current-user-id="user?.id"
                 empty-message="No activities this month"
               />
+              <div v-if="hasMore.this_month" id="load-more-trigger" class="h-10 flex items-center justify-center">
+                <div v-if="isLoading.this_month" class="text-sm text-muted-foreground">Loading more...</div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -205,10 +315,13 @@ const getCurrentUserRankText = (period: keyof typeof props.current_user_rank) =>
             </CardHeader>
             <CardContent>
               <LeaderboardList 
-                :entries="leaderboards.overall"
+                :entries="allLeaderboards.overall"
                 :current-user-id="user?.id"
                 empty-message="No activities yet"
               />
+              <div v-if="hasMore.overall" id="load-more-trigger" class="h-10 flex items-center justify-center">
+                <div v-if="isLoading.overall" class="text-sm text-muted-foreground">Loading more...</div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

@@ -17,10 +17,10 @@ class LeaderboardController extends Controller
 
         return Inertia::render('Leaderboard', [
             'leaderboards' => [
-                'today' => $this->getTodayLeaderboard(),
-                'yesterday' => $this->getYesterdayLeaderboard(),
-                'this_month' => $this->getThisMonthLeaderboard(),
-                'overall' => $this->getOverallLeaderboard(),
+                'today' => $this->getTodayLeaderboard(20),
+                'yesterday' => $this->getYesterdayLeaderboard(20),
+                'this_month' => $this->getThisMonthLeaderboard(20),
+                'overall' => $this->getOverallLeaderboard(20),
             ],
             'current_user_rank' => [
                 'today' => $this->getCurrentUserRank($currentUser, 'today'),
@@ -36,7 +36,28 @@ class LeaderboardController extends Controller
         ]);
     }
 
-    private function getTodayLeaderboard()
+    public function loadMore(Request $request)
+    {
+        $period = $request->get('period', 'overall');
+        $page = $request->get('page', 1);
+        $perPage = 20;
+        $offset = ($page - 1) * $perPage;
+
+        $leaderboard = match($period) {
+            'today' => $this->getTodayLeaderboard($perPage, $offset),
+            'yesterday' => $this->getYesterdayLeaderboard($perPage, $offset),
+            'this_month' => $this->getThisMonthLeaderboard($perPage, $offset),
+            'overall' => $this->getOverallLeaderboard($perPage, $offset),
+            default => $this->getOverallLeaderboard($perPage, $offset),
+        };
+
+        return response()->json([
+            'leaderboard' => $leaderboard,
+            'has_more' => count($leaderboard) === $perPage,
+        ]);
+    }
+
+    private function getTodayLeaderboard($limit = 50, $offset = 0)
     {
         // For today, show users who completed lessons (without points)
         return DailyActivity::with(['user:id,username,full_name,avatar'])
@@ -45,12 +66,13 @@ class LeaderboardController extends Controller
             ->join('users', 'daily_activities.user_id', '=', 'users.id')
             ->orderByDesc('lessons_completed')
             ->orderByDesc('time_bonus_earned')
-            ->limit(50)
+            ->offset($offset)
+            ->limit($limit)
             ->get(['daily_activities.*'])
-            ->map(function ($activity, $index) {
+            ->map(function ($activity, $index) use ($offset) {
                 return [
                     'id' => $activity->user_id,
-                    'rank' => $index + 1,
+                    'rank' => $offset + $index + 1,
                     'user' => [
                         'id' => $activity->user->id,
                         'full_name' => $activity->user->full_name,
@@ -65,7 +87,7 @@ class LeaderboardController extends Controller
             });
     }
 
-    private function getYesterdayLeaderboard()
+    private function getYesterdayLeaderboard($limit = 50, $offset = 0)
     {
         // For yesterday, show users who completed lessons (without points)
         return DailyActivity::with(['user:id,username,full_name,avatar'])
@@ -74,12 +96,13 @@ class LeaderboardController extends Controller
             ->join('users', 'daily_activities.user_id', '=', 'users.id')
             ->orderByDesc('lessons_completed')
             ->orderByDesc('time_bonus_earned')
-            ->limit(50)
+            ->offset($offset)
+            ->limit($limit)
             ->get(['daily_activities.*'])
-            ->map(function ($activity, $index) {
+            ->map(function ($activity, $index) use ($offset) {
                 return [
                     'id' => $activity->user_id,
-                    'rank' => $index + 1,
+                    'rank' => $offset + $index + 1,
                     'user' => [
                         'id' => $activity->user->id,
                         'full_name' => $activity->user->full_name,
@@ -94,20 +117,22 @@ class LeaderboardController extends Controller
             });
     }
 
-    private function getThisMonthLeaderboard()
+    private function getThisMonthLeaderboard($limit = 50, $offset = 0)
     {
         return $this->getLeaderboardForPeriod(
             Carbon::now()->startOfMonth(),
-            Carbon::now()->endOfMonth()
+            Carbon::now()->endOfMonth(),
+            $limit,
+            $offset
         );
     }
 
-    private function getOverallLeaderboard()
+    private function getOverallLeaderboard($limit = 50, $offset = 0)
     {
-        return $this->getLeaderboardForPeriod(null, null);
+        return $this->getLeaderboardForPeriod(null, null, $limit, $offset);
     }
 
-    private function getLeaderboardForPeriod($startDate = null, $endDate = null)
+    private function getLeaderboardForPeriod($startDate = null, $endDate = null, $limit = 50, $offset = 0)
     {
         // For monthly and overall, use actual points from users table
         $query = User::select('id', 'username', 'full_name', 'avatar', 'points')
@@ -119,14 +144,15 @@ class LeaderboardController extends Controller
         // }
 
         $results = $query->orderByDesc('points')
-            ->limit(50) // Top 50 users
+            ->offset($offset)
+            ->limit($limit)
             ->get();
 
         // Add ranking
-        return $results->map(function ($user, $index) {
+        return $results->map(function ($user, $index) use ($offset) {
             return [
                 'id' => $user->id,
-                'rank' => $index + 1,
+                'rank' => $offset + $index + 1,
                 'user' => [
                     'id' => $user->id,
                     'full_name' => $user->full_name,
@@ -135,7 +161,7 @@ class LeaderboardController extends Controller
                 ],
                 'points' => $user->points,
             ];
-        })->take(20); // Show top 20
+        });
     }
 
     private function getCurrentUserRank($user, $period)
