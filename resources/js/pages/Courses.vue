@@ -78,15 +78,25 @@ const currentClassId = computed(() => props.user?.current_class?.id);
 const filteredCourses = computed(() => {
   let courses = allCourses.value;
   
+  // Deduplicate courses by ID first
+  const uniqueCourses = courses.reduce((acc, course) => {
+    if (!acc.find(c => c.id === course.id)) {
+      acc.push(course);
+    }
+    return acc;
+  }, [] as Course[]);
+  
   // Apply search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    courses = courses.filter(course => {
+    courses = uniqueCourses.filter(course => {
       const titleMatch = course.title?.toLowerCase().includes(query);
       const descMatch = course.description?.toLowerCase().includes(query);
       const tagMatch = course.tags?.some(tag => tag.name?.toLowerCase().includes(query));
       return titleMatch || descMatch || tagMatch;
     });
+  } else {
+    courses = uniqueCourses;
   }
 
   // Sort courses: current enrollment first, then enrolled, then by student count
@@ -192,7 +202,10 @@ const loadMoreCourses = async () => {
     const response = await fetch(`/api/courses/load-more?page=${currentPage.value}`);
     const data = await response.json();
     
-    allCourses.value.push(...data.courses);
+    // Deduplicate courses by ID to prevent duplicates
+    const existingIds = new Set(allCourses.value.map(course => course.id));
+    const newCourses = data.courses.filter(course => !existingIds.has(course.id));
+    allCourses.value.push(...newCourses);
     hasMore.value = data.hasMore;
   } catch (error) {
     console.error('Failed to load more courses:', error);

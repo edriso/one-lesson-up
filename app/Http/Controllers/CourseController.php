@@ -407,13 +407,71 @@ $query->whereNotNull('completed_at');
                 $user->decrement('points', $pointsToDeduct);
             }
             
+            // Check if user is the course creator and if there are no other enrollments
+            // BEFORE deleting the current enrollment
+            $isCourseCreator = $course->creator_id === $user->id;
+            $hasOtherEnrollments = $course->enrollments()->where('id', '!=', $enrollment->id)->exists();
+            
+            
             // Clear user's enrollment_id if it matches this enrollment
             if ($user->enrollment_id === $enrollment->id) {
                 $user->update(['enrollment_id' => null]);
             }
             
-            // Delete the enrollment record (as per requirement)
+            // Delete the enrollment record
             $enrollment->delete();
+            
+            if ($isCourseCreator && !$hasOtherEnrollments) {
+                // Store course name before deletion
+                $courseName = $course->name;
+                $courseId = $course->id;
+                
+                // Force delete all related records first to ensure proper cleanup
+                // Delete completed lessons
+                \App\Models\CompletedLesson::whereHas('enrollment', function($query) use ($courseId) {
+                    $query->where('course_id', $courseId);
+                })->delete();
+                
+                // Delete daily activities
+                \App\Models\DailyActivity::whereHas('enrollment', function($query) use ($courseId) {
+                    $query->where('course_id', $courseId);
+                })->delete();
+                
+                // Delete enrollments
+                \App\Models\Enrollment::where('course_id', $courseId)->delete();
+                
+                // Delete course tags
+                \DB::table('course_tags')->where('course_id', $courseId)->delete();
+                
+                // Delete lessons
+                \App\Models\Lesson::whereHas('module', function($query) use ($courseId) {
+                    $query->where('course_id', $courseId);
+                })->delete();
+                
+                // Delete modules
+                \App\Models\Module::where('course_id', $courseId)->delete();
+                
+                // Finally delete the course
+                $deleted = $course->delete();
+                
+                if (!$deleted) {
+                    throw new \Exception('Course deletion failed - delete() returned false');
+                }
+                
+                // Clear any caches that might contain this course
+                \Cache::flush();
+                
+                // Verify the course was actually deleted
+                $courseExists = Course::find($courseId);
+                if ($courseExists) {
+                    throw new \Exception('Course deletion failed - course still exists after deletion');
+                }
+                
+                DB::commit();
+                
+                return redirect()->route('classes')
+                    ->with('success', 'You have left and deleted ' . $courseName . ' since no other users were enrolled.');
+            }
             
             DB::commit();
             
@@ -426,6 +484,39 @@ $query->whereNotNull('completed_at');
         }
     }
     
+    /**
+     * Clean up any orphaned courses (courses with no enrollments).
+     * This is a utility method to fix any data inconsistencies.
+     */
+    public function cleanupOrphanedCourses()
+    {
+        $orphanedCourses = Course::whereDoesntHave('enrollments')->get();
+        
+        foreach ($orphanedCourses as $course) {
+            // Delete all related records
+            \App\Models\CompletedLesson::whereHas('enrollment', function($query) use ($course) {
+                $query->where('course_id', $course->id);
+            })->delete();
+            
+            \App\Models\DailyActivity::whereHas('enrollment', function($query) use ($course) {
+                $query->where('course_id', $course->id);
+            })->delete();
+            
+            \App\Models\Enrollment::where('course_id', $course->id)->delete();
+            \DB::table('course_tags')->where('course_id', $course->id)->delete();
+            
+            \App\Models\Lesson::whereHas('module', function($query) use ($course) {
+                $query->where('course_id', $course->id);
+            })->delete();
+            
+            \App\Models\Module::where('course_id', $course->id)->delete();
+            
+            $course->delete();
+        }
+        
+        return $orphanedCourses->count();
+    }
+
     /**
      * Calculate points earned from a completed course.
      */
