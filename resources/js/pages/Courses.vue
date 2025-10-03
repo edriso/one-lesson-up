@@ -168,7 +168,7 @@ const getButtonVariant = (course: Course) => {
     return course.can_join ? 'default' : 'outline';
   }
   if (course.is_completed) {
-    return 'secondary';
+    return 'default';
   }
   return course.id === currentClassId.value ? 'default' : 'outline';
 };

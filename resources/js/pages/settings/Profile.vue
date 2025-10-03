@@ -41,8 +41,11 @@ const bioText = ref(user.bio || '');
 const bioCharCount = ref(bioText.value.length);
 
 // Point thresholds
-const PROFILE_PICTURE_POINTS = 5;
+const PROFILE_PICTURE_POINTS = 100;
 const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POINTS);
+
+// Profile visibility
+const isPublic = ref(user.is_public || false);
 
 </script>
 
@@ -62,6 +65,21 @@ const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POI
                     class="space-y-6"
                     v-slot="{ errors, processing, recentlySuccessful }"
                 >
+
+                    <!-- Username -->
+                    <div class="grid gap-2">
+                        <Label for="username">Username</Label>
+                        <Input
+                            id="username"
+                            class="mt-1 block w-full"
+                            name="username"
+                            :default-value="user.username"
+                            required
+                            autocomplete="username"
+                            placeholder="Username"
+                        />
+                        <InputError class="mt-2" :message="errors.username" />
+                    </div>
 
                     <!-- Full Name -->
                     <div class="grid gap-2">
@@ -193,9 +211,9 @@ const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POI
                         <div class="flex items-center space-x-2">
                             <Switch
                                 id="is_public"
-                                name="is_public"
-                                :default-checked="user.is_public"
+                                v-model:checked="isPublic"
                             />
+                            <input type="hidden" name="is_public" :value="isPublic ? '1' : '0'" />
                             <Label for="is_public" class="text-sm">
                                 Make my profile public
                             </Label>
