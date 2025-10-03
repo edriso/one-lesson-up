@@ -38,7 +38,6 @@ class RegisteredUserController extends Controller
             'avatar' => 'nullable|string|max:255',
             'title' => 'nullable|string|max:255',
             'bio' => 'nullable|string|max:255',
-            'linkedin_url' => 'nullable|string|max:255',
             'website_url' => 'nullable|string|max:255',
             'is_public' => 'nullable|boolean',
         ]);
@@ -68,7 +67,6 @@ class RegisteredUserController extends Controller
                 'avatar' => $request->avatar,
                 'title' => $request->title,
                 'bio' => $request->bio,
-                'linkedin_url' => $request->linkedin_url,
                 'website_url' => $request->website_url,
                 'is_public' => $request->is_public ?? true,
             ]);

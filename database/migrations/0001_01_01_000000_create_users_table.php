@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('avatar')->nullable();
             $table->string('title')->nullable();
             $table->string('bio')->nullable();
-            $table->string('linkedin_url')->nullable();
             $table->string('website_url')->nullable();
             $table->integer('points')->default(0);
             $table->boolean('is_public')->default(true);

@@ -28,7 +28,6 @@ class ProfileUpdateRequest extends FormRequest
             'avatar' => ['nullable', 'string', 'max:255'],
             'title' => ['nullable', 'string', 'max:255'],
             'bio' => ['nullable', 'string', 'max:255'],
-            'linkedin_url' => ['nullable', 'string', 'max:255'],
             'website_url' => ['nullable', 'string', 'max:255'],
             'is_public' => ['nullable', 'boolean'],
         ];

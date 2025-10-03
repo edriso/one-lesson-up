@@ -26,7 +26,6 @@ class User extends Authenticatable
         'avatar',
         'title',
         'bio',
-        'linkedin_url',
         'website_url',
         'is_public',
         'enrollment_id',

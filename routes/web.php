@@ -195,7 +195,6 @@ Route::get('profile/{username}', function ($username) {
             'username' => $user->username,
             'bio' => $user->bio ?? null,
             'title' => $user->title ?? null,
-            'linkedin_url' => $user->linkedin_url ?? null,
             'website_url' => $user->website_url ?? null,
             'avatar' => $user->avatar ?? null,
             'points' => $user->points ?? 0,

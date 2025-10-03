@@ -33,7 +33,6 @@ class UserFactory extends Factory
             'avatar' => null, // No default avatar for new users
             'title' => fake()->optional(0.5)->jobTitle(),
             'bio' => fake()->optional(0.6)->paragraph(),
-            'linkedin_url' => fake()->optional(0.4)->url(),
             'website_url' => fake()->optional(0.3)->url(),
             'is_public' => fake()->boolean(100), // 100% chance of being public
             'is_active' => fake()->boolean(98), // 98% chance of being active

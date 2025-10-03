@@ -13,7 +13,6 @@ import {
   Briefcase,
   GraduationCap,
   BadgeCheck,
-  Linkedin,
 } from 'lucide-vue-next';
 import LearningCalendar from '@/components/LearningCalendar.vue';
 
@@ -23,7 +22,6 @@ interface ProfileUser {
   username: string;
   bio?: string;
   title?: string;
-  linkedin_url?: string;
   website_url?: string;
   avatar?: string;
   points: number;
@@ -176,13 +174,6 @@ const getActivityIcon = (type: string) => {
               
               <!-- Social Links -->
               <div class="flex flex-wrap gap-4 mt-4">
-                <Button v-if="user.linkedin_url" variant="outline" size="sm" as-child>
-                  <a :href="user.linkedin_url" target="_blank" class="flex items-center gap-2">
-                    <Linkedin class="h-4 w-4" />
-                    LinkedIn
-                    <ExternalLink class="h-3 w-3" />
-                  </a>
-                </Button>
                 <Button v-if="user.website_url" variant="outline" size="sm" as-child>
                   <a :href="user.website_url" target="_blank" class="flex items-center gap-2">
                     <ExternalLink class="h-4 w-4" />

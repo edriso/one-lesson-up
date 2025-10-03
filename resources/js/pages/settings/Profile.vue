@@ -172,19 +172,6 @@ const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POI
                         <InputError class="mt-2" :message="errors.avatar" />
                     </div>
 
-                    <!-- LinkedIn URL -->
-                    <div class="grid gap-2">
-                        <Label for="linkedin_url">LinkedIn Profile</Label>
-                        <Input
-                            id="linkedin_url"
-                            type="url"
-                            class="mt-1 block w-full"
-                            name="linkedin_url"
-                            :default-value="user.linkedin_url || ''"
-                            placeholder="https://linkedin.com/in/yourprofile"
-                        />
-                        <InputError class="mt-2" :message="errors.linkedin_url" />
-                    </div>
 
                     <!-- Website URL -->
                     <div class="grid gap-2">

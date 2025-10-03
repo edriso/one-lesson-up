@@ -38,7 +38,6 @@ export interface User {
     updated_at?: string | null;
     title?: string | null;
     bio?: string | null;
-    linkedin_url?: string | null;
     website_url?: string | null;
     is_public?: boolean;
 }
