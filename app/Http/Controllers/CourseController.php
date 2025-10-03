@@ -327,6 +327,9 @@ $query->whereNotNull('completed_at');
             'bonus_deadline' => $enrollment ? $enrollment->bonus_deadline->toISOString() : null,
             'is_bonus_eligible' => $enrollment ? now()->lte($enrollment->bonus_deadline) : false,
             'is_course_creator' => $course->user_id === $user->id,
+            'enrollment_start_date' => $completedEnrollment ? $completedEnrollment->created_at->toISOString() : null,
+            'was_completed_on_time' => $completedEnrollment ? $completedEnrollment->isCompletedOnTime() : null,
+            'points_earned' => $completedEnrollment ? $this->calculatePointsEarned($completedEnrollment) : null,
         ]);
     }
 
@@ -423,6 +426,29 @@ $query->whereNotNull('completed_at');
         }
     }
     
+    /**
+     * Calculate points earned from a completed course.
+     */
+    private function calculatePointsEarned($enrollment)
+    {
+        $pointsEarned = 0;
+        
+        // Count completed lessons (1 point each)
+        $completedLessonsCount = $enrollment->completedLessons()->count();
+        $pointsEarned += $completedLessonsCount;
+        
+        // Add course completion bonus points
+        $course = $enrollment->course;
+        $lessonCount = $course->lessons_count;
+        $isCompletedOnTime = $enrollment->isCompletedOnTime();
+        
+        // Calculate bonus points using PointSystemValue enum
+        $bonusPoints = \App\Enums\PointSystemValue::calculateCourseBonus($lessonCount, $isCompletedOnTime);
+        $pointsEarned += round($bonusPoints);
+        
+        return $pointsEarned;
+    }
+
     /**
      * Calculate points to deduct when leaving a course.
      */

@@ -286,7 +286,7 @@ const getTotalLessons = () => {
                 placeholder="https://example.com/resources" 
                 :class="{ 'border-destructive': form.errors.link }"
               />
-              <p class="text-sm text-muted-foreground">Add a link to course materials, syllabus, or resources</p>
+              <p class="text-sm text-muted-foreground">Add a link to class materials, syllabus, or resources</p>
               <p v-if="form.errors.link" class="text-sm text-destructive">{{ form.errors.link }}</p>
             </div>
 

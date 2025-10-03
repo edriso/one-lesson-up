@@ -69,6 +69,9 @@ interface Props {
   bonus_deadline?: string;
   is_bonus_eligible: boolean;
   is_course_creator: boolean;
+  enrollment_start_date?: string;
+  was_completed_on_time?: boolean;
+  points_earned?: number;
 }
 
 const props = defineProps<Props>();
@@ -358,7 +361,15 @@ const progressText = computed(() => {
               <span>{{ course.total_lessons }} lessons</span>
             </div>
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Created {{ formatLongDate(course.created_at) }}</span>
+              <span v-if="enrollment_start_date && formatLongDate(course.created_at) === formatLongDate(enrollment_start_date)">
+                Created & Started {{ formatLongDate(course.created_at) }}
+              </span>
+              <span v-else>
+                Created {{ formatLongDate(course.created_at) }}
+              </span>
+            </div>
+            <div v-if="enrollment_start_date && formatLongDate(course.created_at) !== formatLongDate(enrollment_start_date)" class="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Started {{ formatLongDate(enrollment_start_date) }}</span>
             </div>
             <div v-if="is_course_creator" class="flex items-center gap-2 text-sm text-muted-foreground">
               <Globe v-if="course.is_public" class="h-4 w-4" />
@@ -415,13 +426,22 @@ const progressText = computed(() => {
                   <p class="text-sm text-muted-foreground">
                     You completed this class on {{ formatLongDate(completion_date!) }}. 
                   </p>
+                  <div class="mt-3 space-y-2">
+                    <div class="flex items-center gap-2">
+                      <Badge variant="default" class="text-primary-foreground">
+                        {{ points_earned }} points earned
+                      </Badge>
+                      <Badge v-if="was_completed_on_time" variant="default" class="text-primary-foreground">
+                        ✓ On time
+                      </Badge>
+                      <Badge v-else variant="secondary" class="text-secondary-foreground">
+                        ⚠ Late completion
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <Badge variant="secondary" class="text-secondary-foreground text-lg px-3 py-1">
-                100%
-              </Badge>
-            </div>
-            
+            </div>            
           </div>
         </CardContent>
       </Card>
@@ -449,14 +469,13 @@ const progressText = computed(() => {
             <!-- Reflection Prompt when all lessons completed but course not finished -->
             <div v-if="all_lessons_completed && !is_completed" class="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
               <div class="flex items-center gap-3">
-                <Star class="h-5 w-5 text-primary" />
                 <div class="flex-1">
                   <p class="text-sm text-muted-foreground mb-2">
-                    All lessons completed! Write a quick reflection to finish the course.
+                    All lessons completed! Write a quick reflection to finish the class.
                   </p>
                   <Button @click="openReflectionModal" size="sm" class="bg-primary hover:bg-primary/90">
                     <Star class="h-4 w-4 mr-2" />
-                    Complete Course
+                    Complete Class
                   </Button>
                 </div>
               </div>
@@ -467,7 +486,7 @@ const progressText = computed(() => {
               <div class="flex items-center gap-3">
                 <CheckCircle class="h-5 w-5 text-green-600 dark:text-green-400" />
                 <div class="flex-1">
-                  <h3 class="font-semibold text-green-900 dark:text-green-100">Course Completed! 🎉</h3>
+                  <h3 class="font-semibold text-green-900 dark:text-green-100">Class Completed! 🎉</h3>
                   <p v-if="completion_date" class="text-xs text-green-600 dark:text-green-400">
                     Completed on {{ formatLongDate(completion_date) }}
                   </p>
@@ -481,7 +500,7 @@ const progressText = computed(() => {
 
       <!-- Modules and Lessons -->
       <div class="space-y-4">
-        <h2 class="text-2xl font-bold text-foreground">Course Content</h2>
+        <h2 class="text-2xl font-bold text-foreground">Class Content</h2>
         
         <div class="space-y-4">
           <Card 
@@ -584,9 +603,9 @@ const progressText = computed(() => {
                 <BookOpen class="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-foreground">Your Course Reflection</h3>
+                <h3 class="text-lg font-semibold text-foreground">Your Class Reflection</h3>
                 <p class="text-sm text-muted-foreground">
-                  Your thoughts and insights about this course
+                  Your thoughts and insights about this class
                 </p>
               </div>
             </div>

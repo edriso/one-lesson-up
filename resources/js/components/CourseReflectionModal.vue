@@ -1,5 +1,5 @@
 <template>
-  <Dialog :open="isOpen" @update:open="closeModal">
+  <Dialog :open="isOpen" @update:open="(open) => !open && closeModal()">
     <DialogContent class="sm:max-w-[600px]">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">

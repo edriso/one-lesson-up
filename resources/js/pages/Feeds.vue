@@ -67,9 +67,9 @@ allFeeds.value = props.feeds || [];
 // Helper to safely get course title
 const getCourseTitle = (feed: FeedItem): string => {
   if (feed.type === 'lesson') {
-    return feed.lesson?.module?.course?.title || 'Unknown Course';
+    return feed.lesson?.module?.course?.title || 'Unknown Class';
   }
-  return feed.course?.title || 'Unknown Course';
+  return feed.course?.title || 'Unknown Class';
 };
 
 // Helper to safely get lesson title

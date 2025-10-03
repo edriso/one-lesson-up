@@ -7,9 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import LessonCompletionModal from '@/components/LessonCompletionModal.vue';
+import CourseReflectionModal from '@/components/CourseReflectionModal.vue';
 import UserInfo from '@/components/UserInfo.vue';
 import { useDateFormatter } from '@/composables/useDateFormatter';
-import { Clock, BookOpen, Medal, TrendingUp, CheckCircle, Circle } from 'lucide-vue-next';
+import { Clock, BookOpen, Medal, TrendingUp, CheckCircle, Circle, Star, Trophy } from 'lucide-vue-next';
 import { ref, computed, onMounted } from 'vue';
 import type { Component } from 'vue';
 
@@ -40,6 +41,16 @@ interface Activity {
   };
 }
 
+interface LastCompletedLesson {
+  id: number;
+  title: string;
+  summary: string;
+  link?: string;
+  completed_at: string;
+  module_title: string;
+  class_title: string;
+}
+
 interface Props {
   user: {
     id: number;
@@ -61,6 +72,7 @@ interface Props {
   };
   upcoming_lessons?: Lesson[];
   recent_activities?: Activity[];
+  last_completed_lesson?: LastCompletedLesson;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -73,6 +85,9 @@ const { formatShortDateTime } = useDateFormatter();
 // Modal state
 const isModalOpen = ref(false);
 const selectedLesson = ref<Lesson | null>(null);
+
+// Course reflection modal state
+const isReflectionModalOpen = ref(false);
 
 // Infinite scroll state
 const allActivities = ref<Activity[]>([]);
@@ -129,6 +144,21 @@ const onLessonCompleted = () => {
   // The page will already be refreshed by Inertia
 };
 
+const openReflectionModal = () => {
+  isReflectionModalOpen.value = true;
+};
+
+const closeReflectionModal = () => {
+  isReflectionModalOpen.value = false;
+};
+
+const onCourseCompleted = () => {
+  // Redirect to the course page after completion
+  if (props.user.current_class) {
+    router.visit(`/classes/${props.user.current_class.id}`);
+  }
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
   {
     title: 'Home',
@@ -140,6 +170,20 @@ const breadcrumbs: BreadcrumbItem[] = [
 const hasActiveLessons = computed(() => props.upcoming_lessons.length > 0);
 const hasActivities = computed(() => allActivities.value.length > 0);
 const isEnrolled = computed(() => !!props.user.enrollment_id);
+const hasLastCompletedLesson = computed(() => !!props.last_completed_lesson);
+
+// Check if course is 100% complete and needs reflection
+const isCourseComplete = computed(() => {
+  if (!props.user.current_class?.modules) return false;
+  
+  return props.user.current_class.modules.every(module => 
+    module.completion_percentage === 100
+  );
+});
+
+const needsCourseReflection = computed(() => {
+  return isEnrolled.value && isCourseComplete.value;
+});
 
 // Map activity types to icons
 const activityIconMap: Record<string, Component> = {
@@ -173,15 +217,22 @@ const getActivityIcon = (type: string): Component => {
                 </div>
             </div>
 
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Main Content -->
                 <div class="lg:col-span-2 space-y-6">
                     <!-- Current Class Progress -->
-                    <Card v-if="user.enrollment_id && user.current_class" class="border-primary/20 shadow-sm hover:shadow-md transition-shadow cursor-pointer" @click="router.visit(`/classes/${user.current_class.id}`)">
+                    <Card v-if="user.enrollment_id && user.current_class" class="border-primary/20 shadow-sm hover:shadow-md transition-shadow">
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
                                 <BookOpen class="h-5 w-5 text-primary" />
-                                Current Class: {{ user.current_class.title }}
+                                Current Class: 
+                                <span 
+                                    class="text-primary hover:text-primary/80 cursor-pointer underline"
+                                    @click="router.visit(`/classes/${user.current_class.id}`)"
+                                >
+                                    {{ user.current_class.title }}
+                                </span>
                             </CardTitle>
                             <CardDescription>
                                 Continue your learning journey
@@ -195,7 +246,27 @@ const getActivityIcon = (type: string): Component => {
                                         {{ module.completion_percentage }}% Complete
                                     </Badge>
                                 </div>
-                                <Progress :value="module.completion_percentage" class="h-2" />
+                                <div class="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
+                                    <div 
+                                        class="h-full w-full flex-1 bg-primary transition-all"
+                                        :style="{ transform: `translateX(-${100 - module.completion_percentage}%)` }"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <!-- Course Reflection Prompt when all modules are 100% complete -->
+                            <div v-if="needsCourseReflection" class="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1">
+                                        <p class="text-sm text-muted-foreground mb-2">
+                                            All lessons completed! Write a quick reflection to finish the class.
+                                        </p>
+                                        <Button @click="openReflectionModal" size="sm" class="bg-primary hover:bg-primary/90">
+                                            <Star class="h-4 w-4 mr-2" />
+                                            Complete Class
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -254,6 +325,51 @@ const getActivityIcon = (type: string): Component => {
                                             Join a class to complete lessons
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <!-- What I Learned Last Lesson -->
+                    <Card v-if="hasLastCompletedLesson" class="shadow-sm">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <BookOpen class="h-5 w-5 text-primary" />
+                                What I Learned Last Lesson
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-4">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-foreground mb-1">
+                                            {{ last_completed_lesson?.title }}
+                                        </h4>
+                                        <p class="text-sm text-muted-foreground mb-3">
+                                            {{ last_completed_lesson?.module_title }} • {{ last_completed_lesson?.class_title }}
+                                        </p>
+                                        <p class="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                            {{ last_completed_lesson?.summary }}
+                                        </p>
+                                        
+                                        <!-- Link to work if available -->
+                                        <div v-if="last_completed_lesson?.link" class="mt-3">
+                                            <a 
+                                                :href="last_completed_lesson.link" 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                class="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+                                            >
+                                                <BookOpen class="h-4 w-4" />
+                                                View your work
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between pt-2 border-t border-border">
+                                    <span class="text-xs text-muted-foreground">
+                                        Completed {{ formatShortDateTime(last_completed_lesson?.completed_at || '') }}
+                                    </span>
                                 </div>
                             </div>
                         </CardContent>
@@ -342,6 +458,18 @@ const getActivityIcon = (type: string): Component => {
           :lesson="selectedLesson"
           @update:is-open="isModalOpen = $event"
           @completed="onLessonCompleted"
+        />
+
+        <!-- Course Reflection Modal -->
+        <CourseReflectionModal
+          v-if="user.current_class"
+          :is-open="isReflectionModalOpen"
+          :course="user.current_class ? {
+            id: user.current_class.id,
+            title: user.current_class.title
+          } : undefined"
+          @close="closeReflectionModal"
+          @success="onCourseCompleted"
         />
     </AppLayout>
 </template>

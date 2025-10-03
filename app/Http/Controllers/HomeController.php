@@ -120,6 +120,37 @@ class HomeController extends Controller
             ];
         }
         
+        // Get last completed lesson with summary and link
+        $lastCompletedLesson = null;
+        if ($user->enrollment_id) {
+            $lastCompletedLesson = CompletedLesson::with([
+                    'lesson:id,name,module_id',
+                    'lesson.module:id,name,course_id',
+                    'lesson.module.course:id,name'
+                ])
+                ->where('enrollment_id', $user->enrollment_id)
+                ->whereNotNull('summary')
+                ->where('summary', '!=', '')
+                ->latest('created_at')
+                ->first();
+                
+            if ($lastCompletedLesson) {
+                $lesson = $lastCompletedLesson->lesson;
+                $module = $lesson?->module;
+                $course = $module?->course;
+                
+                $lastCompletedLesson = [
+                    'id' => $lastCompletedLesson->id,
+                    'title' => $lesson?->name ?? 'Unknown Lesson',
+                    'summary' => $lastCompletedLesson->summary,
+                    'link' => $lastCompletedLesson->link,
+                    'completed_at' => $lastCompletedLesson->created_at->toISOString(),
+                    'module_title' => $module?->name ?? 'Unknown Module',
+                    'class_title' => $course?->name ?? 'Unknown Course',
+                ];
+            }
+        }
+        
         return Inertia::render('Home', [
             'user' => [
                 'id' => $user->id,
@@ -132,6 +163,7 @@ class HomeController extends Controller
             ],
             'upcoming_lessons' => $upcomingLessons,
             'recent_activities' => $recentActivities,
+            'last_completed_lesson' => $lastCompletedLesson,
         ]);
     }
     
