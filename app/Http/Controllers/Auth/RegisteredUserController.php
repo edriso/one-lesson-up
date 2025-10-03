@@ -34,7 +34,7 @@ class RegisteredUserController extends Controller
             'full_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'username' => 'required|string|max:255|min:3',
+            'username' => 'required|string|max:255|min:3|regex:/^[a-zA-Z0-9_]+$/',
             'avatar' => 'nullable|string|max:255',
             'title' => 'nullable|string|max:255',
             'bio' => 'nullable|string|max:255',
