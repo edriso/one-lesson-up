@@ -24,6 +24,12 @@ class CompletedLessonSeeder extends Seeder
                     $daysAgo = fake()->numberBetween(0, 30); // 0-30 days ago
                     $createdAt = $enrollment->created_at->addDays($index)->subDays($daysAgo);
                     
+                    // Ensure the date is not in the future
+                    $now = now();
+                    if ($createdAt->isFuture()) {
+                        $createdAt = $now->subDays(fake()->numberBetween(0, 7));
+                    }
+                    
                     \App\Models\CompletedLesson::create([
                         'enrollment_id' => $enrollment->id,
                         'lesson_id' => $lesson->id,
@@ -45,6 +51,12 @@ class CompletedLessonSeeder extends Seeder
                     // Create lessons with different dates, starting from enrollment date
                     $daysAgo = fake()->numberBetween(0, 30); // 0-30 days ago
                     $createdAt = $enrollment->created_at->addDays($index)->subDays($daysAgo);
+                    
+                    // Ensure the date is not in the future
+                    $now = now();
+                    if ($createdAt->isFuture()) {
+                        $createdAt = $now->subDays(fake()->numberBetween(0, 7));
+                    }
                     
                     \App\Models\CompletedLesson::create([
                         'enrollment_id' => $enrollment->id,
