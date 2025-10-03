@@ -327,7 +327,7 @@ $query->whereNotNull('completed_at');
             'bonus_deadline' => $enrollment ? $enrollment->bonus_deadline->toISOString() : null,
             'is_bonus_eligible' => $enrollment ? now()->lte($enrollment->bonus_deadline) : false,
             'is_course_creator' => $course->creator_id === $user->id,
-            'enrollment_start_date' => $completedEnrollment ? $completedEnrollment->created_at->toISOString() : null,
+            'enrollment_start_date' => $enrollment ? $enrollment->created_at->toISOString() : null,
             'was_completed_on_time' => $completedEnrollment ? $completedEnrollment->isCompletedOnTime() : null,
             'points_earned' => $completedEnrollment ? $this->calculatePointsEarned($completedEnrollment) : null,
         ]);
