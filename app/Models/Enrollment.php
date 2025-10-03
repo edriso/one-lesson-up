@@ -160,8 +160,11 @@ class Enrollment extends Model
      */
     private function awardCourseCompletionBonus(): void
     {
+        // Calculate active days from daily activities
+        $activeDays = $this->dailyActivities()->count();
+        
         $courseBonus = \App\Enums\PointValue::calculateCompletionBonus(
-            $this->course->lessons_count, 
+            $activeDays, 
             $this->isCompletedOnTime()
         );
 

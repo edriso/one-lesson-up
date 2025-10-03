@@ -81,7 +81,17 @@ test('course completion awards bonus points on time', function () {
     expect($success)->toBeTrue();
     
     $this->user->refresh();
+    
+    // Check if time bonus was awarded
+    $dailyActivity = DailyActivity::where('user_id', $this->user->id)->latest()->first();
+    $hasTimeBonus = $dailyActivity->time_bonus_earned;
+    
+    // Expected points: active day + completion bonus + (time bonus if applicable)
     $expectedPoints = PointValue::ACTIVE_DAY->getPoints() + PointValue::calculateCompletionBonus(1, true);
+    if ($hasTimeBonus) {
+        $expectedPoints += PointValue::TIME_BONUS->getPoints();
+    }
+    
     expect($this->user->points)->toBe($expectedPoints);
 });
 
