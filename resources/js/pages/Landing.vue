@@ -20,6 +20,12 @@ withDefaults(defineProps<Props>(), {
   }),
 });
 
+// Get app name from environment variable
+const appName = import.meta.env.VITE_APP_NAME || 'One Lesson Up';
+
+// Get current year dynamically
+const currentYear = new Date().getFullYear();
+
 // Format numbers with K, M suffixes
 const formatNumber = (num: number): string => {
   if (num >= 1000000) {
@@ -42,7 +48,7 @@ const formatNumber = (num: number): string => {
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <GraduationCap class="h-8 w-8 text-primary" />
-            <h1 class="text-2xl font-bold text-foreground">One Lesson Up</h1>
+            <h1 class="text-2xl font-bold text-foreground">{{ appName }}</h1>
           </div>
           
           <div class="flex items-center gap-4">
@@ -167,7 +173,7 @@ const formatNumber = (num: number): string => {
     <footer class="border-t border-border/40 bg-background/80 backdrop-blur-sm mt-12">
       <div class="container mx-auto px-4 py-6">
         <div class="text-center text-muted-foreground">
-          <p>&copy; 2025 One Lesson Up. All rights reserved.</p>
+          <p>&copy; {{ currentYear }} {{ appName }}. All rights reserved.</p>
         </div>
       </div>
     </footer>
