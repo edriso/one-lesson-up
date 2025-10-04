@@ -30,7 +30,6 @@ class User extends Authenticatable
         'is_public',
         'enrollment_id',
         'timezone',
-        'timezone_updated_at',
     ];
 
     /**

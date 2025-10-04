@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Star, TrendingUp, Calendar, Crown } from 'lucide-vue-next';
 import LeaderboardList from '@/components/LeaderboardList.vue';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 
 interface LeaderboardEntry {
   id: number;
@@ -117,16 +117,26 @@ const hasMore = ref<{
 
 const activeTab = ref('today');
 
+const onTabChange = (newTab: string) => {
+  activeTab.value = newTab;
+};
+
 const loadMoreEntries = async (period: keyof typeof allLeaderboards.value) => {
-  if (isLoading.value[period] || !hasMore.value[period]) return;
+  if (isLoading.value[period] || !hasMore.value[period]) {
+    return;
+  }
 
   isLoading.value[period] = true;
   currentPage.value[period]++;
 
   try {
     const response = await fetch(`/api/leaderboard/load-more?period=${period}&page=${currentPage.value[period]}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const data = await response.json();
-
     allLeaderboards.value[period].push(...data.leaderboard);
     hasMore.value[period] = data.has_more;
   } catch (error) {
@@ -136,28 +146,53 @@ const loadMoreEntries = async (period: keyof typeof allLeaderboards.value) => {
   }
 };
 
+
 const setupIntersectionObserver = () => {
-  const observer = new IntersectionObserver((entries) => {
+  // Disconnect any existing observer first
+  if (observer) {
+    observer.disconnect();
+  }
+
+  const newObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
-        loadMoreEntries(activeTab.value as keyof typeof allLeaderboards.value);
+        // Extract the period from the trigger element's ID
+        const triggerId = entry.target.id;
+        const period = triggerId.replace('load-more-trigger-', '') as keyof typeof allLeaderboards.value;
+        loadMoreEntries(period);
       }
     });
+  }, {
+    rootMargin: '100px' // Trigger 100px before the element comes into view
   });
 
-  // Observe all load-more-trigger elements
-  const loadMoreTriggers = document.querySelectorAll('#load-more-trigger');
-  loadMoreTriggers.forEach(trigger => {
-    observer.observe(trigger);
-  });
+  // Only observe the trigger for the currently active tab
+  const activeTrigger = document.getElementById(`load-more-trigger-${activeTab.value}`);
+  if (activeTrigger) {
+    newObserver.observe(activeTrigger);
+  }
 
-  return observer;
+  return newObserver;
 };
 
 let observer: IntersectionObserver | null = null;
 
+// Watch for tab changes and re-setup intersection observer
+watch(activeTab, async () => {
+  if (observer) {
+    observer.disconnect();
+  }
+  await nextTick(); // Wait for DOM to update
+  setTimeout(() => {
+    observer = setupIntersectionObserver();
+  }, 200); // Ensure DOM is fully updated
+}, { immediate: false });
+
 onMounted(() => {
-  observer = setupIntersectionObserver();
+  // Add a small delay to ensure DOM is fully ready
+  setTimeout(() => {
+    observer = setupIntersectionObserver();
+  }, 100);
 });
 
 onUnmounted(() => {
@@ -219,10 +254,10 @@ onUnmounted(() => {
       <!-- Time Period Tabs -->
       <Tabs v-model="activeTab" default-value="today" class="w-full">
         <TabsList class="grid w-full grid-cols-4">
-          <TabsTrigger value="today">Today</TabsTrigger>
-          <TabsTrigger value="yesterday">Yesterday</TabsTrigger>
-          <TabsTrigger value="this_month">This Month</TabsTrigger>
-          <TabsTrigger value="overall">Overall</TabsTrigger>
+          <TabsTrigger value="today" @click="onTabChange('today')">Today</TabsTrigger>
+          <TabsTrigger value="yesterday" @click="onTabChange('yesterday')">Yesterday</TabsTrigger>
+          <TabsTrigger value="this_month" @click="onTabChange('this_month')">This Month</TabsTrigger>
+          <TabsTrigger value="overall" @click="onTabChange('overall')">Overall</TabsTrigger>
         </TabsList>
 
         <!-- Today Leaderboard -->
@@ -243,9 +278,9 @@ onUnmounted(() => {
                 :current-user-id="user?.id"
                 empty-message="No activities today"
               />
-              <div v-if="hasMore.today" id="load-more-trigger" class="h-10 flex items-center justify-center">
-                <div v-if="isLoading.today" class="text-sm text-muted-foreground">Loading more...</div>
-              </div>
+               <div v-if="hasMore.today" id="load-more-trigger-today" class="h-10 flex items-center justify-center">
+                 <div v-if="isLoading.today" class="text-sm text-muted-foreground">Loading more...</div>
+               </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -268,9 +303,9 @@ onUnmounted(() => {
                 :current-user-id="user?.id"
                 empty-message="No activities yesterday"
               />
-              <div v-if="hasMore.yesterday" id="load-more-trigger" class="h-10 flex items-center justify-center">
-                <div v-if="isLoading.yesterday" class="text-sm text-muted-foreground">Loading more...</div>
-              </div>
+               <div v-if="hasMore.yesterday" id="load-more-trigger-yesterday" class="h-10 flex items-center justify-center">
+                 <div v-if="isLoading.yesterday" class="text-sm text-muted-foreground">Loading more...</div>
+               </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -293,9 +328,9 @@ onUnmounted(() => {
                 :current-user-id="user?.id"
                 empty-message="No activities this month"
               />
-              <div v-if="hasMore.this_month" id="load-more-trigger" class="h-10 flex items-center justify-center">
-                <div v-if="isLoading.this_month" class="text-sm text-muted-foreground">Loading more...</div>
-              </div>
+               <div v-if="hasMore.this_month" id="load-more-trigger-this_month" class="h-10 flex items-center justify-center">
+                 <div v-if="isLoading.this_month" class="text-sm text-muted-foreground">Loading more...</div>
+               </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -318,9 +353,9 @@ onUnmounted(() => {
                 :current-user-id="user?.id"
                 empty-message="No activities yet"
               />
-              <div v-if="hasMore.overall" id="load-more-trigger" class="h-10 flex items-center justify-center">
-                <div v-if="isLoading.overall" class="text-sm text-muted-foreground">Loading more...</div>
-              </div>
+               <div v-if="hasMore.overall" id="load-more-trigger-overall" class="h-10 flex items-center justify-center">
+                 <div v-if="isLoading.overall" class="text-sm text-muted-foreground">Loading more...</div>
+               </div>
             </CardContent>
           </Card>
         </TabsContent>

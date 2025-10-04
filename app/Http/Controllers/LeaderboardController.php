@@ -51,9 +51,12 @@ class LeaderboardController extends Controller
             default => $this->getOverallLeaderboard($perPage, $offset),
         };
 
+        // Check if there are more records by trying to get one more record
+        $hasMore = $this->checkHasMore($period, $offset + $perPage);
+
         return response()->json([
             'leaderboard' => $leaderboard,
-            'has_more' => count($leaderboard) === $perPage,
+            'has_more' => $hasMore,
         ]);
     }
 
@@ -134,34 +137,123 @@ class LeaderboardController extends Controller
 
     private function getLeaderboardForPeriod($startDate = null, $endDate = null, $limit = 50, $offset = 0)
     {
-        // For monthly and overall, use actual points from users table
-        $query = User::select('id', 'username', 'full_name', 'avatar', 'points')
-            ->where('points', '>', 0);
+        if ($startDate && $endDate) {
+            // For this month, use a more efficient approach with raw SQL
+            $userPointsQuery = DailyActivity::selectRaw('
+                user_id,
+                SUM(CASE 
+                    WHEN lessons_completed > 0 THEN 1 
+                    ELSE 0 
+                END) as active_days,
+                SUM(CASE 
+                    WHEN time_bonus_earned = 1 THEN 1 
+                    ELSE 0 
+                END) as time_bonus_days
+            ')
+            ->whereBetween('activity_date', [$startDate, $endDate])
+            ->where('lessons_completed', '>', 0)
+            ->groupBy('user_id')
+            ->havingRaw('active_days > 0');
 
-        // For now, show all users with points (threshold can be added later)
-        // if (class_exists(\App\Enums\PointThreshold::class)) {
-        //     $query->where('points', '>=', PointThreshold::LEADERBOARD_VISIBILITY->value);
-        // }
+            // Get total count for pagination
+            $totalUsers = $userPointsQuery->count();
+            
+            // Apply pagination
+            $results = $userPointsQuery
+                ->orderByDesc('active_days')
+                ->orderByDesc('time_bonus_days')
+                ->offset($offset)
+                ->limit($limit)
+                ->get();
 
-        $results = $query->orderByDesc('points')
-            ->offset($offset)
-            ->limit($limit)
-            ->get();
+            // Get user details
+            $userIds = $results->pluck('user_id');
+            $users = User::whereIn('id', $userIds)
+                ->get(['id', 'username', 'full_name', 'avatar'])
+                ->keyBy('id');
 
-        // Add ranking
-        return $results->map(function ($user, $index) use ($offset) {
-            return [
-                'id' => $user->id,
-                'rank' => $offset + $index + 1,
-                'user' => [
+            return $results->map(function ($result, $index) use ($offset, $users) {
+                $user = $users->get($result->user_id);
+                // Calculate points: 1 point per active day + 1 point per time bonus day
+                $totalPoints = $result->active_days + $result->time_bonus_days;
+                
+                return [
+                    'id' => $result->user_id,
+                    'rank' => $offset + $index + 1,
+                    'user' => [
+                        'id' => $user->id,
+                        'full_name' => $user->full_name,
+                        'username' => $user->username,
+                        'avatar' => $user->avatar,
+                    ],
+                    'points' => $totalPoints,
+                ];
+            });
+        } else {
+            // For overall, use actual points from users table
+            $query = User::select('id', 'username', 'full_name', 'avatar', 'points')
+                ->where('points', '>', 0);
+
+            $results = $query->orderByDesc('points')
+                ->offset($offset)
+                ->limit($limit)
+                ->get();
+
+            // Add ranking
+            return $results->map(function ($user, $index) use ($offset) {
+                return [
                     'id' => $user->id,
-                    'full_name' => $user->full_name,
-                    'username' => $user->username,
-                    'avatar' => $user->avatar,
-                ],
-                'points' => $user->points,
-            ];
-        });
+                    'rank' => $offset + $index + 1,
+                    'user' => [
+                        'id' => $user->id,
+                        'full_name' => $user->full_name,
+                        'username' => $user->username,
+                        'avatar' => $user->avatar,
+                    ],
+                    'points' => $user->points,
+                ];
+            });
+        }
+    }
+
+    private function checkHasMore($period, $offset)
+    {
+        switch ($period) {
+            case 'today':
+                return DailyActivity::whereDate('activity_date', Carbon::today())
+                    ->where('lessons_completed', '>', 0)
+                    ->skip($offset)
+                    ->limit(1)
+                    ->exists();
+
+            case 'yesterday':
+                return DailyActivity::whereDate('activity_date', Carbon::yesterday())
+                    ->where('lessons_completed', '>', 0)
+                    ->skip($offset)
+                    ->limit(1)
+                    ->exists();
+
+            case 'this_month':
+                return DailyActivity::whereBetween('activity_date', [
+                    Carbon::now()->startOfMonth(),
+                    Carbon::now()->endOfMonth()
+                ])
+                ->where('lessons_completed', '>', 0)
+                ->groupBy('user_id')
+                ->havingRaw('COUNT(*) > 0')
+                ->skip($offset)
+                ->limit(1)
+                ->exists();
+
+            case 'overall':
+                return User::where('points', '>', 0)
+                    ->skip($offset)
+                    ->limit(1)
+                    ->exists();
+
+            default:
+                return false;
+        }
     }
 
     private function getCurrentUserRank($user, $period)
@@ -192,6 +284,52 @@ class LeaderboardController extends Controller
                 return $rank !== false ? $rank + 1 : 0;
 
             case 'this_month':
+                // Get user's monthly stats
+                $userStats = DailyActivity::selectRaw('
+                    SUM(CASE 
+                        WHEN lessons_completed > 0 THEN 1 
+                        ELSE 0 
+                    END) as active_days,
+                    SUM(CASE 
+                        WHEN time_bonus_earned = 1 THEN 1 
+                        ELSE 0 
+                    END) as time_bonus_days
+                ')
+                ->where('user_id', $user->id)
+                ->whereBetween('activity_date', [
+                    Carbon::now()->startOfMonth(),
+                    Carbon::now()->endOfMonth()
+                ])
+                ->where('lessons_completed', '>', 0)
+                ->first();
+                
+                $userMonthlyPoints = ($userStats->active_days ?? 0) + ($userStats->time_bonus_days ?? 0);
+                if ($userMonthlyPoints <= 0) {
+                    return 0;
+                }
+                
+                // Count users with more points this month
+                $usersWithMorePoints = DailyActivity::selectRaw('
+                    user_id,
+                    SUM(CASE 
+                        WHEN lessons_completed > 0 THEN 1 
+                        ELSE 0 
+                    END) + SUM(CASE 
+                        WHEN time_bonus_earned = 1 THEN 1 
+                        ELSE 0 
+                    END) as total_points
+                ')
+                ->whereBetween('activity_date', [
+                    Carbon::now()->startOfMonth(),
+                    Carbon::now()->endOfMonth()
+                ])
+                ->where('lessons_completed', '>', 0)
+                ->groupBy('user_id')
+                ->havingRaw('total_points > ?', [$userMonthlyPoints])
+                ->count();
+                
+                return $usersWithMorePoints + 1;
+
             case 'overall':
                 $users = User::where('points', '>', 0)
                     ->orderByDesc('points')
