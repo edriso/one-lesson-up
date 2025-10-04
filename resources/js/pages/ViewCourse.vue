@@ -409,7 +409,7 @@ const progressText = computed(() => {
                             @click="router.visit('/classes')"
                             class="cursor-pointer"
                         >
-                            <ArrowLeft class="mr-2 h-4 w-4" />
+                            <ArrowLeft class="h-4 w-4" />
                             Back to Classes
                         </Button>
                     </div>
@@ -515,7 +515,7 @@ const progressText = computed(() => {
                         rel="noopener noreferrer"
                         class="cursor-pointer"
                     >
-                        <ExternalLink class="mr-2 h-4 w-4" />
+                        <ExternalLink class="h-4 w-4" />
                         View Class
                     </Button>
                 </div>
@@ -942,7 +942,7 @@ const progressText = computed(() => {
                                 @click="openLeaveModal"
                                 class="text-destructive hover:text-destructive"
                             >
-                                <LogOut class="mr-2 h-4 w-4" />
+                                <LogOut class="h-4 w-4" />
                                 Leave Class
                             </Button>
                         </div>
@@ -975,7 +975,7 @@ const progressText = computed(() => {
                         Cancel
                     </Button>
                     <Button variant="destructive" @click="confirmLeaveCourse">
-                        <LogOut class="mr-2 h-4 w-4" />
+                        <LogOut class="h-4 w-4" />
                         Leave Class
                     </Button>
                 </div>

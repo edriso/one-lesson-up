@@ -99,7 +99,7 @@ const submit = () => {
                     size="sm"
                     @click="$inertia.visit(`/classes/${lesson.course.id}`)"
                 >
-                    <ArrowLeft class="mr-2 h-4 w-4" />
+                    <ArrowLeft class="h-4 w-4" />
                     Back to Class
                 </Button>
             </div>
@@ -246,7 +246,7 @@ const submit = () => {
                                 :disabled="form.processing || !form.summary"
                                 class="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
                             >
-                                <CheckCircle class="mr-2 h-4 w-4" />
+                                <CheckCircle class="h-4 w-4" />
                                 {{
                                     form.processing
                                         ? 'Completing...'

@@ -21,7 +21,6 @@ test('user can be created with all required fields', function () {
     expect($user->username)->toBe('testuser');
     expect($user->email)->toBe('test@example.com');
     expect($user->full_name)->toBe('Test User');
-    expect($user->title)->toBe('Software Developer');
     expect($user->bio)->toBe('Test bio');
     expect($user->is_public)->toBeTrue();
 });

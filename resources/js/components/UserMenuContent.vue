@@ -30,13 +30,13 @@ defineProps<Props>();
                 prefetch
                 as="button"
             >
-                <UserIcon class="mr-2 h-4 w-4" />
+                <UserIcon class="h-4 w-4" />
                 My Profile
             </Link>
         </DropdownMenuItem>
         <DropdownMenuItem :as-child="true">
             <Link class="block w-full" :href="edit()" prefetch as="button">
-                <Settings class="mr-2 h-4 w-4" />
+                <Settings class="h-4 w-4" />
                 Settings
             </Link>
         </DropdownMenuItem>
@@ -50,7 +50,7 @@ defineProps<Props>();
             as="button"
             data-test="logout-button"
         >
-            <LogOut class="mr-2 h-4 w-4" />
+            <LogOut class="h-4 w-4" />
             Log out
         </Link>
     </DropdownMenuItem>

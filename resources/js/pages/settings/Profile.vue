@@ -31,7 +31,6 @@ interface Props {
         website_url: string | null;
         avatar: string | null;
         points: number;
-        title: string | null;
         timezone: string;
         timezone_updated_at: string;
         can_update_timezone: boolean;
@@ -57,7 +56,6 @@ const email = ref(props.user.email || '');
 const bio = ref(props.user.bio || '');
 const websiteUrl = ref(props.user.website_url || '');
 const avatar = ref(props.user.avatar || '');
-const title = ref(props.user.title || '');
 
 // Bio character counter
 const bioCharCount = ref(bio.value.length);
@@ -135,18 +133,17 @@ const handleSubmit = (event: Event) => {
     // Clear previous errors
     clientErrors.value = {};
 
-    // Get form data from reactive variables
-    const formData = {
-        username: username.value,
-        full_name: fullName.value,
-        email: email.value,
-        bio: bio.value,
-        website_url: websiteUrl.value,
-        avatar: avatar.value,
-        title: title.value,
-        is_public: isPublic.value,
-        timezone: timezone.value,
-    };
+           // Get form data from reactive variables
+           const formData = {
+               username: username.value,
+               full_name: fullName.value,
+               email: email.value,
+               bio: bio.value,
+               website_url: websiteUrl.value,
+               avatar: avatar.value,
+               is_public: isPublic.value,
+               timezone: timezone.value,
+           };
 
     // Validate form data
     const errors = validateForm(formData);
@@ -260,18 +257,6 @@ const handleSubmit = (event: Event) => {
                         </div>
                     </div>
 
-                    <!-- Title -->
-                    <div class="grid gap-2">
-                        <Label for="title">Title / Job Role</Label>
-                        <Input
-                            id="title"
-                            v-model="title"
-                            class="mt-1 block w-full"
-                            name="title"
-                            placeholder="e.g., Software Engineer, Student"
-                        />
-                        <InputError class="mt-2" :message="clientErrors.title" />
-                    </div>
 
                     <!-- Bio -->
                     <div class="grid gap-2">

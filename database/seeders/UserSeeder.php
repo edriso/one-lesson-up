@@ -18,7 +18,6 @@ class UserSeeder extends Seeder
                 'email' => 'admin@onelessonup.com',
                 'password' => bcrypt('password'),
                 'full_name' => 'Admin User',
-                'title' => 'Platform Administrator',
                 'bio' => 'Administrator of One Lesson Up platform',
                 'is_public' => true,
                 'is_active' => true,

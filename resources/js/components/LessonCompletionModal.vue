@@ -207,11 +207,11 @@ watch(
                 >
                     <CheckCircle
                         v-if="!isCompletingLesson"
-                        class="mr-2 h-4 w-4"
+                        class="h-4 w-4"
                     />
                     <div
                         v-else
-                        class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                        class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
                     ></div>
                     {{
                         isCompletingLesson

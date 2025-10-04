@@ -23,20 +23,19 @@ class ProfileController extends Controller
         return Inertia::render('settings/Profile', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
-            'user' => [
-                'username' => $user->username,
-                'full_name' => $user->full_name,
-                'email' => $user->email,
-                'email_verified_at' => $user->email_verified_at,
-                'bio' => $user->bio,
-                'website_url' => $user->website_url,
-                'avatar' => $user->avatar,
-                'points' => $user->points,
-                'title' => $user->title,
-                'timezone' => $user->timezone,
-                'timezone_updated_at' => $user->timezone_updated_at,
-                'can_update_timezone' => $user->canUpdateTimezone(),
-            ],
+                'user' => [
+                    'username' => $user->username,
+                    'full_name' => $user->full_name,
+                    'email' => $user->email,
+                    'email_verified_at' => $user->email_verified_at,
+                    'bio' => $user->bio,
+                    'website_url' => $user->website_url,
+                    'avatar' => $user->avatar,
+                    'points' => $user->points,
+                    'timezone' => $user->timezone,
+                    'timezone_updated_at' => $user->timezone_updated_at,
+                    'can_update_timezone' => $user->canUpdateTimezone(),
+                ],
         ]);
     }
 

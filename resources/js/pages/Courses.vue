@@ -289,7 +289,7 @@ onMounted(() => {
                                 : 'Create a new class'
                         "
                     >
-                        <Plus class="mr-2 h-4 w-4" />
+                        <Plus class="h-4 w-4" />
                         Create Class
                     </Button>
                 </Link>
@@ -388,7 +388,7 @@ onMounted(() => {
                         :href="'/classes/create'"
                     >
                         <Button variant="default">
-                            <Plus class="mr-2 h-4 w-4" />
+                            <Plus class="h-4 w-4" />
                             Create First Class
                         </Button>
                     </Link>

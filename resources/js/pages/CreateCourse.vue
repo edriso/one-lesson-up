@@ -286,7 +286,7 @@ const getTotalLessons = () => {
                     size="sm"
                     @click="$inertia.visit('/classes')"
                 >
-                    <ArrowLeft class="mr-2 h-4 w-4" />
+                    <ArrowLeft class="h-4 w-4" />
                     Back to Classes
                 </Button>
             </div>
@@ -322,6 +322,9 @@ const getTotalLessons = () => {
                                 <li>
                                     Leaving a class later will deduct all points
                                     earned from that class
+                                </li>
+                                <li>
+                                    If you leave your class, it will be permanently deleted only if you're the only enrolled student
                                 </li>
                                 <li>
                                     You can only be enrolled in one class at a
@@ -596,7 +599,7 @@ const getTotalLessons = () => {
                             @click="addModule"
                             variant="outline"
                         >
-                            <Plus class="mr-2 h-4 w-4" />
+                            <Plus class="h-4 w-4" />
                             Add Module
                         </Button>
                     </div>
@@ -831,7 +834,7 @@ const getTotalLessons = () => {
                                     :disabled="form.processing"
                                     class="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 md:flex-none"
                                 >
-                                    <Save class="mr-2 h-4 w-4" />
+                                    <Save class="h-4 w-4" />
                                     {{
                                         form.processing
                                             ? 'Creating...'

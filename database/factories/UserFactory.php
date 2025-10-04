@@ -31,7 +31,6 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'full_name' => fake()->optional(0.7)->name(),
             'avatar' => null, // No default avatar for new users
-            'title' => fake()->optional(0.5)->jobTitle(),
             'bio' => fake()->optional(0.6)->paragraph(),
             'website_url' => fake()->optional(0.3)->url(),
             'is_public' => fake()->boolean(100), // 100% chance of being public
