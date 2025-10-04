@@ -25,7 +25,7 @@ return new class extends Migration
             $table->unsignedBigInteger('enrollment_id')->nullable();
             $table->string('email')->unique();
             $table->unsignedTinyInteger('week_starts_on')->default(0); // 0=Sunday, 1=Monday
-            $table->string('timezone')->default('UTC');
+            $table->string('timezone', 50)->default('UTC'); // IANA timezone identifier (e.g., 'America/New_York')
             $table->timestamp('timezone_updated_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

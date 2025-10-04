@@ -30,6 +30,11 @@ class ProfileUpdateRequest extends FormRequest
             'bio' => ['nullable', 'string', 'max:255'],
             'website_url' => ['nullable', 'string', 'max:255'],
             'is_public' => ['nullable', 'boolean'],
+            'timezone' => ['nullable', 'string', 'max:255', function ($attribute, $value, $fail) {
+                if ($value && !in_array($value, timezone_identifiers_list())) {
+                    $fail('The selected timezone is invalid.');
+                }
+            }],
         ];
     }
 
@@ -43,6 +48,17 @@ class ProfileUpdateRequest extends FormRequest
                     $validator->errors()->add(
                         'avatar',
                         'You need at least ' . \App\Enums\PointThreshold::PROFILE_PICTURE_UNLOCK->value . ' points to upload a profile picture.'
+                    );
+                }
+            }
+
+            // Validate timezone update frequency (30 days)
+            if ($this->has('timezone') && $this->timezone && $this->timezone !== $this->user()->timezone) {
+                if (!$this->user()->canUpdateTimezone()) {
+                    $nextUpdateDate = $this->user()->timezone_updated_at->addDays(30)->format('F j, Y');
+                    $validator->errors()->add(
+                        'timezone',
+                        "Timezone can be updated again on {$nextUpdateDate}."
                     );
                 }
             }

@@ -18,9 +18,16 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        
         return Inertia::render('settings/Profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            'user' => [
+                'timezone' => $user->timezone,
+                'timezone_updated_at' => $user->timezone_updated_at,
+                'can_update_timezone' => $user->canUpdateTimezone(),
+            ],
         ]);
     }
 
@@ -34,6 +41,15 @@ class ProfileController extends Controller
         // Convert email to lowercase
         if (isset($validated['email'])) {
             $validated['email'] = strtolower($validated['email']);
+        }
+        
+        // Handle timezone update separately to use the updateTimezone method
+        if (isset($validated['timezone']) && $validated['timezone'] !== $request->user()->timezone) {
+            $timezoneUpdated = $request->user()->updateTimezone($validated['timezone']);
+            if (!$timezoneUpdated) {
+                return back()->withErrors(['timezone' => 'Unable to update timezone. Please try again.']);
+            }
+            unset($validated['timezone']); // Remove from regular update
         }
         
         $request->user()->fill($validated);

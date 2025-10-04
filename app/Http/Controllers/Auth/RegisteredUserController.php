@@ -40,6 +40,7 @@ class RegisteredUserController extends Controller
             'bio' => 'nullable|string|max:255',
             'website_url' => 'nullable|string|max:255',
             'is_public' => 'nullable|boolean',
+            'timezone' => 'nullable|string|max:255',
         ]);
 
         // Check for case-insensitive username uniqueness
@@ -69,6 +70,8 @@ class RegisteredUserController extends Controller
                 'bio' => $request->bio,
                 'website_url' => $request->website_url,
                 'is_public' => $request->is_public ?? true,
+                'timezone' => $request->timezone ?? 'UTC',
+                'timezone_updated_at' => now(),
             ]);
         } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
             // Handle unique constraint violations

@@ -5,10 +5,26 @@ import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import TimezonePicker from '@/components/TimezonePicker.vue';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { login } from '@/routes';
 import { Form, Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
+import { ref, onMounted } from 'vue';
+
+// Timezone detection
+const detectedTimezone = ref('UTC');
+
+onMounted(() => {
+    // Auto-detect user's timezone
+    try {
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        detectedTimezone.value = userTimezone;
+    } catch (error) {
+        console.warn('Could not detect timezone, using UTC');
+        detectedTimezone.value = 'UTC';
+    }
+});
 </script>
 
 <template>
@@ -24,6 +40,8 @@ import { LoaderCircle } from 'lucide-vue-next';
             v-slot="{ errors, processing }"
             class="flex flex-col gap-6"
         >
+            <!-- Hidden timezone field -->
+            <input type="hidden" name="timezone" :value="detectedTimezone" />
             <div class="grid gap-6">
                 <div class="grid gap-2">
                     <Label for="username">Username</Label>
@@ -41,7 +59,7 @@ import { LoaderCircle } from 'lucide-vue-next';
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="full_name">Full Name</Label>
+                    <Label for="full_name">Name</Label>
                     <Input
                         id="full_name"
                         type="text"
@@ -95,6 +113,11 @@ import { LoaderCircle } from 'lucide-vue-next';
                     />
                     <InputError :message="errors.password_confirmation" />
                 </div>
+
+                <TimezonePicker
+                    v-model="detectedTimezone"
+                    :errors="errors"
+                />
 
                 <Button
                     type="submit"

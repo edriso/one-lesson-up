@@ -100,7 +100,7 @@ class DailyActivity extends Model
             }
 
             // Check and award time bonus if not already earned today and in time window
-            $currentTime = new \DateTime();
+            $currentTime = now();
             $timeBonusType = TimeBonusType::fromTime($currentTime, $timezone);
             
             if (!$hasTimeBonusToday && $timeBonusType) {

@@ -4,7 +4,7 @@ import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 
-import DeleteUser from '@/components/DeleteUser.vue';
+// import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import TimezonePicker from '@/components/TimezonePicker.vue';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
@@ -22,9 +23,14 @@ import { ref, computed } from 'vue';
 interface Props {
     mustVerifyEmail: boolean;
     status?: string;
+    user: {
+        timezone: string;
+        timezone_updated_at: string;
+        can_update_timezone: boolean;
+    };
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const breadcrumbItems: BreadcrumbItem[] = [
     {
@@ -47,6 +53,12 @@ const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POI
 // Profile visibility
 const isPublic = ref(user.is_public || false);
 
+// Timezone
+const timezone = ref(props.user.timezone || 'UTC');
+const canUpdateTimezone = ref(props.user.can_update_timezone ?? true);
+const timezoneUpdatedAt = ref(props.user.timezone_updated_at);
+
+
 </script>
 
 <template>
@@ -65,6 +77,8 @@ const isPublic = ref(user.is_public || false);
                     class="space-y-6"
                     v-slot="{ errors, processing, recentlySuccessful }"
                 >
+                    <!-- Hidden timezone field -->
+                    <input type="hidden" name="timezone" :value="timezone" />
 
                     <!-- Username -->
                     <div class="grid gap-2">
@@ -165,6 +179,28 @@ const isPublic = ref(user.is_public || false);
                         <InputError class="mt-2" :message="errors.bio" />
                     </div>
 
+                    <!-- Website URL -->
+                    <div class="grid gap-2">
+                        <Label for="website_url">Personal Website</Label>
+                        <Input
+                            id="website_url"
+                            type="url"
+                            class="mt-1 block w-full"
+                            name="website_url"
+                            :default-value="user.website_url || ''"
+                            placeholder="https://yourwebsite.com"
+                        />
+                        <InputError class="mt-2" :message="errors.website_url" />
+                    </div>
+
+                    <!-- Timezone -->
+                    <TimezonePicker
+                        v-model="timezone"
+                        :can-update-timezone="canUpdateTimezone"
+                        :timezone-updated-at="timezoneUpdatedAt"
+                        :errors="errors"
+                    />
+
                     <!-- Avatar URL -->
                     <div class="grid gap-2">
                         <Label for="avatar">Profile Picture URL</Label>
@@ -188,21 +224,6 @@ const isPublic = ref(user.is_public || false);
                             Enter a direct URL to your profile picture
                         </p>
                         <InputError class="mt-2" :message="errors.avatar" />
-                    </div>
-
-
-                    <!-- Website URL -->
-                    <div class="grid gap-2">
-                        <Label for="website_url">Personal Website</Label>
-                        <Input
-                            id="website_url"
-                            type="url"
-                            class="mt-1 block w-full"
-                            name="website_url"
-                            :default-value="user.website_url || ''"
-                            placeholder="https://yourwebsite.com"
-                        />
-                        <InputError class="mt-2" :message="errors.website_url" />
                     </div>
 
                     <!-- Privacy Settings -->
@@ -250,7 +271,7 @@ const isPublic = ref(user.is_public || false);
                 </Form>
             </div>
 
-            <DeleteUser />
+            <!-- <DeleteUser /> -->
         </SettingsLayout>
     </AppLayout>
 </template>
