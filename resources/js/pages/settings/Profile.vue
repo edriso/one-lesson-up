@@ -7,18 +7,18 @@ import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 // import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
+import TimezonePicker from '@/components/TimezonePicker.vue';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import TimezonePicker from '@/components/TimezonePicker.vue';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Info } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
 
 interface Props {
     mustVerifyEmail: boolean;
@@ -40,25 +40,25 @@ const breadcrumbItems: BreadcrumbItem[] = [
 ];
 
 const page = usePage();
-const user = page.props.auth.user;
+const authUser = page.props.auth.user;
 
 // Bio character counter
-const bioText = ref(user.bio || '');
+const bioText = ref(authUser.bio || '');
 const bioCharCount = ref(bioText.value.length);
 
 // Point thresholds
 const PROFILE_PICTURE_POINTS = 100;
-const canUploadAvatar = computed(() => (user.points || 0) >= PROFILE_PICTURE_POINTS);
+const canUploadAvatar = computed(
+    () => (authUser.points || 0) >= PROFILE_PICTURE_POINTS,
+);
 
 // Profile visibility
-const isPublic = ref(user.is_public || false);
+const isPublic = ref(authUser.is_public || false);
 
 // Timezone
 const timezone = ref(props.user.timezone || 'UTC');
 const canUpdateTimezone = ref(props.user.can_update_timezone ?? true);
 const timezoneUpdatedAt = ref(props.user.timezone_updated_at);
-
-
 </script>
 
 <template>
@@ -173,7 +173,10 @@ const timezoneUpdatedAt = ref(props.user.timezone_updated_at);
                             :rows="4"
                             maxlength="255"
                         />
-                        <p class="text-xs text-muted-foreground" :class="{ 'text-red-500': bioCharCount > 255 }">
+                        <p
+                            class="text-xs text-muted-foreground"
+                            :class="{ 'text-red-500': bioCharCount > 255 }"
+                        >
                             {{ bioCharCount }}/255 characters
                         </p>
                         <InputError class="mt-2" :message="errors.bio" />
@@ -190,7 +193,10 @@ const timezoneUpdatedAt = ref(props.user.timezone_updated_at);
                             :default-value="user.website_url || ''"
                             placeholder="https://yourwebsite.com"
                         />
-                        <InputError class="mt-2" :message="errors.website_url" />
+                        <InputError
+                            class="mt-2"
+                            :message="errors.website_url"
+                        />
                     </div>
 
                     <!-- Timezone -->
@@ -216,8 +222,10 @@ const timezoneUpdatedAt = ref(props.user.timezone_updated_at);
                         <Alert v-if="!canUploadAvatar" variant="destructive">
                             <Info class="h-4 w-4" />
                             <AlertDescription>
-                                You need at least {{ PROFILE_PICTURE_POINTS }} points to set a profile picture. 
-                                You currently have {{ user.points }} points.
+                                You need at least
+                                {{ PROFILE_PICTURE_POINTS }} points to set a
+                                profile picture. You currently have
+                                {{ user.points }} points.
                             </AlertDescription>
                         </Alert>
                         <p v-else class="text-xs text-muted-foreground">
@@ -230,22 +238,23 @@ const timezoneUpdatedAt = ref(props.user.timezone_updated_at);
                     <div class="grid gap-2">
                         <Label for="is_public">Profile Visibility</Label>
                         <div class="flex items-center space-x-2">
-                            <Switch
-                                id="is_public"
-                                v-model:checked="isPublic"
+                            <Switch id="is_public" v-model:checked="isPublic" />
+                            <input
+                                type="hidden"
+                                name="is_public"
+                                :value="isPublic ? '1' : '0'"
                             />
-                            <input type="hidden" name="is_public" :value="isPublic ? '1' : '0'" />
                             <Label for="is_public" class="text-sm">
                                 Make my profile public
                             </Label>
                         </div>
                         <p class="text-xs text-muted-foreground">
-                            When enabled, your profile and activities will be visible to other users. 
-                            When disabled, your profile will show as private to other users.
+                            When enabled, your profile and activities will be
+                            visible to other users. When disabled, your profile
+                            will show as private to other users.
                         </p>
                         <InputError class="mt-2" :message="errors.is_public" />
                     </div>
-
 
                     <div class="flex items-center gap-4">
                         <Button

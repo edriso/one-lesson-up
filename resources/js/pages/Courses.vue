@@ -1,62 +1,68 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { 
-  Plus, 
-  Users, 
-  Trophy, 
-  Search,
-  X,
-  Lock,
-  Globe,
-  GraduationCap
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import {
+    Globe,
+    GraduationCap,
+    Lock,
+    Plus,
+    Search,
+    Trophy,
+    Users,
+    X,
 } from 'lucide-vue-next';
-import { ref, computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 interface Tag {
-  id: number;
-  name: string;
+    id: number;
+    name: string;
 }
 
 interface Course {
-  id: number;
-  title: string;
-  description: string;
-  students_count: number;
-  active_students_count?: number;
-  completed_students_count?: number;
-  lessons_count: number;
-  created_at: string;
-  can_join: boolean;
-  is_enrolled: boolean;
-  is_completed: boolean;
-  is_creator: boolean;
-  is_featured?: boolean;
-  is_public?: boolean;
-  tags?: Tag[];
+    id: number;
+    title: string;
+    description: string;
+    students_count: number;
+    active_students_count?: number;
+    completed_students_count?: number;
+    lessons_count: number;
+    created_at: string;
+    can_join: boolean;
+    is_enrolled: boolean;
+    is_completed: boolean;
+    is_creator: boolean;
+    is_featured?: boolean;
+    is_public?: boolean;
+    tags?: Tag[];
 }
 
 interface Props {
-  courses?: Course[];
-  can_create_class?: boolean;
-  user?: {
-    id: number;
-    enrollment_id?: number;
-    current_class?: {
-      id: number;
-      title: string;
+    courses?: Course[];
+    can_create_class?: boolean;
+    user?: {
+        id: number;
+        enrollment_id?: number;
+        current_class?: {
+            id: number;
+            title: string;
+        };
     };
-  };
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  courses: () => [],
-  can_create_class: false,
-  user: undefined,
+    courses: () => [],
+    can_create_class: false,
+    user: undefined,
 });
 
 // Search functionality
@@ -76,380 +82,480 @@ const currentClassId = computed(() => props.user?.current_class?.id);
 
 // Optimized filtering and sorting
 const filteredCourses = computed(() => {
-  let courses = allCourses.value;
-  
-  // Deduplicate courses by ID first
-  const uniqueCourses = courses.reduce((acc, course) => {
-    if (!acc.find(c => c.id === course.id)) {
-      acc.push(course);
-    }
-    return acc;
-  }, [] as Course[]);
-  
-  // Apply search filter
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    courses = uniqueCourses.filter(course => {
-      const titleMatch = course.title?.toLowerCase().includes(query);
-      const descMatch = course.description?.toLowerCase().includes(query);
-      const tagMatch = course.tags?.some(tag => tag.name?.toLowerCase().includes(query));
-      return titleMatch || descMatch || tagMatch;
-    });
-  } else {
-    courses = uniqueCourses;
-  }
+    let courses = allCourses.value;
 
-  // Sort courses: current enrollment first, then enrolled, then by student count
-  return [...courses].sort((a, b) => {
-    // Current enrollment first
-    const aIsCurrent = a.id === currentClassId.value;
-    const bIsCurrent = b.id === currentClassId.value;
-    if (aIsCurrent !== bIsCurrent) return aIsCurrent ? -1 : 1;
-    
-    // Enrolled courses next
-    if (a.is_enrolled !== b.is_enrolled) return a.is_enrolled ? -1 : 1;
-    
-    // Sort by popularity (student count) for non-enrolled courses
-    if (!a.is_enrolled && !b.is_enrolled) {
-      return b.students_count - a.students_count;
+    // Deduplicate courses by ID first
+    const uniqueCourses = courses.reduce((acc, course) => {
+        if (!acc.find((c) => c.id === course.id)) {
+            acc.push(course);
+        }
+        return acc;
+    }, [] as Course[]);
+
+    // Apply search filter
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        courses = uniqueCourses.filter((course) => {
+            const titleMatch = course.title?.toLowerCase().includes(query);
+            const descMatch = course.description?.toLowerCase().includes(query);
+            const tagMatch = course.tags?.some((tag) =>
+                tag.name?.toLowerCase().includes(query),
+            );
+            return titleMatch || descMatch || tagMatch;
+        });
+    } else {
+        courses = uniqueCourses;
     }
-    
-    return 0;
-  });
+
+    // Sort courses: current enrollment first, then enrolled, then by student count
+    return [...courses].sort((a, b) => {
+        // Current enrollment first
+        const aIsCurrent = a.id === currentClassId.value;
+        const bIsCurrent = b.id === currentClassId.value;
+        if (aIsCurrent !== bIsCurrent) return aIsCurrent ? -1 : 1;
+
+        // Enrolled courses next
+        if (a.is_enrolled !== b.is_enrolled) return a.is_enrolled ? -1 : 1;
+
+        // Sort by popularity (student count) for non-enrolled courses
+        if (!a.is_enrolled && !b.is_enrolled) {
+            return b.students_count - a.students_count;
+        }
+
+        return 0;
+    });
 });
 
 const clearSearch = () => {
-  searchQuery.value = '';
+    searchQuery.value = '';
 };
 
 // Simplified student count text
 const getStudentCountText = (course: Course): string => {
-  const { students_count, active_students_count, completed_students_count } = course;
-  
-  if (active_students_count === undefined || completed_students_count === undefined) {
-    return `${students_count} student${students_count !== 1 ? 's' : ''}`;
-  }
-  
-  if (students_count === 0) return '0 students';
-  if (active_students_count === 0) return `${students_count} completed`;
-  if (completed_students_count === 0) return `${students_count} active`;
-  
-  return `${students_count} total (${active_students_count} active, ${completed_students_count} completed)`;
+    const { students_count, active_students_count, completed_students_count } =
+        course;
+
+    if (
+        active_students_count === undefined ||
+        completed_students_count === undefined
+    ) {
+        return `${students_count} student${students_count !== 1 ? 's' : ''}`;
+    }
+
+    if (students_count === 0) return '0 students';
+    if (active_students_count === 0) return `${students_count} completed`;
+    if (completed_students_count === 0) return `${students_count} active`;
+
+    return `${students_count} total (${active_students_count} active, ${completed_students_count} completed)`;
 };
 
 // Get course status badge
 const getCourseStatus = (course: Course) => {
-  if (course.id === currentClassId.value) {
-    return { label: 'Current', variant: 'secondary' as const };
-  }
-  if (course.is_completed) {
-    return { label: 'Completed', variant: 'default' as const };
-  }
-  if (course.is_enrolled) {
-    return { label: 'In Progress', variant: 'outline' as const };
-  }
-  return null;
+    if (course.id === currentClassId.value) {
+        return { label: 'Current', variant: 'secondary' as const };
+    }
+    if (course.is_completed) {
+        return { label: 'Completed', variant: 'default' as const };
+    }
+    if (course.is_enrolled) {
+        return { label: 'In Progress', variant: 'outline' as const };
+    }
+    return null;
 };
 
 // Get button text based on course state
 const getButtonText = (course: Course): string => {
-  if (!course.is_enrolled) {
-    return course.can_join ? 'Join Class' : 'Cannot Join';
-  }
-  if (course.is_completed) {
-    return 'View Completed';
-  }
-  return course.id === currentClassId.value ? 'Continue Learning' : 'View Class';
+    if (!course.is_enrolled) {
+        return course.can_join ? 'Join Class' : 'Cannot Join';
+    }
+    if (course.is_completed) {
+        return 'View Completed';
+    }
+    return course.id === currentClassId.value
+        ? 'Continue Learning'
+        : 'View Class';
 };
 
 // Get button variant based on course state
 const getButtonVariant = (course: Course) => {
-  if (!course.is_enrolled) {
-    return course.can_join ? 'default' : 'outline';
-  }
-  if (course.is_completed) {
-    return 'default';
-  }
-  return course.id === currentClassId.value ? 'default' : 'outline';
+    if (!course.is_enrolled) {
+        return course.can_join ? 'default' : 'outline';
+    }
+    if (course.is_completed) {
+        return 'default';
+    }
+    return course.id === currentClassId.value ? 'default' : 'outline';
 };
 
 const joinCourse = (courseId: number) => {
-  router.post(`/classes/${courseId}/join`, {}, {
-    preserveScroll: true,
-  });
+    router.post(
+        `/classes/${courseId}/join`,
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
 };
 
 const viewCourse = (courseId: number) => {
-  router.visit(`/classes/${courseId}`);
+    router.visit(`/classes/${courseId}`);
 };
 
 const handleCourseAction = (course: Course) => {
-  if (course.is_enrolled) {
-    viewCourse(course.id);
-  } else if (course.can_join) {
-    joinCourse(course.id);
-  }
+    if (course.is_enrolled) {
+        viewCourse(course.id);
+    } else if (course.can_join) {
+        joinCourse(course.id);
+    }
 };
 
 // Load more courses function
 const loadMoreCourses = async () => {
-  if (isLoading.value || !hasMore.value) return;
-  
-  isLoading.value = true;
-  currentPage.value += 1;
-  
-  try {
-    const response = await fetch(`/api/courses/load-more?page=${currentPage.value}`);
-    const data = await response.json();
-    
-    // Deduplicate courses by ID to prevent duplicates
-    const existingIds = new Set(allCourses.value.map(course => course.id));
-    const newCourses = data.courses.filter((course: Course) => !existingIds.has(course.id));
-    allCourses.value.push(...newCourses);
-    hasMore.value = data.hasMore;
-  } catch (error) {
-    console.error('Failed to load more courses:', error);
-    currentPage.value -= 1; // Revert page increment on error
-  } finally {
-    isLoading.value = false;
-  }
+    if (isLoading.value || !hasMore.value) return;
+
+    isLoading.value = true;
+    currentPage.value += 1;
+
+    try {
+        const response = await fetch(
+            `/api/courses/load-more?page=${currentPage.value}`,
+        );
+        const data = await response.json();
+
+        // Deduplicate courses by ID to prevent duplicates
+        const existingIds = new Set(
+            allCourses.value.map((course) => course.id),
+        );
+        const newCourses = data.courses.filter(
+            (course: Course) => !existingIds.has(course.id),
+        );
+        allCourses.value.push(...newCourses);
+        hasMore.value = data.hasMore;
+    } catch (error) {
+        console.error('Failed to load more courses:', error);
+        currentPage.value -= 1; // Revert page increment on error
+    } finally {
+        isLoading.value = false;
+    }
 };
 
 // Intersection Observer for infinite scroll
 const loadMoreTrigger = ref<HTMLElement | null>(null);
 
 onMounted(() => {
-  if (loadMoreTrigger.value) {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore.value && !isLoading.value) {
-        loadMoreCourses();
-      }
-    });
-    
-    observer.observe(loadMoreTrigger.value);
-  }
+    if (loadMoreTrigger.value) {
+        const observer = new IntersectionObserver((entries) => {
+            if (
+                entries[0].isIntersecting &&
+                hasMore.value &&
+                !isLoading.value
+            ) {
+                loadMoreCourses();
+            }
+        });
+
+        observer.observe(loadMoreTrigger.value);
+    }
 });
 </script>
 
 <template>
-  <Head title="Classes" />
-  
-  <AppLayout>
-    <div class="space-y-6">
-      <!-- Header -->
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-        <div>
-          <h1 class="text-4xl font-bold text-foreground mb-2">
-            Classes
-          </h1>
-          <p class="text-muted-foreground">
-            Discover and join learning communities
-          </p>
-        </div>
-        
-        <!-- Create Class Button -->
-        <Link :href="'/classes/create'">
-          <Button 
-            variant="default" 
-            :disabled="!can_create_class"
-            class="w-full md:w-auto cursor-pointer"
-            :title="!can_create_class ? 'You must leave your current class before creating a new one' : 'Create a new class'"
-          >
-            <Plus class="h-4 w-4 mr-2" />
-            Create Class
-          </Button>
-        </Link>
-      </div>
+    <Head title="Classes" />
 
-      <!-- Tooltip for disabled create button -->
-      <div v-if="!can_create_class" class="mb-4 p-3 bg-muted/50 rounded-lg border border-muted">
-        <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <Lock class="h-4 w-4" />
-          <span v-if="user.enrollment_id">
-            You're already enrolled in "{{ user.current_class?.title }}". 
-            Complete it or leave to join or create a new class.
-          </span>
-          <span v-else>
-            You need to meet certain requirements to create a class.
-          </span>
-        </div>
-      </div>
+    <AppLayout>
+        <div class="space-y-6">
+            <!-- Header -->
+            <div
+                class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+            >
+                <div>
+                    <h1 class="mb-2 text-4xl font-bold text-foreground">
+                        Classes
+                    </h1>
+                    <p class="text-muted-foreground">
+                        Discover and join learning communities
+                    </p>
+                </div>
 
-      <!-- Search and Filter -->
-      <div class="flex flex-col md:flex-row gap-4 mb-6">
-        <!-- Search Input -->
-        <div class="relative flex-1">
-          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input 
-            v-model="searchQuery"
-            placeholder="Search classes by title, description, or tags..." 
-            class="pl-10 pr-10 h-11"
-          />
-          <Button
-            v-if="searchQuery"
-            variant="ghost"
-            size="sm"
-            class="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-            @click="clearSearch"
-          >
-            <X class="h-4 w-4" />
-          </Button>
-        </div>
+                <!-- Create Class Button -->
+                <Link :href="'/classes/create'">
+                    <Button
+                        variant="default"
+                        :disabled="!can_create_class"
+                        class="w-full cursor-pointer md:w-auto"
+                        :title="
+                            !can_create_class
+                                ? 'You must leave your current class before creating a new one'
+                                : 'Create a new class'
+                        "
+                    >
+                        <Plus class="mr-2 h-4 w-4" />
+                        Create Class
+                    </Button>
+                </Link>
+            </div>
 
-      </div>
-
-      <!-- Results Count -->
-      <div v-if="searchQuery" class="mb-4 flex items-center justify-between">
-        <p class="text-sm text-muted-foreground">
-          Showing {{ filteredCourses.length }} of {{ courses.length }} classes
-        </p>
-        <Button 
-          v-if="searchQuery"
-          variant="ghost" 
-          size="sm"
-          @click="clearSearch"
-        >
-          Clear Search
-        </Button>
-      </div>
-
-      <!-- Classes Grid -->
-      <div v-if="filteredCourses.length === 0" class="text-center py-12">
-        <GraduationCap class="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-        <h3 class="text-lg font-semibold text-foreground mb-2">
-          {{ searchQuery ? 'No Matching Classes' : 'No Classes Found' }}
-        </h3>
-        <p class="text-muted-foreground mb-4">
-          {{ searchQuery 
-            ? 'Try adjusting your search terms to find classes.' 
-            : 'Be the first to create a class or check back later for new classes.' 
-          }}
-        </p>
-        <div class="flex items-center justify-center gap-2">
-          <Button 
-            v-if="searchQuery"
-            variant="outline"
-            @click="clearSearch"
-          >
-            Clear Search
-          </Button>
-          <Link v-if="can_create_class && !searchQuery" :href="'/classes/create'">
-            <Button variant="default">
-              <Plus class="h-4 w-4 mr-2" />
-              Create First Class
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card v-for="course in filteredCourses" :key="course.id" 
-              class="hover:shadow-lg transition-shadow duration-200">
-          <CardHeader>
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <CardTitle class="text-lg line-clamp-2">{{ course.title }}</CardTitle>
-                <CardDescription class="mt-1 line-clamp-2">
-                  {{ course.description }}
-                </CardDescription>
-              </div>
-              <div class="flex items-center gap-2 ml-4">
-                <Badge 
-                  v-if="getCourseStatus(course)" 
-                  :variant="getCourseStatus(course)!.variant" 
-                  :class="getCourseStatus(course)!.variant === 'secondary' ? 'text-secondary-foreground' : 'bg-primary text-primary-foreground'"
+            <!-- Tooltip for disabled create button -->
+            <div
+                v-if="!can_create_class"
+                class="mb-4 rounded-lg border border-muted bg-muted/50 p-3"
+            >
+                <div
+                    class="flex items-center gap-2 text-sm text-muted-foreground"
                 >
-                  {{ getCourseStatus(course)!.label }}
-                </Badge>
-              </div>
+                    <Lock class="h-4 w-4" />
+                    <span v-if="user.enrollment_id">
+                        You're already enrolled in "{{
+                            user.current_class?.title
+                        }}". Complete it or leave to join or create a new class.
+                    </span>
+                    <span v-else>
+                        You need to meet certain requirements to create a class.
+                    </span>
+                </div>
             </div>
 
-            <!-- Tags (moved after description) -->
-            <div v-if="course.tags && course.tags.length > 0" class="flex flex-wrap gap-1">
-              <Badge 
-                v-for="tag in course.tags" 
-                :key="tag.id" 
-                variant="outline" 
-                class="text-xs"
-              >
-                {{ tag.name }}
-              </Badge>
+            <!-- Search and Filter -->
+            <div class="mb-6 flex flex-col gap-4 md:flex-row">
+                <!-- Search Input -->
+                <div class="relative flex-1">
+                    <Search
+                        class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-muted-foreground"
+                    />
+                    <Input
+                        v-model="searchQuery"
+                        placeholder="Search classes by title, description, or tags..."
+                        class="h-11 pr-10 pl-10"
+                    />
+                    <Button
+                        v-if="searchQuery"
+                        variant="ghost"
+                        size="sm"
+                        class="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 transform p-0"
+                        @click="clearSearch"
+                    >
+                        <X class="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
-  
-            <!-- Class Stats -->
-            <div class="flex flex-col gap-4 text-sm text-muted-foreground mt-4">
-              <div class="flex items-center gap-1">
-                <GraduationCap class="h-4 w-4" />
-                <span>{{ course.lessons_count }} {{ course.lessons_count === 1 ? 'lesson' : 'lessons' }}</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <Users class="h-4 w-4" />
-                <span>{{ getStudentCountText(course) }}</span>
-              </div>
-              <div v-if="course.is_creator" class="flex items-center gap-1">
-                <Globe v-if="course.is_public" class="h-4 w-4" />
-                <Lock v-else class="h-4 w-4" />
-                <span>{{ course.is_public ? 'Public' : 'Private' }}</span>
-              </div>
-            </div>
-          </CardHeader>
 
-          <!-- Actions at the very end of the card -->
-          <div class="px-6 pt-4 border-t border-border/50">
-            <div class="flex gap-2">
-              <Button 
-                :variant="getButtonVariant(course)"
-                class="flex-1 cursor-pointer"
-                :disabled="!course.is_enrolled && !course.can_join"
-                @click="handleCourseAction(course)"
-              >
-                {{ getButtonText(course) }}
-              </Button>
+            <!-- Results Count -->
+            <div
+                v-if="searchQuery"
+                class="mb-4 flex items-center justify-between"
+            >
+                <p class="text-sm text-muted-foreground">
+                    Showing {{ filteredCourses.length }} of
+                    {{ courses.length }} classes
+                </p>
+                <Button
+                    v-if="searchQuery"
+                    variant="ghost"
+                    size="sm"
+                    @click="clearSearch"
+                >
+                    Clear Search
+                </Button>
             </div>
-          </div>
-        </Card>
-        
-        <!-- Infinite scroll trigger and loading indicator -->
-        <div v-if="hasMore" ref="loadMoreTrigger" class="col-span-full flex justify-center py-8">
-          <div v-if="isLoading" class="flex items-center gap-2 text-muted-foreground">
-            <div class="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-sm">Loading more classes...</span>
-          </div>
-          <div v-else class="text-sm text-muted-foreground">
-            Scroll to load more
-          </div>
+
+            <!-- Classes Grid -->
+            <div v-if="filteredCourses.length === 0" class="py-12 text-center">
+                <GraduationCap
+                    class="mx-auto mb-4 h-16 w-16 text-muted-foreground opacity-50"
+                />
+                <h3 class="mb-2 text-lg font-semibold text-foreground">
+                    {{
+                        searchQuery ? 'No Matching Classes' : 'No Classes Found'
+                    }}
+                </h3>
+                <p class="mb-4 text-muted-foreground">
+                    {{
+                        searchQuery
+                            ? 'Try adjusting your search terms to find classes.'
+                            : 'Be the first to create a class or check back later for new classes.'
+                    }}
+                </p>
+                <div class="flex items-center justify-center gap-2">
+                    <Button
+                        v-if="searchQuery"
+                        variant="outline"
+                        @click="clearSearch"
+                    >
+                        Clear Search
+                    </Button>
+                    <Link
+                        v-if="can_create_class && !searchQuery"
+                        :href="'/classes/create'"
+                    >
+                        <Button variant="default">
+                            <Plus class="mr-2 h-4 w-4" />
+                            Create First Class
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+
+            <div
+                v-else
+                class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+            >
+                <Card
+                    v-for="course in filteredCourses"
+                    :key="course.id"
+                    class="transition-shadow duration-200 hover:shadow-lg"
+                >
+                    <CardHeader>
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <CardTitle class="line-clamp-2 text-lg">{{
+                                    course.title
+                                }}</CardTitle>
+                                <CardDescription class="mt-1 line-clamp-2">
+                                    {{ course.description }}
+                                </CardDescription>
+                            </div>
+                            <div class="ml-4 flex items-center gap-2">
+                                <Badge
+                                    v-if="getCourseStatus(course)"
+                                    :variant="getCourseStatus(course)!.variant"
+                                    :class="
+                                        getCourseStatus(course)!.variant ===
+                                        'secondary'
+                                            ? 'text-secondary-foreground'
+                                            : 'bg-primary text-primary-foreground'
+                                    "
+                                >
+                                    {{ getCourseStatus(course)!.label }}
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <!-- Tags (moved after description) -->
+                        <div
+                            v-if="course.tags && course.tags.length > 0"
+                            class="flex flex-wrap gap-1"
+                        >
+                            <Badge
+                                v-for="tag in course.tags"
+                                :key="tag.id"
+                                variant="outline"
+                                class="text-xs"
+                            >
+                                {{ tag.name }}
+                            </Badge>
+                        </div>
+
+                        <!-- Class Stats -->
+                        <div
+                            class="mt-4 flex flex-col gap-4 text-sm text-muted-foreground"
+                        >
+                            <div class="flex items-center gap-1">
+                                <GraduationCap class="h-4 w-4" />
+                                <span
+                                    >{{ course.lessons_count }}
+                                    {{
+                                        course.lessons_count === 1
+                                            ? 'lesson'
+                                            : 'lessons'
+                                    }}</span
+                                >
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <Users class="h-4 w-4" />
+                                <span>{{ getStudentCountText(course) }}</span>
+                            </div>
+                            <div
+                                v-if="course.is_creator"
+                                class="flex items-center gap-1"
+                            >
+                                <Globe
+                                    v-if="course.is_public"
+                                    class="h-4 w-4"
+                                />
+                                <Lock v-else class="h-4 w-4" />
+                                <span>{{
+                                    course.is_public ? 'Public' : 'Private'
+                                }}</span>
+                            </div>
+                        </div>
+                    </CardHeader>
+
+                    <!-- Actions at the very end of the card -->
+                    <div class="border-t border-border/50 px-6 pt-4">
+                        <div class="flex gap-2">
+                            <Button
+                                :variant="getButtonVariant(course)"
+                                class="flex-1 cursor-pointer"
+                                :disabled="
+                                    !course.is_enrolled && !course.can_join
+                                "
+                                @click="handleCourseAction(course)"
+                            >
+                                {{ getButtonText(course) }}
+                            </Button>
+                        </div>
+                    </div>
+                </Card>
+
+                <!-- Infinite scroll trigger and loading indicator -->
+                <div
+                    v-if="hasMore"
+                    ref="loadMoreTrigger"
+                    class="col-span-full flex justify-center py-8"
+                >
+                    <div
+                        v-if="isLoading"
+                        class="flex items-center gap-2 text-muted-foreground"
+                    >
+                        <div
+                            class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"
+                        ></div>
+                        <span class="text-sm">Loading more classes...</span>
+                    </div>
+                    <div v-else class="text-sm text-muted-foreground">
+                        Scroll to load more
+                    </div>
+                </div>
+
+                <div v-else class="col-span-full flex justify-center py-8">
+                    <span class="text-sm text-muted-foreground"
+                        >No more classes</span
+                    >
+                </div>
+            </div>
+
+            <!-- Current Enrollment Info -->
+            <Card
+                v-if="user?.enrollment_id && user?.current_class"
+                class="mt-8 border-primary/20"
+            >
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2">
+                        <Trophy class="h-5 w-5 text-primary" />
+                        Your Current Class
+                    </CardTitle>
+                    <CardDescription>
+                        You're currently enrolled in this class
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-semibold text-foreground">
+                                {{ user.current_class!.title }}
+                            </h3>
+                            <p class="text-sm text-muted-foreground">
+                                Continue your learning journey
+                            </p>
+                        </div>
+                        <Link :href="`/classes/${user.current_class!.id}`">
+                            <Button variant="default">
+                                Continue Learning
+                            </Button>
+                        </Link>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
-        
-        <div v-else class="col-span-full flex justify-center py-8">
-          <span class="text-sm text-muted-foreground">No more classes</span>
-        </div>
-      </div>
-
-      <!-- Current Enrollment Info -->
-      <Card v-if="user?.enrollment_id && user?.current_class" class="mt-8 border-primary/20">
-        <CardHeader>
-          <CardTitle class="flex items-center gap-2">
-            <Trophy class="h-5 w-5 text-primary" />
-            Your Current Class
-          </CardTitle>
-          <CardDescription>
-            You're currently enrolled in this class
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="font-semibold text-foreground">{{ user.current_class!.title }}</h3>
-              <p class="text-sm text-muted-foreground">Continue your learning journey</p>
-            </div>
-            <Link :href="`/classes/${user.current_class!.id}`">
-              <Button variant="default">
-                Continue Learning
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  </AppLayout>
+    </AppLayout>
 </template>

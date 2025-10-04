@@ -96,7 +96,7 @@
     --card-foreground: hsl(0 0% 3.9%);
     --popover: hsl(0 0% 100%);
     --popover-foreground: hsl(0 0% 3.9%);
-    
+
     /* Custom Brand Colors */
     /* Primary: rgb(191, 189, 250) -> hsl(242, 76%, 86%) */
     --color-primary-bg: 191 189 250;
@@ -104,13 +104,13 @@
     /* Secondary/Progress: rgb(249, 229, 78) -> hsl(52, 94%, 64%) */
     --color-secondary-bg: 249 229 78;
     --color-secondary-text: 28 28 28;
-    
+
     /* Apply custom colors */
     --primary: hsl(242 76% 86%);
     --primary-foreground: rgb(28 28 28);
     --secondary: hsl(52 94% 64%);
     --secondary-foreground: rgb(28 28 28);
-    
+
     --muted: hsl(0 0% 96.1%);
     --muted-foreground: hsl(0 0% 45.1%);
     --accent: hsl(242 76% 96%);

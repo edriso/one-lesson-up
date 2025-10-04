@@ -2,15 +2,15 @@
 import RegisteredUserController from '@/actions/App/Http/Controllers/Auth/RegisteredUserController';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
+import TimezonePicker from '@/components/TimezonePicker.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import TimezonePicker from '@/components/TimezonePicker.vue';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { login } from '@/routes';
 import { Form, Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
-import { ref, onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 
 // Timezone detection
 const detectedTimezone = ref('UTC');
@@ -20,7 +20,7 @@ onMounted(() => {
     try {
         const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         detectedTimezone.value = userTimezone;
-    } catch (error) {
+    } catch {
         console.warn('Could not detect timezone, using UTC');
         detectedTimezone.value = 'UTC';
     }
@@ -114,10 +114,7 @@ onMounted(() => {
                     <InputError :message="errors.password_confirmation" />
                 </div>
 
-                <TimezonePicker
-                    v-model="detectedTimezone"
-                    :errors="errors"
-                />
+                <TimezonePicker v-model="detectedTimezone" :errors="errors" />
 
                 <Button
                     type="submit"
