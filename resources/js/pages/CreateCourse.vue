@@ -192,7 +192,73 @@ const goToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
+// Client-side validation
+const clientErrors = ref<Record<string, string>>({});
+
+const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    // Course name validation
+    if (!form.name || form.name.trim().length < 3) {
+        errors.name = 'Course name must be at least 3 characters long.';
+    }
+
+    // Course description validation
+    if (!form.description || form.description.trim().length < 10) {
+        errors.description = 'Course description must be at least 10 characters long.';
+    }
+
+    // Course link validation (if provided)
+    if (form.link && form.link.trim()) {
+        try {
+            new URL(form.link);
+        } catch {
+            errors.link = 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.';
+        }
+    }
+
+    // Modules validation
+    if (!form.modules || form.modules.length === 0) {
+        errors.modules = 'At least one module is required.';
+    } else {
+        form.modules.forEach((module, moduleIndex) => {
+            if (!module.name || module.name.trim().length < 3) {
+                errors[`modules.${moduleIndex}.name`] = 'Module name must be at least 3 characters long.';
+            }
+            if (!module.description || module.description.trim().length < 5) {
+                errors[`modules.${moduleIndex}.description`] = 'Module description must be at least 5 characters long.';
+            }
+            if (!module.lessons || module.lessons.length === 0) {
+                errors[`modules.${moduleIndex}.lessons`] = 'At least one lesson is required per module.';
+            } else {
+                module.lessons.forEach((lesson, lessonIndex) => {
+                    if (!lesson.name || lesson.name.trim().length < 3) {
+                        errors[`modules.${moduleIndex}.lessons.${lessonIndex}.name`] = 'Lesson name must be at least 3 characters long.';
+                    }
+                    if (!lesson.description || lesson.description.trim().length < 5) {
+                        errors[`modules.${moduleIndex}.lessons.${lessonIndex}.description`] = 'Lesson description must be at least 5 characters long.';
+                    }
+                });
+            }
+        });
+    }
+
+    return errors;
+};
+
 const submit = () => {
+    // Clear previous errors
+    clientErrors.value = {};
+
+    // Validate form data
+    const errors = validateForm();
+    
+    if (Object.keys(errors).length > 0) {
+        clientErrors.value = errors;
+        return; // Prevent form submission
+    }
+
+    // Submit form if validation passes
     form.post('/classes', {
         onSuccess: () => {
             // Redirect handled by controller

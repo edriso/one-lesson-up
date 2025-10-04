@@ -202,13 +202,36 @@ const startEditingSummary = () => {
 };
 
 const saveSummary = async () => {
-    if (!selectedLessonForSummary.value || !lessonSummary.value.trim()) {
+    // Clear previous errors
+    summaryError.value = '';
+
+    // Enhanced client-side validation
+    if (!selectedLessonForSummary.value) {
+        summaryError.value = 'No lesson selected.';
+        return;
+    }
+
+    if (!lessonSummary.value.trim()) {
         summaryError.value = 'Please provide a summary before saving.';
         return;
     }
 
+    if (lessonSummary.value.trim().length < 10) {
+        summaryError.value = 'Please provide a summary of at least 10 characters.';
+        return;
+    }
+
+    // Validate link if provided
+    if (lessonLink.value.trim()) {
+        try {
+            new URL(lessonLink.value.trim());
+        } catch {
+            summaryError.value = 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.';
+            return;
+        }
+    }
+
     isSaving.value = true;
-    summaryError.value = '';
 
     try {
         const response = await fetch(

@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import {
     ArrowLeft,
     CheckCircle,
@@ -42,7 +43,42 @@ const form = useForm({
     link: '',
 });
 
+// Client-side validation
+const clientErrors = ref<Record<string, string>>({});
+
+const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    // Summary validation
+    if (!form.summary || form.summary.trim().length < 10) {
+        errors.summary = 'Please provide a summary of at least 10 characters.';
+    }
+
+    // Link validation (if provided)
+    if (form.link && form.link.trim()) {
+        try {
+            new URL(form.link);
+        } catch {
+            errors.link = 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.';
+        }
+    }
+
+    return errors;
+};
+
 const submit = () => {
+    // Clear previous errors
+    clientErrors.value = {};
+
+    // Validate form data
+    const errors = validateForm();
+    
+    if (Object.keys(errors).length > 0) {
+        clientErrors.value = errors;
+        return; // Prevent form submission
+    }
+
+    // Submit form if validation passes
     form.post(`/lessons/${props.lesson.id}/complete`, {
         onSuccess: () => {
             // Redirect handled by controller
@@ -140,16 +176,16 @@ const submit = () => {
                                 :rows="6"
                                 required
                                 :class="
-                                    form.errors.summary
+                                    (clientErrors.summary || form.errors.summary)
                                         ? 'border-destructive'
                                         : ''
                                 "
                             />
                             <p
-                                v-if="form.errors.summary"
+                                v-if="clientErrors.summary || form.errors.summary"
                                 class="text-sm text-destructive"
                             >
-                                {{ form.errors.summary }}
+                                {{ clientErrors.summary || form.errors.summary }}
                             </p>
                             <p class="text-xs text-muted-foreground">
                                 {{ form.summary.length }} / 1000 characters
@@ -178,15 +214,15 @@ const submit = () => {
                                     placeholder="https://github.com/yourname/project or https://notion.so/notes"
                                     class="pl-10"
                                     :class="{
-                                        'border-destructive': form.errors.link,
+                                        'border-destructive': clientErrors.link || form.errors.link,
                                     }"
                                 />
                             </div>
                             <p
-                                v-if="form.errors.link"
+                                v-if="clientErrors.link || form.errors.link"
                                 class="text-sm text-destructive"
                             >
-                                {{ form.errors.link }}
+                                {{ clientErrors.link || form.errors.link }}
                             </p>
                         </div>
 

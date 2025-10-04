@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { login, register } from '@/routes';
 import { Head, Link } from '@inertiajs/vue3';
-import { GraduationCap, Medal, Target, Users } from 'lucide-vue-next';
+import { GraduationCap, Medal, Target, Sparkles, Users } from 'lucide-vue-next';
 
 interface Props {
     stats?: {
@@ -94,7 +94,7 @@ const formatNumber = (num: number): string => {
                             size="lg"
                             class="bg-primary px-8 py-4 text-lg text-primary-foreground hover:bg-primary/90"
                         >
-                            <Target class="mr-2 h-5 w-5" />
+                            <Sparkles class="h-5 w-5" />
                             Start Learning Free
                         </Button>
                     </Link>
@@ -215,7 +215,7 @@ const formatNumber = (num: number): string => {
                         size="lg"
                         class="bg-primary px-8 py-4 text-lg text-primary-foreground hover:bg-primary/90"
                     >
-                        <Medal class="mr-2 h-5 w-5" />
+                        <Sparkles class="h-5 w-5" />
                         Start Learning Free
                     </Button>
                 </Link>

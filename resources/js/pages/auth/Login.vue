@@ -11,11 +11,57 @@ import { register } from '@/routes';
 import { request } from '@/routes/password';
 import { Form, Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
+import { ref } from 'vue';
 
 defineProps<{
     status?: string;
     canResetPassword: boolean;
 }>();
+
+// Client-side validation
+const clientErrors = ref<Record<string, string>>({});
+
+const validateForm = (formData: any) => {
+    const errors: Record<string, string> = {};
+
+    // Email validation
+    const email = formData.email?.trim() || '';
+    if (!email) {
+        errors.email = 'Email address is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.email = 'Please enter a valid email address.';
+    }
+
+    // Password validation
+    if (!formData.password || formData.password.length < 1) {
+        errors.password = 'Password is required.';
+    }
+
+    return errors;
+};
+
+const handleSubmit = (event: Event) => {
+    // Clear previous errors
+    clientErrors.value = {};
+
+    // Get form data from the form state
+    const formData = {
+        email: (document.querySelector('input[name="email"]') as HTMLInputElement)?.value || '',
+        password: (document.querySelector('input[name="password"]') as HTMLInputElement)?.value || '',
+    };
+
+    // Validate form data
+    const errors = validateForm(formData);
+    
+    if (Object.keys(errors).length > 0) {
+        clientErrors.value = errors;
+        event.preventDefault(); // Prevent form submission
+        return false;
+    }
+
+    // If validation passes, allow form submission
+    return true;
+};
 </script>
 
 <template>
@@ -51,7 +97,7 @@ defineProps<{
                         autocomplete="email"
                         placeholder="email@example.com"
                     />
-                    <InputError :message="errors.email" />
+                    <InputError :message="clientErrors.email || errors.email" />
                 </div>
 
                 <div class="grid gap-2">
@@ -75,7 +121,7 @@ defineProps<{
                         autocomplete="current-password"
                         placeholder="Password"
                     />
-                    <InputError :message="errors.password" />
+                    <InputError :message="clientErrors.password || errors.password" />
                 </div>
 
                 <div class="flex items-center justify-between">
@@ -91,6 +137,7 @@ defineProps<{
                     :tabindex="4"
                     :disabled="processing"
                     data-test="login-button"
+                    @click="handleSubmit"
                 >
                     <LoaderCircle
                         v-if="processing"

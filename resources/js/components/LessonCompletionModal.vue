@@ -64,15 +64,22 @@ const closeModal = () => {
 };
 
 const submitCompletion = () => {
-    // Validation
+    // Clear previous errors
+    completionError.value = '';
+
+    // Enhanced validation
     if (!props.lesson) {
         completionError.value = 'Invalid lesson selected.';
         return;
     }
 
-    if (!isSummaryValid.value) {
-        completionError.value =
-            'Please provide a summary before completing the lesson.';
+    if (!summary.value.trim()) {
+        completionError.value = 'Please provide a summary before completing the lesson.';
+        return;
+    }
+
+    if (summary.value.trim().length < 10) {
+        completionError.value = 'Please provide a summary of at least 10 characters.';
         return;
     }
 
@@ -84,7 +91,6 @@ const submitCompletion = () => {
     }
 
     isCompletingLesson.value = true;
-    completionError.value = '';
 
     const data: { summary: string; link?: string } = {
         summary: summary.value.trim(),

@@ -150,14 +150,31 @@ const closeModal = () => {
 };
 
 const submitReflection = async () => {
-    if (!reflection.value.trim() || reflection.value.trim().length < 50) {
-        reflectionError.value =
-            'Please provide a reflection of at least 50 characters.';
+    // Clear previous errors
+    reflectionError.value = '';
+
+    // Enhanced client-side validation
+    if (!reflection.value.trim()) {
+        reflectionError.value = 'Please provide a reflection.';
         return;
     }
 
+    if (reflection.value.trim().length < 50) {
+        reflectionError.value = 'Please provide a reflection of at least 50 characters.';
+        return;
+    }
+
+    // Validate reflection link if provided
+    if (reflectionLink.value.trim()) {
+        try {
+            new URL(reflectionLink.value.trim());
+        } catch {
+            reflectionError.value = 'Please enter a valid URL (e.g., https://example.com) or leave the link field empty.';
+            return;
+        }
+    }
+
     isSubmitting.value = true;
-    reflectionError.value = '';
 
     try {
         const url = props.isEditing
