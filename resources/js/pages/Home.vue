@@ -10,7 +10,7 @@ import LessonCompletionModal from '@/components/LessonCompletionModal.vue';
 import CourseReflectionModal from '@/components/CourseReflectionModal.vue';
 import UserInfo from '@/components/UserInfo.vue';
 import { useDateFormatter } from '@/composables/useDateFormatter';
-import { Clock, Medal, TrendingUp, CheckCircle, BadgeCheck, NotebookPen, BookOpen, GraduationCap } from 'lucide-vue-next';
+import { Clock, Medal, TrendingUp, CheckCircle, BadgeCheck, NotebookPen, Notebook, BookOpen, GraduationCap } from 'lucide-vue-next';
 import { ref, computed, onMounted } from 'vue';
 import type { Component } from 'vue';
 
