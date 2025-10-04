@@ -53,7 +53,7 @@ const { open, setOpen, disabled: contextDisabled } = selectContext
 const triggerRef = ref<HTMLButtonElement>()
 
 const triggerClass = computed(() => {
-  const isDisabled = props.disabled || contextDisabled.value
+  const isDisabled = props.disabled || contextDisabled
   
   return cva(
     'flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
@@ -82,16 +82,16 @@ const handleClick = (event: MouseEvent) => {
   event.preventDefault()
   event.stopPropagation()
   
-  if (!props.disabled && !contextDisabled.value) {
-    setOpen(!open.value)
+  if (!props.disabled && !contextDisabled) {
+    setOpen(!open)
   }
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
-    if (!props.disabled && !contextDisabled.value) {
-      setOpen(!open.value)
+    if (!props.disabled && !contextDisabled) {
+      setOpen(!open)
     }
   } else if (event.key === 'Escape') {
     setOpen(false)
@@ -99,7 +99,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 // Close on outside click
-watch(open, (isOpen) => {
+watch(() => open, (isOpen) => {
   if (isOpen) {
     const handleClickOutside = (event: MouseEvent) => {
       if (triggerRef.value && !triggerRef.value.contains(event.target as Node)) {
