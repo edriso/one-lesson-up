@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Link } from '@inertiajs/vue3';
-import { Award, BadgeCheck, Crown, Trophy } from 'lucide-vue-next';
+import { Award, Crown, Trophy } from 'lucide-vue-next';
 
 interface LeaderboardEntry {
     id: number;
@@ -13,11 +13,7 @@ interface LeaderboardEntry {
         avatar?: string;
     };
     points?: number;
-    activities_count?: number;
     lessons_completed?: number;
-    has_time_bonus?: boolean;
-    bonus_type?: string;
-    activity_date?: string;
 }
 
 interface Props {
@@ -36,7 +32,7 @@ const getRankIcon = (rank: number) => {
         case 3:
             return Award;
         default:
-            return BadgeCheck;
+            return null; // No icon for ranks 4+
     }
 };
 
@@ -80,13 +76,11 @@ const getUserInitials = (fullName: string) => {
     >
         <div class="flex items-center gap-4">
             <div
-                class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-muted"
             >
-                <component
-                    :is="getRankIcon(entry.rank)"
-                    class="h-4 w-4"
-                    :class="getRankColor(entry.rank)"
-                />
+                <span class="text-sm font-bold text-muted-foreground">
+                    {{ entry.rank }}
+                </span>
             </div>
             <Link
                 :href="`/profile/${entry.user?.username || 'unknown'}`"
@@ -96,14 +90,20 @@ const getUserInitials = (fullName: string) => {
                     class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20"
                 >
                     <span class="text-sm font-semibold text-primary-foreground">
-                        {{ getUserInitials(entry.user?.full_name || '') }}
+                        {{ getUserInitials(entry.user?.full_name || entry.user?.username || '') }}
                     </span>
                 </div>
                 <div>
                     <h4
                         class="flex items-center gap-2 font-semibold text-foreground"
                     >
-                        {{ entry.user?.full_name || 'Unknown User' }}
+                        {{ entry.user?.full_name || entry.user?.username }}
+                        <component
+                            v-if="getRankIcon(entry.rank)"
+                            :is="getRankIcon(entry.rank)"
+                            class="h-4 w-4"
+                            :class="getRankColor(entry.rank)"
+                        />
                         <Badge
                             v-if="isCurrentUser()"
                             variant="outline"
@@ -111,9 +111,6 @@ const getUserInitials = (fullName: string) => {
                             >You</Badge
                         >
                     </h4>
-                    <p class="text-sm text-muted-foreground">
-                        @{{ entry.user?.username || 'unknown' }}
-                    </p>
                 </div>
             </Link>
         </div>
@@ -135,30 +132,7 @@ const getUserInitials = (fullName: string) => {
                     {{ entry.lessons_completed === 1 ? 'lesson' : 'lessons' }}
                 </p>
 
-                <!-- Show activities count or time bonus info -->
-                <p
-                    v-if="entry.activities_count !== undefined"
-                    class="text-sm text-muted-foreground"
-                >
-                    {{ entry.activities_count }} activities
-                </p>
-                <p
-                    v-else-if="entry.has_time_bonus"
-                    class="text-sm text-muted-foreground"
-                >
-                    ⭐ Time bonus
-                </p>
-                <p v-else class="text-sm text-muted-foreground">
-                    Daily activity
-                </p>
             </div>
-            <Badge
-                v-if="entry.rank <= 3"
-                variant="secondary"
-                class="text-secondary-foreground"
-            >
-                #{{ entry.rank }}
-            </Badge>
         </div>
     </div>
 </template>
