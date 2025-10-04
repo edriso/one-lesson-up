@@ -94,7 +94,7 @@ class DailyActivity extends Model
             // Increment lessons completed for this enrollment
             $activity->increment('lessons_completed');
 
-            // Award active day point only if this is the first activity today
+            // Award active day bonus (1 point) for the first lesson of the day
             if (!$hasActivityToday) {
                 $pointsAwarded += PointValue::ACTIVE_DAY->getPoints();
             }
@@ -126,10 +126,8 @@ class DailyActivity extends Model
     {
         $points = 0;
         
-        // Active day point (if at least 1 lesson completed)
-        if ($this->lessons_completed > 0) {
-            $points += PointValue::ACTIVE_DAY->getPoints();
-        }
+        // 1 point for active day bonus (first lesson of the day)
+        $points += PointValue::ACTIVE_DAY->getPoints();
         
         // Time bonus point
         if ($this->time_bonus_earned) {

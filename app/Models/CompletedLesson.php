@@ -25,11 +25,6 @@ class CompletedLesson extends Model
     {
         // Record daily activity and award points when a lesson is completed
         static::created(function ($completedLesson) {
-            // Skip during seeding to avoid unique constraint violations
-            if (app()->runningInConsole() && app()->environment('local') && !app()->runningUnitTests()) {
-                return;
-            }
-            
             $user = $completedLesson->enrollment->user;
             
             // Record daily activity and get points awarded

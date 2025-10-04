@@ -327,7 +327,7 @@ $query->whereNotNull('completed_at');
             'bonus_deadline' => $enrollment ? $enrollment->bonus_deadline->toISOString() : null,
             'is_bonus_eligible' => $enrollment ? now()->lte($enrollment->bonus_deadline) : false,
             'is_course_creator' => $course->creator_id === $user->id,
-            'enrollment_start_date' => $enrollment ? $enrollment->created_at->toISOString() : null,
+            'enrollment_start_date' => $enrollment ? $enrollment->created_at->toISOString() : ($completedEnrollment ? $completedEnrollment->created_at->toISOString() : null),
             'was_completed_on_time' => $completedEnrollment ? $completedEnrollment->isCompletedOnTime() : null,
             'points_earned' => $completedEnrollment ? $this->calculatePointsEarned($completedEnrollment) : null,
         ]);
@@ -522,49 +522,40 @@ $query->whereNotNull('completed_at');
      */
     private function calculatePointsEarned($enrollment)
     {
-        $pointsEarned = 0;
-        
-        // Count completed lessons (1 point each)
-        $completedLessonsCount = $enrollment->completedLessons()->count();
-        $pointsEarned += $completedLessonsCount;
-        
-        // Add course completion bonus points
+        // Only show course completion bonus points (not lesson points)
         $course = $enrollment->course;
         $lessonCount = $course->lessons_count;
         $isCompletedOnTime = $enrollment->isCompletedOnTime();
         
         // Calculate bonus points using PointSystemValue enum
         $bonusPoints = \App\Enums\PointSystemValue::calculateCourseBonus($lessonCount, $isCompletedOnTime);
-        $pointsEarned += round($bonusPoints);
         
-        return $pointsEarned;
+        return $bonusPoints;
     }
 
     /**
-     * Calculate points to deduct when leaving a course.
+* Calculate points to deduct when leaving a course.
      */
     private function calculatePointsToDeduct($enrollment)
     {
         $pointsToDeduct = 0;
         
-        // Count completed lessons (1 point each)
-        $completedLessonsCount = $enrollment->completedLessons()->count();
-        $pointsToDeduct += $completedLessonsCount;
+        // Calculate active day bonus points that were awarded
+        $dailyActivities = \App\Models\DailyActivity::where('enrollment_id', $enrollment->id)->get();
+        $pointsToDeduct += $dailyActivities->sum('getPointsEarned');
         
         // Check if course was completed (bonus points)
         if ($enrollment->completed_at) {
             // Calculate course completion bonus that was awarded
             $course = $enrollment->course;
             $lessonCount = $course->lessons_count;
-            $deadline = $course->deadline_days;
             
             // Check if completed within deadline
-            $deadlineDate = $enrollment->created_at->addDays($deadline);
-            $isCompletedOnTime = $enrollment->completed_at->lte($deadlineDate);
+            $isCompletedOnTime = $enrollment->completed_at->lte($enrollment->bonus_deadline);
             
             // Calculate bonus points using PointSystemValue enum
             $bonusPoints = \App\Enums\PointSystemValue::calculateCourseBonus($lessonCount, $isCompletedOnTime);
-            $pointsToDeduct += round($bonusPoints);
+            $pointsToDeduct += $bonusPoints;
         }
         
         return $pointsToDeduct;

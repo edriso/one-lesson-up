@@ -13,7 +13,6 @@ test('user can be created with all required fields', function () {
         'username' => 'testuser',
         'email' => 'test@example.com',
         'full_name' => 'Test User',
-        'title' => 'Software Developer',
         'bio' => 'Test bio',
         'is_public' => true,
     ]);

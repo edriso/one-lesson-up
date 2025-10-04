@@ -90,7 +90,7 @@ class Enrollment extends Model
      */
     public function getDeadlineDateAttribute(): Carbon
     {
-        return $this->created_at->addDays($this->course->deadline_days);
+        return $this->bonus_deadline;
     }
 
     /**
@@ -160,20 +160,15 @@ class Enrollment extends Model
      */
     private function awardCourseCompletionBonus(): void
     {
-        // Calculate active days from daily activities
-        $activeDays = $this->dailyActivities()->count();
+        // Use the same calculation as the display logic for consistency
+        $lessonCount = $this->course->lessons_count;
+        $isCompletedOnTime = $this->isCompletedOnTime();
         
-        $courseBonus = \App\Enums\PointValue::calculateCompletionBonus(
-            $activeDays, 
-            $this->isCompletedOnTime()
-        );
-
-        if ($courseBonus > 0) {
-            $this->user->increment('points', $courseBonus);
-            
-            // Course completion bonus is already part of user's total points
-            // Daily activity tracking happens automatically via lesson completion
-            // No need to create separate activity for course completion bonus
+        // Calculate only the bonus points (not the total course points)
+        $bonusPoints = \App\Enums\PointSystemValue::calculateCourseBonus($lessonCount, $isCompletedOnTime);
+        
+        if ($bonusPoints > 0) {
+            $this->user->increment('points', $bonusPoints);
         }
     }
 }

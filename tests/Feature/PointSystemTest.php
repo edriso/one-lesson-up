@@ -86,8 +86,8 @@ test('course completion awards bonus points on time', function () {
     $dailyActivity = DailyActivity::where('user_id', $this->user->id)->latest()->first();
     $hasTimeBonus = $dailyActivity->time_bonus_earned;
     
-    // Expected points: active day + completion bonus + (time bonus if applicable)
-    $expectedPoints = PointValue::ACTIVE_DAY->getPoints() + PointValue::calculateCompletionBonus(1, true);
+    // Expected points: active day bonus + course completion bonus + (time bonus if applicable)
+    $expectedPoints = 1 + \App\Enums\PointSystemValue::calculateCourseBonus(1, true);
     if ($hasTimeBonus) {
         $expectedPoints += PointValue::TIME_BONUS->getPoints();
     }
@@ -125,7 +125,7 @@ test('multiple enrollments same day awards single active day point', function ()
 
     $this->user->refresh();
     
-    // Second lesson should not award any additional points since user already active today
+    // Second lesson should NOT award additional points (active day bonus only once per day)
     expect($this->user->points)->toBe($pointsAfterFirst);
     
     // But should have 2 separate daily activities

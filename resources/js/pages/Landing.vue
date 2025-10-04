@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { login, register } from '@/routes';
 import { Head, Link } from '@inertiajs/vue3';
-import { GraduationCap, Medal, Target, Sparkles, Users } from 'lucide-vue-next';
+import { GraduationCap, Medal, Target, Gamepad2, Users } from 'lucide-vue-next';
 
 interface Props {
     stats?: {
@@ -78,12 +78,11 @@ const formatNumber = (num: number): string => {
         <div class="container mx-auto px-4 py-16">
             <div class="mx-auto max-w-4xl text-center">
                 <h2 class="mb-6 text-4xl font-bold text-foreground md:text-5xl">
-                    Stop Abandoning Courses.<br />
-                    <span class="text-primary">Start Finishing Them.</span>
+                    Turn Learning Into a Game.<br />
+                    <span class="text-primary">Level up your learning.</span>
                 </h2>
                 <p class="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
-                    Gamify your learning with points, deadlines, and community.
-                    Complete classes you actually start.
+                    Whether it's Udemy courses, YouTube series, bootcamps, or any structured learning path - turn it into a game and actually finish what you start.
                 </p>
 
                 <div
@@ -94,7 +93,7 @@ const formatNumber = (num: number): string => {
                             size="lg"
                             class="bg-primary px-8 py-4 text-lg text-primary-foreground hover:bg-primary/90"
                         >
-                            <Sparkles class="h-5 w-5" />
+                            <Gamepad2 class="h-5 w-5" />
                             Start Learning Free
                         </Button>
                     </Link>
@@ -124,11 +123,10 @@ const formatNumber = (num: number): string => {
                         <Target class="h-8 w-8 text-primary" />
                     </div>
                     <h3 class="mb-2 text-lg font-semibold text-foreground">
-                        One Course at a Time
+                        Stay Focused
                     </h3>
                     <p class="text-sm text-muted-foreground">
-                        Focus on completing one course before starting another.
-                        No more scattered learning.
+                        One learning path at a time. No more scattered learning or abandoned courses, classes, or roadmaps.
                     </p>
                 </div>
 
@@ -140,11 +138,10 @@ const formatNumber = (num: number): string => {
                         <Medal class="h-8 w-8 text-secondary-foreground" />
                     </div>
                     <h3 class="mb-2 text-lg font-semibold text-foreground">
-                        Earn Points & Bonuses
+                        Gamified Learning
                     </h3>
                     <p class="text-sm text-muted-foreground">
-                        Get points for lessons, time bonuses for morning/evening
-                        learning, and course completion bonuses.
+                        Earn points for every lesson, get bonuses for consistent learning, and compete on leaderboards.
                     </p>
                 </div>
 
@@ -156,11 +153,10 @@ const formatNumber = (num: number): string => {
                         <Users class="h-8 w-8 text-primary" />
                     </div>
                     <h3 class="mb-2 text-lg font-semibold text-foreground">
-                        Community & Competition
+                        Community Support
                     </h3>
                     <p class="text-sm text-muted-foreground">
-                        See what others are learning, compete on leaderboards,
-                        and stay motivated together.
+                        Learn alongside others, see what they're studying, and stay motivated together.
                     </p>
                 </div>
             </div>
@@ -172,7 +168,7 @@ const formatNumber = (num: number): string => {
                 class="mx-auto max-w-3xl rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 p-8 text-center"
             >
                 <h3 class="mb-6 text-2xl font-bold text-foreground">
-                    Join Active Learners
+                    Join the Learning Community
                 </h3>
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <div>
@@ -205,17 +201,17 @@ const formatNumber = (num: number): string => {
         <div class="container mx-auto px-4 py-12">
             <div class="mx-auto max-w-2xl text-center">
                 <h3 class="mb-4 text-2xl font-bold text-foreground">
-                    Ready to Finish What You Start?
+                    Ready to Actually Finish Your Learning?
                 </h3>
                 <p class="mb-6 text-muted-foreground">
-                    Join learners who are actually completing their courses.
+                    Join thousands of learners who are finally completing their courses, classes, and learning roadmaps.
                 </p>
                 <Link :href="register()">
                     <Button
                         size="lg"
                         class="bg-primary px-8 py-4 text-lg text-primary-foreground hover:bg-primary/90"
                     >
-                        <Sparkles class="h-5 w-5" />
+                        <Gamepad2 class="h-5 w-5" />
                         Start Learning Free
                     </Button>
                 </Link>

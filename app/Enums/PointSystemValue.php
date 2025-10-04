@@ -12,19 +12,27 @@ enum PointSystemValue: int
     /**
      * Calculate course completion bonus points.
      */
-    public static function calculateCourseBonus(int $lessonCount, bool $completedOnTime): float
+    public static function calculateCourseBonus(int $lessonCount, bool $completedOnTime): int
     {
         $multiplier = $completedOnTime 
             ? self::COURSE_ON_TIME_BONUS_MULTIPLIER->value 
             : self::COURSE_LATE_BONUS_MULTIPLIER->value;
         
-        return ($lessonCount * $multiplier) / 100;
+        // Calculate bonus as integer: for 50% bonus, give 1 point for every 2 lessons
+        // For 25% bonus, give 1 point for every 4 lessons
+        if ($multiplier == 50) {
+            return (int) floor($lessonCount / 2);
+        } elseif ($multiplier == 25) {
+            return (int) floor($lessonCount / 4);
+        }
+        
+        return 0;
     }
 
     /**
      * Calculate total points for a course completion.
      */
-    public static function calculateTotalCoursePoints(int $lessonCount, bool $completedOnTime): float
+    public static function calculateTotalCoursePoints(int $lessonCount, bool $completedOnTime): int
     {
         $lessonPoints = $lessonCount * self::LESSON_COMPLETED->value;
         $bonusPoints = self::calculateCourseBonus($lessonCount, $completedOnTime);

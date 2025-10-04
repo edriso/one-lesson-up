@@ -141,10 +141,7 @@ class LeaderboardController extends Controller
             // For this month, use a more efficient approach with raw SQL
             $userPointsQuery = DailyActivity::selectRaw('
                 user_id,
-                SUM(CASE 
-                    WHEN lessons_completed > 0 THEN 1 
-                    ELSE 0 
-                END) as active_days,
+                SUM(lessons_completed) as total_lessons,
                 SUM(CASE 
                     WHEN time_bonus_earned = 1 THEN 1 
                     ELSE 0 
@@ -153,14 +150,14 @@ class LeaderboardController extends Controller
             ->whereBetween('activity_date', [$startDate, $endDate])
             ->where('lessons_completed', '>', 0)
             ->groupBy('user_id')
-            ->havingRaw('active_days > 0');
+            ->havingRaw('total_lessons > 0');
 
             // Get total count for pagination
             $totalUsers = $userPointsQuery->count();
             
             // Apply pagination
             $results = $userPointsQuery
-                ->orderByDesc('active_days')
+                ->orderByDesc('total_lessons')
                 ->orderByDesc('time_bonus_days')
                 ->offset($offset)
                 ->limit($limit)
@@ -174,8 +171,8 @@ class LeaderboardController extends Controller
 
             return $results->map(function ($result, $index) use ($offset, $users) {
                 $user = $users->get($result->user_id);
-                // Calculate points: 1 point per active day + 1 point per time bonus day
-                $totalPoints = $result->active_days + $result->time_bonus_days;
+                // Calculate points: 1 point per lesson + 1 point per time bonus day
+                $totalPoints = $result->total_lessons + $result->time_bonus_days;
                 
                 return [
                     'id' => $result->user_id,
@@ -286,10 +283,7 @@ class LeaderboardController extends Controller
             case 'this_month':
                 // Get user's monthly stats
                 $userStats = DailyActivity::selectRaw('
-                    SUM(CASE 
-                        WHEN lessons_completed > 0 THEN 1 
-                        ELSE 0 
-                    END) as active_days,
+                    SUM(lessons_completed) as total_lessons,
                     SUM(CASE 
                         WHEN time_bonus_earned = 1 THEN 1 
                         ELSE 0 
@@ -303,7 +297,7 @@ class LeaderboardController extends Controller
                 ->where('lessons_completed', '>', 0)
                 ->first();
                 
-                $userMonthlyPoints = ($userStats->active_days ?? 0) + ($userStats->time_bonus_days ?? 0);
+                $userMonthlyPoints = ($userStats->total_lessons ?? 0) + ($userStats->time_bonus_days ?? 0);
                 if ($userMonthlyPoints <= 0) {
                     return 0;
                 }
@@ -311,10 +305,7 @@ class LeaderboardController extends Controller
                 // Count users with more points this month
                 $usersWithMorePoints = DailyActivity::selectRaw('
                     user_id,
-                    SUM(CASE 
-                        WHEN lessons_completed > 0 THEN 1 
-                        ELSE 0 
-                    END) + SUM(CASE 
+                    SUM(lessons_completed) + SUM(CASE 
                         WHEN time_bonus_earned = 1 THEN 1 
                         ELSE 0 
                     END) as total_points

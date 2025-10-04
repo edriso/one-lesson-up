@@ -1,12 +1,12 @@
 # One Lesson Up 🎯
 
-> **Stop abandoning courses. Start finishing them.**
+> **Turn Learning Into a Game. Level up your learning.**
 
-Transform online learning into an engaging journey with gamification, accountability, and community support. Whether you're taking a Udemy course, YouTube series, or any structured program, One Lesson Up keeps you accountable and motivated.
+Transform any structured learning into an engaging journey with gamification, accountability, and community support. Whether it's Udemy courses, YouTube series, bootcamps, or any structured learning path - turn it into a game and actually finish what you start.
 
 ## 🌟 Why One Lesson Up?
 
-Most online learners abandon courses within the first few lessons. One Lesson Up solves this by:
+Most learners abandon their courses, classes, and learning roadmaps within the first few lessons. One Lesson Up solves this by:
 
 - **🎯 Gamification** - Turn learning into a game with points, deadlines, and achievements
 - **👥 Community** - Learn alongside others and see what they're studying
@@ -18,7 +18,7 @@ Most online learners abandon courses within the first few lessons. One Lesson Up
 
 One Lesson Up gamifies online learning with:
 
-- **🎯 Points System** - Earn 1 point per lesson, with learning deadline bonuses
+- **🎯 Points System** - Earn points for learning, with time bonuses and course completion bonuses
 - **⏱️ Learning Deadlines** - Complete classes on time for bonus points
 - **📝 Learning Summaries** - Reinforce knowledge by writing what you learned
 - **📖 Course Reflections** - Write and edit reflections when completing courses
@@ -36,16 +36,15 @@ One Lesson Up gamifies online learning with:
 1. **Create or Join a Class** - Add your course name, modules, and lessons with smart tags (one active course at a time)
 2. **Complete & Reflect** - After each lesson, write a summary of what you learned
 3. **Course Reflection** - When you complete all lessons, write a reflection about the entire course
-4. **Earn Points** - Get 1 point per lesson, with time-based bonuses for completing courses on schedule
+4. **Earn Points** - Get points for learning, with time bonuses and course completion bonuses
 5. **Climb the Leaderboard** - Accumulate points and compete with other ninjas
 6. **Track Progress** - See your learning activity and progress over time
 7. **Discover & Organize** - Find relevant classes through tags and organize your learning path
 
 ## 📊 Points System
 
-- **Lesson completion**: 1 point per lesson
-- **Active day bonus**: 1 point for first lesson of the day
-- **Time bonus**: 1 point for morning (5-8 AM) or evening (8-11 PM) learning
+- **Active day bonus**: 1 point for first lesson of the day (regardless of how many lessons completed)
+- **Time bonus**: 1 point for morning (5-8 AM) or evening (8-11 PM) learning (maximum 1 per day)
 - **Course completion bonus**: Variable based on course size and completion time
 - **Learning deadline**: Calculated based on lesson count for maximum bonus points
 
@@ -65,7 +64,14 @@ One Lesson Up gamifies online learning with:
 - **30 lessons**: 42 days (30 + 12) 
 - **50 lessons**: 70 days (50 + 20)
 
-**Example**: 30-lesson course completed on time = 30 lesson points + 30 active day points + time bonuses + course completion bonus = 60+ points ⚡
+**Example**: 2-lesson course completed on time = 1 active day bonus + 1 course completion bonus = 2 points ⚡
+
+**Perfect For**:
+- Self-learners taking online courses (Udemy, Coursera, YouTube, etc.)
+- Anyone struggling to finish courses they start
+- People who want accountability and structure in their learning
+- Competitive learners who thrive on gamification
+- Students and professionals pursuing structured learning paths
 
 ## 🛠️ Tech Stack
 
@@ -223,14 +229,6 @@ This project is open-sourced software licensed under the [MIT license](https://o
 - **Vue.js Team** - For the progressive JavaScript framework
 - **Tailwind CSS** - For the utility-first CSS framework
 - **All Contributors** - Thank you for making this project better!
-
-## 🎯 Perfect For
-
-- Self-learners taking online courses (Udemy, Coursera, YouTube, etc.)
-- Anyone struggling to finish courses they start
-- People who want accountability and structure in their learning
-- Competitive learners who thrive on gamification
-- Students
 
 ---
 

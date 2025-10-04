@@ -102,6 +102,9 @@ class Course extends Model
      */
     public function getSmartDeadlineAttribute(): \Carbon\Carbon
     {
-        return now()->addDays($this->deadline_days);
+        // Calculate deadline based on lesson count: 1 week per lesson
+        $weeksPerLesson = 1;
+        $totalWeeks = $this->lessons_count * $weeksPerLesson;
+        return now()->addWeeks($totalWeeks);
     }
 }
